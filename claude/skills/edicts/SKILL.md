@@ -282,6 +282,116 @@ When findings are handled, I present the summary to the Imperator with each find
 
 ---
 
+## Dispatching the Custos
+
+The magistrates have cleared the plan. They verified what the artifact says and means. One walk remains — Marcus Pernix verifies what the artifact does when a soldier executes it on this machine, in this shell, against this environment.
+
+I dispatch the Custos only when Praetor+Provocator are "returned clean" — five conditions must hold:
+
+1. **No MISUNDERSTANDING currently in escalation.** A MISUNDERSTANDING that was escalated to the Imperator and resolved (Imperator clarified, plan revised, decision logged in `decisions.md` of type `decision`) closes the escalation. The revised plan is eligible for Custos. Forced re-dispatch of Praetor+Provocator on every MISUNDERSTANDING resolution is NOT required — case-by-case at the Imperator review gate handles the rare re-skinned-misunderstanding risk.
+2. **No unresolved GAPs after the 2-iteration cap.** GAPs the consul addressed in the auto-feed loop count as resolved. GAPs that exhausted the cap are escalations and disqualify the plan from Custos until the Imperator resolves them and the resolution is logged in `decisions.md`.
+3. **All CONCERNs explicitly handled.** Adopted-and-revised, or rejected with reasoning per protocol section 6. **Split-verifier sub-clause:** when Praetor returns CONCERN on a surface and Provocator returns SOUND on the same surface (or vice versa), the SOUND from one verifier does NOT auto-neutralize the CONCERN from the other. The consul must explicitly handle the CONCERN and record the resolution in `decisions.md`.
+4. **No silent plan modifications since plan verification cleared.** Run `git diff <plan-path>` (working tree vs HEAD; this assumes the standard flow — the consul commits the plan as part of plan-writing close-out, before announcing "Dispatching Praetor and Provocator"). If the diff is non-empty, announce: *"Plan modified since plan verification cleared — diff: <output>. Reply 'redispatch' to re-run plan verification, or 'proceed' to dispatch Custos."* Match the reply against the two tokens (case-insensitive, after the same trim rule used for skip syntax): `redispatch` or `re-dispatch` triggers re-run; `proceed`, `continue`, `go` triggers dispatch. Anything else (including bare `no`, `yes`, or vague replies) triggers one clarification: *"Reply 'redispatch' or 'proceed' — anything else needs clarification."* Log the gate decision in `decisions.md` (type `decision`). If the consul edited the plan post-verification but pre-commit (a flow violation), surface this directly to the Imperator: *"Plan was edited after plan verification but before being committed — the diff baseline is lost. Re-dispatch plan verification?"*
+5. **Imperator overrides recorded.** Override means the Imperator explicitly directed the consul against the verifier's recommendation (e.g., *"revert that fix"* or *"proceed despite this finding"*) — log in `decisions.md` (type `override`). Implicit acceptance (Imperator agreed with consul handling without overriding) does NOT require a separate entry — the consul's handling is already in the summary.
+
+I announce: "Dispatching the Custos for dispatch-readiness verification."
+
+The Imperator may say "skip" to bypass. The recognition contract is **strict** (tighter than the existing Praetor+Provocator pattern — explicit grammar makes operator behavior auditable). Whitelist (case-insensitive, after the trim rule below):
+
+- `skip`
+- `skip custos`
+- `no`
+- `no custos`
+- `no, skip`
+- `nope`
+- `cancel`
+- `none`
+- `don't`
+- `stop`
+
+**Trim rule** before matching: strip surrounding `**` (bold), `*` (italic), `` ` `` (code), `"` and `'` (straight quotes), `“`, `”`, `‘`, `’` (curly quotes — macOS auto-substitutes these for straight quotes by default), leading `> ` (blockquote), leading `- ` and `* ` (list markers), trailing whitespace, and trailing punctuation (`.`, `,`, `;`, `:`, `!`, `?`). Then normalize any remaining curly quotes to straight quotes (so smart-quote `don’t` matches `don't` in the whitelist). Lowercase. Compare against the whitelist. The trim+normalize rule is consistent with the override matcher's quote handling in the BLOCKER override flow below — both code paths strip and normalize quotes the same way.
+
+Vague replies that do not match the whitelist (`not now`, `maybe later`, `up to you`, `hmm`, `idk`, `unsure`) trigger one clarification: *"Skip Custos, or proceed?"* Anything else proceeds to dispatch.
+
+A skip declaration is honored only **before** the Agent tool call fires. Once in flight, the dispatcher acknowledges: *"Custos is mid-walk; verdict will land in 2–3 minutes. You can override the verdict on return."* On verdict return, present with note: *"Custos returned <verdict>; you pre-skipped. Proceed past the verdict, or honor it?"*
+
+I read the protocol and the template before dispatch:
+
+- `/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md`
+- `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/custos-verification.md`
+
+I follow the template exactly. Custos walks alone — no parallel partner. He returns one of three verdicts.
+
+### Verdict Action
+
+Every `decisions.md` entry of type `verdict` or `revert` written from this phase MUST populate the `**Plan SHA:**` field with the output of `git rev-parse HEAD:<plan-path>` at the moment of the entry. The session-resumption check below depends on this SHA being recorded.
+
+- **`OK TO MARCH`** — present the attributed summary to the Imperator (verdict, findings list including SOUND findings, mandatory Do Not Widen section). Proceed to "The Legion Awaits."
+
+- **`PATCH BEFORE DISPATCH`** — apply the inline patches Custos named. Re-dispatch Custos once with a `## Re-walk Marker` section in the prompt naming the patches applied. **This is the only re-walk permitted.**
+  - Marker contains **only** unified diff hunks. No prose, no attribution, no rationale, no reference to finding categories. (Schema lives in the template at `templates/custos-verification.md`.)
+  - Patches between walks must be Custos-mandated only. The consul does NOT bundle unrelated edits (typo fixes, post-CONCERN revisions, scope expansions). If the consul notices an unrelated issue mid-patch, complete the patch, let Custos re-walk, then handle the unrelated issue afterward through normal channels.
+  - Second walk `OK TO MARCH` → present summary, proceed to "The Legion Awaits."
+  - Second walk `BLOCKER` → halt and escalate. Patches stay applied on disk (no auto-revert). Log both walks in `decisions.md` (type `verdict` for each) plus the patches applied between them. Imperator decides next steps; if "revert," the consul reverts via Edit and logs a `revert` entry in `decisions.md` referencing the prior `verdict` entry.
+  - Second walk `PATCH BEFORE DISPATCH` again → escalate (treated as exhausted under the Codex 2-iteration cap).
+
+- **`BLOCKER`** — halt the workflow. Show the Imperator the finding(s) and chain of evidence. The Imperator decides:
+  - **Patch and re-dispatch full Praetor+Provocator+Custos cycle.**
+  - **Patch and re-dispatch Custos only** (counted as the one allowed re-walk under PATCH BEFORE DISPATCH semantics; a second non-OK escalates).
+  - **Override and proceed.** Require explicit confirmation: *"BLOCKER override — proceed to legion-awaits with [finding title] unresolved? Confirm with 'override confirmed.'"*
+    - Override matcher tolerance: case-insensitive; trim surrounding whitespace, punctuation, and quotes; accept `override`, `override confirmed`, `OVERRIDE CONFIRMED`, `"override confirmed"`. Reject confirmations with extra content beyond punctuation/whitespace/quotes (e.g., `override confirmed, but be careful` triggers re-prompt: *"Confirmation must stand alone. Confirm with just 'override confirmed' or restate."*).
+    - Override recorded in `decisions.md` (type `override`) with finding text and Imperator confirmation.
+  - **Escalate beyond the consul.** The Imperator may invoke a different skill or pause the campaign entirely.
+
+### Verdict Parsing Contract
+
+The dispatcher reads the line beginning with `Verdict:` (literal prefix, case-sensitive on the prefix). Expected format:
+
+```
+Verdict: <BLOCKER | PATCH BEFORE DISPATCH | OK TO MARCH>
+```
+
+**Tolerance rules**, applied in order:
+
+1. Strip leading and trailing whitespace from the entire line.
+2. Strip surrounding `**` (markdown bold) from the verdict value.
+3. Strip trailing punctuation (`.`, `,`, `;`, `:`, `!`, `?`) from the value.
+4. Whitespace between `Verdict:` and the value is optional and stripped (so `Verdict:BLOCKER`, `Verdict: BLOCKER`, and `Verdict:  BLOCKER` all parse the value as `BLOCKER`).
+5. Match the resulting value against the three exact uppercase strings.
+
+**Parser scope:** scan top-to-bottom; ignore lines inside fenced code blocks (between ` ``` ` markers) to avoid demonstration-line collisions. The first matching `Verdict:` line outside any code fence is authoritative.
+
+**Malformed cases** (treat as `BLOCKER` + escalate, with note *"Custos verdict malformed — treated as BLOCKER, full report attached"*):
+
+- Missing `Verdict:` line outside any code fence.
+- Multiple `Verdict:` lines outside code fences (ambiguous).
+- Lowercase or mixed-case verdict value (`blocker`, `Blocker`).
+- Verdict value with extra content beyond strippable punctuation/whitespace/bold (`BLOCKER (with caveats)`, `BLOCKER for now`, `BLOCKER OK TO MARCH`).
+- Markdown-bold around the prefix (`**Verdict:**`) — the prefix match is case-sensitive on `Verdict:` literal; bolded prefix does not match.
+- Verdict line with a value that is none of the three accepted strings.
+
+### Verdict Authority on Inconsistency
+
+If Custos's report contains contradictory finding tags (e.g., verdict `OK TO MARCH` with a finding tagged MISUNDERSTANDING, or verdict `BLOCKER` with no MISUNDERSTANDING or dispatch-preventing-GAP findings):
+
+1. Honor the verdict (Custos's persona authority over the three-verdict overlay).
+2. Flag the contradiction to the Imperator with the full Custos report attached: *"Custos's verdict and finding tags contradict — verdict honored, contradiction surfaced for review."*
+3. Log a `decisions.md` entry (type `decision`) noting the contradiction and the dispatcher's resolution.
+
+The contradiction is a Custos report bug, not a dispatcher decision.
+
+### Failure / Abort Handling
+
+- **Non-return** (subagent crash, OOM, network timeout, infinite loop): the Agent tool's completion signal indicates non-return.
+- **Partial-result-with-failure**: if the Agent tool returns `failed` with a partial body, attempt to parse a verdict from the partial body per the parsing contract above. If a valid verdict parses, honor it with note *"Custos failed mid-report; verdict parsed from partial output."* If no valid verdict parses, treat as non-return: `BLOCKER` + escalate with note *"Custos dispatch did not return — treated as BLOCKER, no verdict available."*
+- **Mid-dispatch skip**: see Skip Syntax above. Skip honored only before the Agent tool fires; in-flight dispatch runs to completion; on return, present verdict with the pre-skip note.
+- **Re-walk inheritance**: the second walk after `PATCH BEFORE DISPATCH` inherits the same failure semantics — non-return on the second walk treats as `BLOCKER` + escalate. There is no re-re-walk.
+- **Session termination**: if the main session terminates during a Custos dispatch, the in-flight Agent call is orphaned. On session resumption, run `git rev-parse HEAD:<plan-path>` to get the current plan SHA, then scan `decisions.md` for the most recent `verdict` entry whose `**Plan SHA:**` field matches. If no matching entry is present, the dispatch did not complete (or did not log) — announce: *"Custos dispatch from prior session has no recorded verdict for plan SHA `<sha>`. Re-dispatch, or proceed without?"* The Imperator decides; either choice is logged in `decisions.md` (type `decision`, with the current plan SHA recorded).
+
+After verdict handling completes (or override is confirmed), proceed to "The Legion Awaits."
+
+---
+
 ## The Legion Awaits
 
 The edicts are written and committed. Before the march begins, the Imperator decides who takes the field:
