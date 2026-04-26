@@ -484,7 +484,7 @@ Append to `/Users/milovan/projects/Consilium/docs/cases/2026-04-26-custos-edicts
 **Trigger:** Provocator GAP on plan iteration 1 — spec text writes `## Authoring for Custos` (H2) but spec wording calls the addition a "subsection." H2 placement between "Are my symbols consistent?" paragraph and "Fixes are made inline..." paragraph would split the parent `## Review Before Dispatch` section mid-flow and orphan its closing sentinel.
 **Decision:** Use H3 (`### Authoring for Custos`) instead of spec-literal H2 to subordinate the new section to its parent "Review Before Dispatch."
 **Rationale:** The spec uses the word "subsection" (parent-child relationship) but writes H2 markup (sibling relationship). The two are contradictory at the markdown structural level. H3 honors the conceptual subsection wording and preserves "Fixes are made inline..." as the parent section's closing sentinel; H2 would force a structural choice (orphan the closer, or move the closer above the new H2 — both invasive). Codex Deviation-as-Improvement Rule applies: cleaner structure is the better path. Imperator may override at the legion-awaits review by directing a re-edit to H2 (one-character change in the SKILL.md edit).
-**Plan SHA:** <commit SHA after Task 4 commit lands>
+**Plan SHA:** <`git rev-parse --short HEAD:<plan-path>` blob SHA at the time of the entry, per the CONVENTIONS Audit Artifacts schema>
 ```
 
 - [ ] **Step 5: Commit**

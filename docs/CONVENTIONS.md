@@ -89,6 +89,7 @@ A case folder may include `decisions.md` — an append-only audit log for decisi
 - Custos returns a verdict (any of `BLOCKER`, `PATCH BEFORE DISPATCH`, `OK TO MARCH`); both walks logged when re-walk fires.
 - Plan modification gate (per the `edicts` skill "Dispatching the Custos" phase) triggers and the Imperator decides.
 - Iteration count exceeded by Imperator authority (Codex auto-feed cap of 2 surpassed).
+- Custos verdict and finding tags contradict (per the `edicts` skill "Dispatching the Custos" → "Verdict Authority on Inconsistency" subsection).
 - Any other consequential decision the actor wants preserved separately from the spec/plan substrate.
 
 **Optional when** the case has no overrides, no Custos verdicts, no gate decisions, and no iteration overrides.

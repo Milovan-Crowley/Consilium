@@ -254,7 +254,7 @@ The Custos walks the operational layer the magistrates leave intact — shell qu
 
 **Baseline.** Any "run full suite" or "all tests pass" claim is a regression gate that depends on baseline. Cross-check against `$CONSILIUM_DOCS/doctrine/known-gaps.md`. If known-bad tests fall in the suite, the gate must scope around them or accept their failure explicitly.
 
-**Required reading when authoring plans that touch shell, env, or baseline:** `~/.claude/agents/consilium-custos.md` lines 100–110 — the "How I Work — The Six Walks" section. Read it directly. Reasoning from memory is forbidden by the Codex; the file is the source.
+**Required reading when authoring plans that touch shell, env, or baseline:** `~/.claude/agents/consilium-custos.md` lines 96–110 — the "How I Work — The Six Walks" section. Read it directly. Reasoning from memory is forbidden by the Codex; the file is the source.
 
 The Authoring Awareness raises the content bar. It does not change the plan template schema — tasks still use the existing `### Task N` / `**Files:**` / `- [ ] **Step**` shape.
 
@@ -339,7 +339,7 @@ Every `decisions.md` entry of type `verdict` or `revert` written from this phase
   - **Patch and re-dispatch full Praetor+Provocator+Custos cycle.**
   - **Patch and re-dispatch Custos only** (counted as the one allowed re-walk under PATCH BEFORE DISPATCH semantics; a second non-OK escalates).
   - **Override and proceed.** Require explicit confirmation: *"BLOCKER override — proceed to legion-awaits with [finding title] unresolved? Confirm with 'override confirmed.'"*
-    - Override matcher tolerance: case-insensitive; trim surrounding whitespace, punctuation, and quotes; accept `override`, `override confirmed`, `OVERRIDE CONFIRMED`, `"override confirmed"`. Reject confirmations with extra content beyond punctuation/whitespace/quotes (e.g., `override confirmed, but be careful` triggers re-prompt: *"Confirmation must stand alone. Confirm with just 'override confirmed' or restate."*).
+    - Override matcher tolerance: apply the same trim+normalize sequence as the Skip rule above (strip surrounding bold/italic/code/blockquote/list-markers, straight quotes, curly quotes, trailing whitespace, trailing punctuation; normalize curly quotes to straight quotes; lowercase). Then match against `override` or `override confirmed`. Reject confirmations with extra content beyond what the sequence strips (e.g., `override confirmed, but be careful` triggers re-prompt: *"Confirmation must stand alone. Confirm with just 'override confirmed' or restate."*).
     - Override recorded in `decisions.md` (type `override`) with finding text and Imperator confirmation.
   - **Escalate beyond the consul.** The Imperator may invoke a different skill or pause the campaign entirely.
 
