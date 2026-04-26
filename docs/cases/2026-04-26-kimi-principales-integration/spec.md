@@ -1,4 +1,6 @@
-# 2026-04-26-kimi-principales-integration — Spec (Shadow-Mode v1, iteration 2)
+# 2026-04-26-kimi-principales-integration — Spec (Shadow-Mode v1, iteration 2) — **HALTED**
+
+> **HALT NOTICE (2026-04-26):** This spec is halted by Imperator decision after iteration 2 returned 4 unresolved MISUNDERSTANDINGs across two verifiers. **Do not execute this spec.** Read `next-session-notes.md` first for the architectural lessons, the unresolved findings catalog, and the recommended manual-experiment path forward. The spec body below is preserved as architectural reference only.
 
 ## Goal
 
