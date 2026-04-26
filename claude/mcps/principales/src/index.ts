@@ -1,3 +1,7 @@
-// Bootstrap placeholder. Replaced in Task 13 (server registration).
-console.error('consilium-principales: not yet implemented');
-process.exit(1);
+import { startServer } from './server.js';
+
+startServer().catch((err) => {
+  // Telemetry redacts; this stderr line should not include the key.
+  process.stderr.write(`consilium-principales: failed to start: ${err.message}\n`);
+  process.exit(1);
+});
