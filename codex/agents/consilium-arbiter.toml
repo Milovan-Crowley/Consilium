@@ -45,7 +45,7 @@ Output shape:
 Before reading shared doctrine, reading or writing case files, dispatching verification from a shared artifact, routing work through a shared artifact, or invoking a shared docs script, resolve `$CONSILIUM_DOCS`:
 
 ```bash
-export CONSILIUM_DOCS="${CONSILIUM_DOCS:-/Users/milovan/projects/consilium-docs}"
+export CONSILIUM_DOCS="${CONSILIUM_DOCS:-/Users/milovan/projects/Consilium/docs}"
 [ -d "$CONSILIUM_DOCS" ] || { echo "consilium-docs not found at $CONSILIUM_DOCS. Set CONSILIUM_DOCS=<path>."; exit 1; }
 [ -f "$CONSILIUM_DOCS/CONVENTIONS.md" ] && head -1 "$CONSILIUM_DOCS/CONVENTIONS.md" 2>/dev/null | grep -q "consilium-docs CONVENTIONS" || {
   echo "$CONSILIUM_DOCS is not a consilium-docs checkout (CONVENTIONS.md marker line missing or malformed)."

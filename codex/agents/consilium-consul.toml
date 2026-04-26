@@ -88,7 +88,7 @@ Rules:
 Before reading shared doctrine, reading or writing case files, dispatching verification from a shared artifact, routing work through a shared artifact, or invoking a shared docs script, resolve `$CONSILIUM_DOCS`:
 
 ```bash
-export CONSILIUM_DOCS="${CONSILIUM_DOCS:-/Users/milovan/projects/consilium-docs}"
+export CONSILIUM_DOCS="${CONSILIUM_DOCS:-/Users/milovan/projects/Consilium/docs}"
 [ -d "$CONSILIUM_DOCS" ] || { echo "consilium-docs not found at $CONSILIUM_DOCS. Set CONSILIUM_DOCS=<path>."; exit 1; }
 [ -f "$CONSILIUM_DOCS/CONVENTIONS.md" ] && head -1 "$CONSILIUM_DOCS/CONVENTIONS.md" 2>/dev/null | grep -q "consilium-docs CONVENTIONS" || {
   echo "$CONSILIUM_DOCS is not a consilium-docs checkout (CONVENTIONS.md marker line missing or malformed)."
@@ -234,8 +234,8 @@ Trigger this route when the user names `tribune`, `consilium:tribune`, `$tribune
 
 Debugging sequence:
 - Resolve `$CONSILIUM_DOCS` before shared doctrine reads, contained-case scans, or case creation.
-- Load the Tribune skill only when the runtime skill source resolves to `/Users/milovan/projects/Consilium-codex/skills/tribune`.
-- If the runtime Tribune resolves to `/Users/milovan/projects/Consilium/skills/tribune` or any other non-Codex path, treat Codex Tribune as unavailable and use the 14-field diagnosis packet inline from `$CONSILIUM_DOCS/doctrine/diagnosis-packet.md`.
+- Load the Tribune skill only when the runtime skill source resolves to `/Users/milovan/projects/Consilium/codex/skills/tribune`.
+- If the runtime Tribune resolves to `/Users/milovan/projects/Consilium/claude/skills/tribune` or any other non-Codex path, treat Codex Tribune as unavailable and use the 14-field diagnosis packet inline from `$CONSILIUM_DOCS/doctrine/diagnosis-packet.md`.
 - Read `$CONSILIUM_DOCS/doctrine/lane-classification.md`, `$CONSILIUM_DOCS/doctrine/fix-thresholds.md`, `$CONSILIUM_DOCS/doctrine/known-gaps-protocol.md`, and the matching `$CONSILIUM_DOCS/doctrine/lane-guides/*.md` file.
 - Produce a diagnosis packet before proposing a code fix.
 - Persist bug diagnosis packets through `$CONSILIUM_DOCS/scripts/case-new <slug> --target <target> --agent codex --type bug` and capture the returned dated case folder.
