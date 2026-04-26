@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import type { MoonshotRequest, MoonshotResult } from './types.js';
-import { scrubParameters, type ScrubbableRequest } from '../pipeline/parameter-scrubber.js';
+import { scrubParameters, type ScrubbableRequest, type ScrubbedRequest } from '../pipeline/parameter-scrubber.js';
 
 // Aggregated, non-streaming-shape response that the deps function returns.
 // fromEnv's implementation streams under the hood (spec Section 1 invariant) and aggregates.
@@ -85,25 +85,42 @@ export class MoonshotClient {
     // In v1, callers (verify_lane → buildRequest) produce already-clean requests, so this
     // is a no-op; it activates if future callers pass arbitrary params.
     const scrubbed = scrubParameters(req);
-    let attempt = 0;
+    let attempt = 0;          // transport-retry budget gauge (consumes maxRetries)
+    let totalCalls = 0;       // real call count, reported as `attempts` in the result
     let lastError: unknown;
+    let truncationRetried = false;
+    let workingReq: ScrubbedRequest = scrubbed;
     while (attempt <= maxRetries) {
       attempt += 1;
+      totalCalls += 1;
       try {
-        const res = await this.deps.chatCompletionsCreate(scrubbed);
+        const res = await this.deps.chatCompletionsCreate(workingReq);
         const choice = res.choices[0];
         if (!choice) {
-          return { ok: false, failure_class: 'refused', message: 'no choices returned', attempts: attempt };
+          return { ok: false, failure_class: 'refused', message: 'no choices returned', attempts: totalCalls };
         }
         const content = choice.message.content ?? '';
         if (choice.finish_reason === 'length') {
-          return { ok: false, failure_class: 'truncation', message: 'finish_reason=length', attempts: attempt };
+          // Spec section 1: "Length truncation → retry once with higher cap, then synthetic GAP
+          // with unverified_reason=truncation." The transport-retry budget is independent of this
+          // soft retry, so we decrement `attempt` to keep the budget intact while `totalCalls`
+          // keeps a faithful record of how many round-trips actually happened.
+          if (!truncationRetried && workingReq.max_completion_tokens !== undefined) {
+            const newCap = Math.min(workingReq.max_completion_tokens * 2, 16000);
+            if (newCap > workingReq.max_completion_tokens) {
+              truncationRetried = true;
+              workingReq = { ...workingReq, max_completion_tokens: newCap };
+              attempt -= 1; // soft retry — does not consume transport-retry budget
+              continue;
+            }
+          }
+          return { ok: false, failure_class: 'truncation', message: 'finish_reason=length', attempts: totalCalls };
         }
         // Defense-in-depth: an empty content body cannot be a valid docket. Surface a
         // refused failure class with a clear message so the diagnostic isn't a downstream
         // JSON.parse-of-empty-string masquerading as schema_error.
         if (content.trim() === '') {
-          return { ok: false, failure_class: 'refused', message: 'empty content body', attempts: attempt };
+          return { ok: false, failure_class: 'refused', message: 'empty content body', attempts: totalCalls };
         }
         return {
           ok: true,
@@ -113,7 +130,7 @@ export class MoonshotClient {
           completion_tokens: res.usage?.completion_tokens ?? 0,
           // OpenAI SDK 4.70+ exposes cached_tokens under prompt_tokens_details, not usage.cached_tokens.
           cached_tokens: res.usage?.prompt_tokens_details?.cached_tokens ?? 0,
-          attempts: attempt,
+          attempts: totalCalls,
         };
       } catch (err) {
         lastError = err;
@@ -129,7 +146,7 @@ export class MoonshotClient {
       ok: false,
       failure_class: 'transport_failure',
       message: status ? `${status}: ${message}` : message,
-      attempts: attempt,
+      attempts: totalCalls,
     };
   }
 }
