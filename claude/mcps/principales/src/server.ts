@@ -71,6 +71,7 @@ export async function startServer(): Promise<void> {
   // to enable thinking only when both gates permit. Currently no lane has thinking_allowed=true,
   // so this gate is observed but does not change Moonshot request shape until the integration
   // case wires the actual API parameter.
+  // MIRROR: test/disable-thinking.test.ts duplicates this parse for unit coverage — keep in sync.
   const rawDisableThinking = (env.CONSILIUM_KIMI_DISABLE_THINKING ?? 'true').toLowerCase().trim();
   const disableThinking = rawDisableThinking !== 'false';
 
