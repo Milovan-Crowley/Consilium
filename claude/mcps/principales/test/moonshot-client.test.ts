@@ -85,3 +85,29 @@ describe('Moonshot client', () => {
     expect(result.ok).toBe(false);
   });
 });
+
+describe('MoonshotClient.fromEnv (GAP-B fix: defensive timeout parsing)', () => {
+  // Note: We can't easily intercept the OpenAI SDK constructor here without
+  // a vi.mock setup. The defensive-parse logic is tested separately by
+  // observing that fromEnv does not throw on malformed env values.
+
+  it('does not throw on malformed CONSILIUM_KIMI_TIMEOUT_MS', () => {
+    expect(() => MoonshotClient.fromEnv({
+      MOONSHOT_API_KEY: 'sk-test',
+      CONSILIUM_KIMI_TIMEOUT_MS: 'not-a-number',
+    } as NodeJS.ProcessEnv)).not.toThrow();
+  });
+
+  it('does not throw on negative CONSILIUM_KIMI_TIMEOUT_MS', () => {
+    expect(() => MoonshotClient.fromEnv({
+      MOONSHOT_API_KEY: 'sk-test',
+      CONSILIUM_KIMI_TIMEOUT_MS: '-1000',
+    } as NodeJS.ProcessEnv)).not.toThrow();
+  });
+
+  it('throws clear error on placeholder MOONSHOT_API_KEY', () => {
+    expect(() => MoonshotClient.fromEnv({
+      MOONSHOT_API_KEY: '<from-vault>',
+    } as NodeJS.ProcessEnv)).toThrow(/placeholder/);
+  });
+});

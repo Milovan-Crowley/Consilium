@@ -51,9 +51,20 @@ export async function startServer(): Promise<void> {
   const env = process.env;
   const defaultModel = env.CONSILIUM_KIMI_DEFAULT_MODEL ?? 'kimi-k2.5';
   const escalationModel = env.CONSILIUM_KIMI_ESCALATION_MODEL ?? 'kimi-k2.6';
-  const budgetUsd = parseFloat(env.CONSILIUM_KIMI_SESSION_BUDGET_USD ?? '5');
-  const concurrency = parseInt(env.CONSILIUM_KIMI_MAX_CONCURRENCY ?? '4', 10);
-  const timeoutMs = parseInt(env.CONSILIUM_KIMI_TIMEOUT_MS ?? '45000', 10);
+  // Defensive env parsing: NaN/negative/non-numeric falls back to documented defaults.
+  // Without these guards, a malformed CONSILIUM_KIMI_SESSION_BUDGET_USD silently produces
+  // NaN (unbounded budget); malformed CONSILIUM_KIMI_MAX_CONCURRENCY produces NaN (deadlocked
+  // semaphore — Semaphore.acquire never resolves). Mirrors the same guard used in
+  // MoonshotClient.fromEnv for CONSILIUM_KIMI_TIMEOUT_MS; the two parses can drift if one is
+  // updated and not the other, but both share the same default and guard, so v1 keeps them mirrored.
+  const rawBudget = parseFloat(env.CONSILIUM_KIMI_SESSION_BUDGET_USD ?? '5');
+  const budgetUsd = Number.isFinite(rawBudget) && rawBudget > 0 ? rawBudget : 5;
+
+  const rawConcurrency = parseInt(env.CONSILIUM_KIMI_MAX_CONCURRENCY ?? '4', 10);
+  const concurrency = Number.isFinite(rawConcurrency) && rawConcurrency > 0 ? rawConcurrency : 4;
+
+  const rawTimeout = parseInt(env.CONSILIUM_KIMI_TIMEOUT_MS ?? '45000', 10);
+  const timeoutMs = Number.isFinite(rawTimeout) && rawTimeout > 0 ? rawTimeout : 45000;
 
   const moonshot = MoonshotClient.fromEnv(env);
   const semaphore = new Semaphore(concurrency);

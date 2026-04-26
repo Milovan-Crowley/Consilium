@@ -41,7 +41,15 @@ export class MoonshotClient {
       );
     }
     const baseURL = env.MOONSHOT_BASE_URL ?? 'https://api.moonshot.ai/v1';
-    const sdk = new OpenAI({ apiKey, baseURL });
+
+    // Operator-level per-request timeout cap. Defensive against malformed env values:
+    // NaN, non-positive, or non-numeric falls back to the documented default (45s).
+    // Without this, a hung Moonshot stream would hold a semaphore slot for the SDK's
+    // default 600s, eventually deadlocking all concurrent verify_lane calls.
+    const rawTimeout = parseInt(env.CONSILIUM_KIMI_TIMEOUT_MS ?? '45000', 10);
+    const timeout = Number.isFinite(rawTimeout) && rawTimeout > 0 ? rawTimeout : 45000;
+
+    const sdk = new OpenAI({ apiKey, baseURL, timeout });
     return new MoonshotClient({
       chatCompletionsCreate: async (req): Promise<AggregatedChatResponse> => {
         // Spec invariant (Section 1): use streaming Chat Completions. Aggregate chunks
