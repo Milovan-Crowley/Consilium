@@ -45,6 +45,7 @@ During execution, the Legatus replaces "Dispatching..." with immediate dispatch.
 | Spec verification | `consilium-censor` |
 | Plan verification | `consilium-praetor` |
 | Adversarial stress-test (spec, plan, or campaign) | `consilium-provocator` |
+| Dispatch-readiness verification | `consilium-custos` |
 | Per-task mini-checkit | `consilium-tribunus` |
 | Implementation and GAP fix | `consilium-soldier` |
 | Reconnaissance scout | `consilium-scout` |
