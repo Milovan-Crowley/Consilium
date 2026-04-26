@@ -32,8 +32,10 @@ Environment variables (set via Claude Code's `mcpServers` config):
 
 ## Tools
 
-- `mcp__principales__verify_lane(args) → docket` — primary entrypoint.
-- `mcp__principales__health() → status` — operator visibility.
-- `mcp__principales__mode() → string` — reads `CONSILIUM_VERIFICATION_MODE`.
+The MCP server registers under the name `consilium-principales` (see `~/.claude/settings.json` `mcpServers`), so tools surface in Claude Code as `mcp__consilium-principales__*`:
+
+- `mcp__consilium-principales__verify_lane(args) → docket` — primary entrypoint.
+- `mcp__consilium-principales__health() → status` — operator visibility.
+- `mcp__consilium-principales__mode() → string` — reads `CONSILIUM_VERIFICATION_MODE`.
 
 See `/Users/milovan/projects/Consilium/docs/cases/2026-04-26-kimi-principales-v1/spec.md` for the full design.
