@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -eu
+
+if [ "$#" -lt 1 ]; then
+  echo "Usage: case-close <case-folder-name> [--skip-retro]" >&2
+  exit 2
+fi
+
+slug="$1"
+shift
+
+skip_retro=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --skip-retro) skip_retro=1; shift ;;
+    *) echo "unknown arg: $1" >&2; exit 2 ;;
+  esac
+done
+
+CONSILIUM_DOCS="${CONSILIUM_DOCS:-$HOME/projects/consilium-docs}"
+case_path="$CONSILIUM_DOCS/cases/$slug"
+[ -d "$case_path" ] || { echo "case not found: $case_path" >&2; exit 1; }
+
+has_spec=0
+has_diagnosis=0
+[ -f "$case_path/spec.md" ] && has_spec=1
+[ -f "$case_path/diagnosis.md" ] && has_diagnosis=1
+
+if [ "$has_spec" -eq 1 ] && [ "$has_diagnosis" -eq 1 ]; then
+  echo "ambiguous case shape: both spec.md and diagnosis.md exist" >&2
+  exit 1
+fi
+
+if [ "$has_spec" -eq 0 ] && [ "$has_diagnosis" -eq 0 ]; then
+  echo "unclassifiable case shape: neither spec.md nor diagnosis.md exists" >&2
+  exit 1
+fi
+
+retro="$case_path/retro.md"
+
+if [ "$has_spec" -eq 1 ]; then
+  if [ ! -f "$retro" ]; then
+    cat > "$retro" <<EOF
+# $slug — Retrospective
+
+## What we built
+
+(fill)
+
+## What we learned
+
+(fill)
+
+## What would we do differently
+
+(fill)
+
+## Patterns to promote
+
+(fill)
+EOF
+    echo "retro.md template written at $retro. Fill it in, then re-run case-close. Feature/infra/idea cases require retro." >&2
+    exit 1
+  fi
+fi
+
+if [ "$has_diagnosis" -eq 1 ]; then
+  if [ ! -f "$retro" ] && [ "$skip_retro" -eq 0 ]; then
+    cat > "$retro" <<EOF
+# $slug — Retrospective
+
+## Should this become a known-gap doctrine entry?
+
+(yes/no + reasoning)
+
+## Root cause summary
+
+(one paragraph)
+EOF
+    echo "retro.md template written at $retro. Fill it in and re-run, or re-run with --skip-retro for bug cases." >&2
+    exit 1
+  fi
+fi
+
+status="$case_path/STATUS.md"
+[ -f "$status" ] || { echo "STATUS.md not found: $status" >&2; exit 1; }
+
+today=$(date +%Y-%m-%d)
+tmp=$(mktemp)
+awk -v today="$today" '
+  BEGIN { in_fm=0; saw_closed_at=0 }
+  /^---$/ {
+    if (in_fm && !saw_closed_at) {
+      print "closed_at: " today
+    }
+    in_fm = !in_fm
+    print
+    next
+  }
+  in_fm && /^status:/ { print "status: closed"; next }
+  in_fm && /^closed_at:/ { print "closed_at: " today; saw_closed_at=1; next }
+  { print }
+' "$status" > "$tmp"
+mv "$tmp" "$status"
+
+echo "Case closed: $slug"

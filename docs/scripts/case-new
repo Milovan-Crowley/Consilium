@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -eu
+
+usage() {
+  echo "Usage: case-new <slug> --target <divinipress-store|divinipress-backend|consilium|cross-repo> --type <feature|bug|infra|idea> [--agent <claude|codex|both>]" >&2
+}
+
+if [ "$#" -lt 1 ]; then
+  usage
+  exit 2
+fi
+
+slug="$1"
+shift
+
+target=""
+agent="claude"
+case_type=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --target) target="${2:-}"; shift 2 ;;
+    --agent) agent="${2:-}"; shift 2 ;;
+    --type) case_type="${2:-}"; shift 2 ;;
+    *) echo "unknown arg: $1" >&2; usage; exit 2 ;;
+  esac
+done
+
+case "$target" in
+  divinipress-store|divinipress-backend|consilium|cross-repo) ;;
+  "") echo "error: --target is required" >&2; usage; exit 2 ;;
+  *) echo "error: invalid --target: $target" >&2; exit 2 ;;
+esac
+
+case "$agent" in
+  claude|codex|both) ;;
+  *) echo "error: invalid --agent: $agent" >&2; exit 2 ;;
+esac
+
+case "$case_type" in
+  feature|bug|infra|idea) ;;
+  "") echo "error: --type is required" >&2; usage; exit 2 ;;
+  *) echo "error: invalid --type: $case_type" >&2; exit 2 ;;
+esac
+
+CONSILIUM_DOCS="${CONSILIUM_DOCS:-$HOME/projects/consilium-docs}"
+[ -d "$CONSILIUM_DOCS" ] || { echo "consilium-docs not found at $CONSILIUM_DOCS" >&2; exit 1; }
+
+today=$(date +%Y-%m-%d)
+cases_dir="$CONSILIUM_DOCS/cases"
+mkdir -p "$cases_dir"
+
+base_name="${today}-${slug}"
+final_slug="$base_name"
+n=2
+while [ -d "$cases_dir/$final_slug" ]; do
+  final_slug="${base_name}-${n}"
+  n=$((n + 1))
+done
+
+case_path="$cases_dir/$final_slug"
+mkdir -p "$case_path"
+
+cat > "$case_path/STATUS.md" <<EOF
+---
+status: draft
+opened: $today
+target: $target
+agent: $agent
+type: $case_type
+sessions: 1
+current_session: 1
+---
+
+## Current state
+
+Draft case created.
+
+## What's next
+
+- [ ] Fill the primary case artifact
+
+## Open questions
+
+(none yet)
+EOF
+
+if [ "$case_type" = "bug" ]; then
+  cat > "$case_path/diagnosis.md" <<EOF
+# $final_slug — Diagnosis
+
+(Draft. Medicus writes the diagnosis packet here.)
+EOF
+else
+  cat > "$case_path/spec.md" <<EOF
+# $final_slug — Spec
+
+(Draft. Consul writes the design here.)
+EOF
+fi
+
+echo "$case_path"

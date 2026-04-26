@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -eu
+
+if [ "$#" -lt 2 ]; then
+  echo "Usage: case-session <case-folder-name> <topic>" >&2
+  exit 2
+fi
+
+slug="$1"
+topic="$2"
+
+CONSILIUM_DOCS="${CONSILIUM_DOCS:-$HOME/projects/consilium-docs}"
+case_path="$CONSILIUM_DOCS/cases/$slug"
+[ -d "$case_path" ] || { echo "case not found: $case_path" >&2; exit 1; }
+
+if [ -f "$case_path/diagnosis.md" ] && [ ! -f "$case_path/spec.md" ]; then
+  echo "bug cases do not use case-session: $slug" >&2
+  exit 1
+fi
+
+max_n=0
+for f in "$case_path"/session-[0-9][0-9]-*.md; do
+  [ -e "$f" ] || continue
+  fname=$(basename "$f")
+  n="${fname#session-}"
+  n="${n%%-*}"
+  n=$((10#$n))
+  if [ "$n" -gt "$max_n" ]; then
+    max_n="$n"
+  fi
+done
+
+if [ "$max_n" -eq 0 ]; then
+  if [ -f "$case_path/spec.md" ] || [ -f "$case_path/plan.md" ]; then
+    next_n=2
+  else
+    next_n=1
+  fi
+else
+  next_n=$((max_n + 1))
+fi
+
+padded_n=$(printf "%02d" "$next_n")
+session_spec="$case_path/session-${padded_n}-${topic}-spec.md"
+
+if [ -e "$session_spec" ]; then
+  echo "file already exists: $session_spec" >&2
+  exit 1
+fi
+
+cat > "$session_spec" <<EOF
+# $slug — Session $padded_n: $topic
+
+(Draft. Consul writes the session-scoped spec here.)
+EOF
+
+status="$case_path/STATUS.md"
+if [ -f "$status" ]; then
+  tmp=$(mktemp)
+  awk -v next_n="$next_n" '
+    BEGIN { in_fm=0 }
+    /^---$/ { in_fm = !in_fm; print; next }
+    in_fm && /^sessions:/ { print "sessions: " next_n; next }
+    in_fm && /^current_session:/ { print "current_session: " next_n; next }
+    { print }
+  ' "$status" > "$tmp"
+  mv "$tmp" "$status"
+fi
+
+echo "$session_spec"

@@ -1,0 +1,6 @@
+.DS_Store
+.serena/
+__pycache__/
+*.pyc
+node_modules/
+.migration-in-progress

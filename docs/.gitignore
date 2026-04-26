@@ -1,0 +1,3 @@
+# Transient migration guard — Piece 2 creates/removes this only
+.migration-in-progress
+preflight/piece2-backups/

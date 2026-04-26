@@ -1,0 +1,5 @@
+{
+  "name": "consilium",
+  "description": "Domain-aware planning and verification system for Divinipress. Roman-themed agent hierarchy with independent verification at every stage.",
+  "version": "1.0.0"
+}

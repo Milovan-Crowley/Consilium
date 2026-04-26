@@ -1,0 +1,484 @@
+# ESLint 9 + Flat Config Migration (post-Next 16)
+
+**Target repo:** `divinipress-store` (frontend only — backend has separate tooling)
+**Type:** infra
+**Session:** 1
+**Author:** Publius Auctor (Consul)
+**Date:** 2026-04-25
+**Revision:** R1.1 — R1 corrected three MISUNDERSTANDINGs about how `eslint-config-next@16` ships and addressed seven verifier-surfaced GAPs/CONCERNs (Censor + Provocator round 1). R1.1 patched two must-fix GAPs from round 2 (`exec eslint --` separator; success-criterion #1 exit-code wording), one script hardening (mktemp + git diff exit-code capture), three narrative cleanups, and four risks-as-accepted additions. See "Revision history" at end.
+
+---
+
+## Context
+
+The Next.js 16 upgrade broke `yarn lint` across `divinipress-store`. Two distinct breakage points were diagnosed by the Imperator and confirmed by reconnaissance:
+
+1. **`next lint` removed in Next 16.** `package.json` script reads `"lint": "next lint"`. Running it produces:
+   ```
+   Invalid project directory provided, no such directory: /Users/milovan/projects/divinipress-store/lint
+   ```
+2. **ESLint 8 + `eslint-config-next@16` + legacy `.eslintrc.json` is incompatible.** Running ESLint 8 directly against the legacy config produces:
+   ```
+   TypeError: Converting circular structure to JSON
+       property 'configs' -> property 'flat' -> ... 'react' closes the circle
+   ```
+   `eslint-config-next@16` ships flat-config-only (peerDependency `eslint: >=9.0.0`); the legacy `.eslintrc.json` schema cannot consume it.
+
+Reconnaissance also surfaced four facts that shape scope:
+
+- **No CI lint gate.** No `.github/` directory in repo. Lint is local discipline only — broken lint has not been blocking other PR reviews.
+- **`scripts/pre-commit-validate.sh` does not invoke lint.** Custom grep checks only. Broken lint is not silently blocking commits.
+- **`.eslintrc.json` references `eslint-import-resolver-typescript` in `settings.import/resolver` but the package is not installed.** Latent bug, currently masked because lint does not run. Resolved transitively by `eslint-config-next@16`'s direct dependency on it (no direct pin needed in this spec).
+- **`.eslintrc.json` `import/order` `pathGroups` reference dead aliases** (`@layout/**`, `@components/**`, `@styles/**`) — explicitly forbidden by the project `CLAUDE.md` Import Alias Guide.
+
+The Imperator wants the full migration in one PR rather than a minimum-diff downgrade. He has accepted the operational consequence: existing in-flight worktrees will cherry-pick the migration commit during PR review and rebase post-merge.
+
+**Confidence: High** — Imperator stated explicitly: "I hate doing half work tbh… this is definitely necessary tooling."
+
+---
+
+## Goals
+
+1. Restore `yarn lint` to a state where it executes against the new config without ESLint internal errors (config validates, plugins load, rules execute). Source-code violation count is whatever it is — see `Violation handling` for policy.
+2. Land a single, atomic migration as a squash-merge commit on `develop`, optimized for clean rebase deduplication of cherry-picks across the Imperator's existing stacked worktrees.
+3. Provide a `lint:changed` primitive that lints only files modified versus `origin/develop`, so the Imperator can practically use lint on a codebase with a (large) pre-existing violation backlog.
+4. Clean up two latent issues caught during reconnaissance: dead-alias `pathGroups`, and the inconsistent specific-vs-generic `@/*` alias treatment in `import/order`. Both are within the natural scope of editing the lint config.
+
+**Non-goals (deferred to follow-up cases):**
+
+- Wiring lint into `scripts/pre-commit-validate.sh` (team-wide behavior change).
+- Adding a CI lint workflow (no `.github/` exists; this is a separate organizational decision).
+- Adding `@typescript-eslint/*` rule packs beyond what `eslint-config-next@16` already provides (it bundles `typescript-eslint@8`).
+- Resolving the existing repo-wide violation backlog (handled separately via `lint:changed` discipline; full-repo cleanup PR is its own future case).
+
+**Confidence: High** — boundary explicitly negotiated with Imperator.
+
+---
+
+## Scope of changes
+
+### Files modified
+
+| File | Change |
+|-|-|
+| `package.json` | Bump `eslint` to `^9`; loosen `eslint-config-next` pin to `^16`; replace `lint` script; add `lint:changed` script. **No other dep additions needed** — `globals`, `eslint-import-resolver-typescript`, `typescript-eslint` all ride in transitively via `eslint-config-next@16`. |
+| `.eslintrc.json` | **DELETE** |
+| `eslint.config.mjs` | **CREATE** — flat-config translation using direct `eslint-config-next/core-web-vitals` flat-array import. |
+| `scripts/lint-changed.sh` | **CREATE** — extracted shell file (instead of inline JSON-encoded one-liner) for readability + safer file-argument handling + base-ref precheck. |
+| `.nvmrc` | **CREATE** — pin Node version (currently no pin; shell drifts to Node 25.x). |
+| `yarn.lock` | Regenerated by `yarn install`. |
+
+### Files NOT modified
+
+- `scripts/pre-commit-validate.sh` — out of scope per non-goals.
+- `tsconfig.json` — unrelated.
+- Any source files (`src/**`, `e2e/**`) — out of scope; surfaced lint violations handled per `Violation handling` section.
+
+**Confidence: High** — file list is exhaustive. Six files instead of five (verified spec change vs prior revision).
+
+---
+
+## Detailed design
+
+### 1. `package.json` script changes
+
+```json
+{
+  "scripts": {
+    "lint": "eslint .",
+    "lint:changed": "bash scripts/lint-changed.sh"
+  }
+}
+```
+
+Notes:
+
+- `lint` runs flat-config defaults: walks `.` and respects the `ignores` block in `eslint.config.mjs` (no more `--ext` flag — flat config infers extensions from config-block `files` patterns).
+- `lint:changed` delegates to a real shell file (see §1a below) instead of an inline JSON-encoded one-liner. Two reasons: (a) `xargs -0` with NUL-delimited file lists is brittle to JSON-escape; (b) a real script file is easier to review, edit, and extend.
+
+**Confidence: High**
+
+### 1a. `scripts/lint-changed.sh`
+
+```bash
+#!/usr/bin/env bash
+# Lint only files changed on this branch versus the comparison base.
+# Override base via env: LINT_BASE=origin/<branch> yarn lint:changed
+set -euo pipefail
+
+BASE="${LINT_BASE:-origin/develop}"
+
+# Verify the base ref exists; otherwise exit loudly rather than silently
+# reporting "No changed files" when git-diff fails.
+if ! git rev-parse --verify "$BASE" >/dev/null 2>&1; then
+  echo "lint:changed: base ref '$BASE' not found." >&2
+  echo "Run: git fetch origin develop   (or set LINT_BASE=<existing-ref>)" >&2
+  exit 1
+fi
+
+# Capture diff output to a temp file so we can detect runtime failures
+# (process substitution swallows exit codes under set -e — Provocator R2).
+TMPFILE="$(mktemp -t lint-changed.XXXXXX)"
+trap 'rm -f "$TMPFILE"' EXIT
+if ! git diff --name-only -z --diff-filter=ACMR "$BASE"...HEAD > "$TMPFILE"; then
+  echo "lint:changed: git diff failed against base $BASE." >&2
+  exit 1
+fi
+
+# Build positional args from NUL-delimited git output.
+# --diff-filter=ACMR: added, copied, modified, renamed.
+# Skips deletions, type-changes, and unmerged paths.
+# Bash 3.2 compatible (macOS default ships bash 3.2; no mapfile -d).
+set --
+while IFS= read -r -d '' file; do
+  case "$file" in
+    *.ts|*.tsx|*.js|*.jsx) set -- "$@" "$file" ;;
+  esac
+done < "$TMPFILE"
+
+if [ "$#" -eq 0 ]; then
+  echo "lint:changed: no changed TS/JS files vs $BASE."
+  exit 0
+fi
+
+# `--` separates options from filenames so files starting with `-` are
+# not interpreted as eslint flags (Provocator R2).
+exec eslint -- "$@"
+```
+
+Notes:
+
+- `set -euo pipefail` — fail loud on any sub-step failure, including unset variables.
+- `git rev-parse --verify "$BASE"` precheck closes the silent-failure mode the Provocator R1 surfaced (missing `origin/develop` → empty `FILES` → "No changed files" false negative).
+- `mktemp` + explicit `if !` capture closes the second silent-failure mode the Provocator R2 surfaced: `set -e` does NOT propagate failures from process substitution `< <(...)`. Capturing to a temp file and checking the exit code explicitly handles I/O errors, OOM, killed-by-signal, etc.
+- `trap 'rm -f "$TMPFILE"' EXIT` — temp file cleanup on any exit path.
+- `while IFS= read -r -d '' file` reads NUL-delimited filenames (bash 3.2 compatible — `read -d` works in macOS default bash; `mapfile -d ''` requires bash 4+ and is avoided).
+- `case "$file" in *.ts|*.tsx|...) set -- "$@" "$file" ;;` builds the positional-parameter list while filtering by extension. POSIX-compliant; handles filenames with spaces/metacharacters safely (no word-splitting).
+- `--diff-filter=ACMR` — added, copied, modified, renamed. Drops `D` (deleted, nothing to lint), `T` (type-changed, rare), `U` (unmerged, mid-merge state).
+- `exec eslint -- "$@"` — `--` terminator ensures filenames starting with `-` are passed as positional arguments, not interpreted as flags. `exec` replaces shell process with eslint, exit code propagates cleanly.
+
+`origin/develop` is the default comparison base. For nested stacks where the parent is itself a feature branch, override via `LINT_BASE=origin/<parent-branch> yarn lint:changed`.
+
+This script lints **all violations in changed files**, not just changed lines. The discipline: "if you opened the file, you can fix what's in it."
+
+**Confidence: High**
+
+### 2. `package.json` dependency changes
+
+| Package | From | To | Reason |
+|-|-|-|-|
+| `eslint` | `^8` (8.57.x) | `^9` | Required by `eslint-config-next@16` peerDependency `eslint: >=9.0.0`. |
+| `eslint-config-next` | `16.2.1` | `^16` | Already at 16; loosen to caret. |
+
+**No other devDep additions.** Critically:
+
+- `globals` — NOT added. `eslint-config-next@16` pins `globals 16.4.0` as a direct dep (verified in `node_modules/eslint-config-next/package.json`). Adding a direct `^15` would create two `globals` packages in the tree (footgun).
+- `eslint-import-resolver-typescript` — NOT added. `eslint-config-next@16` pins it directly (`^3.5.2`). Available via transitive resolution after `yarn install`.
+- `@eslint/eslintrc` — NOT added. Only needed for `FlatCompat`, which the corrected config does not use.
+- `typescript-eslint` — NOT added. `eslint-config-next@16` pins `typescript-eslint@^8.46.0` directly; its rules are auto-loaded via the bundled `next/typescript` flat block.
+
+Existing eslint-related deps that remain unchanged: `eslint-config-prettier ^10`, `eslint-plugin-import ^2.29.1` (the corrected config does NOT import from `eslint-plugin-import` directly — the `import` plugin and rules ride in via `eslint-config-next@16`'s flat array, so the floor is moot for this spec), `eslint-plugin-prettier ^5.5`, `prettier ^3.3`.
+
+**Confidence: High** — versions verified via direct read of `node_modules/eslint-config-next/package.json` (per Censor + Provocator).
+
+### 3. `eslint.config.mjs` — flat config translation
+
+Faithfully preserves the project's own rule overrides; relies on `eslint-config-next@16`'s flat array for everything else.
+
+```js
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
+import prettierConfig from 'eslint-config-prettier/flat'
+import prettierPlugin from 'eslint-plugin-prettier'
+
+export default [
+  // Ignore patterns calibrated to actual repo contents (verified via repo walk)
+  {
+    ignores: [
+      // Build outputs
+      '.next/**',
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      'coverage/**',
+      'public/**',
+
+      // Generated Next files
+      'next-env.d.ts',
+
+      // Test artifacts (Playwright)
+      'playwright-report/**',
+      'test-results/**',
+      '.playwright-mcp/**',
+
+      // Vercel cache
+      '.vercel/**',
+
+      // Project-specific
+      'src/_quarantine/**',          // CLAUDE.md hard rule — quarantined Fluent UI code
+      '.worktrees/**',                // critical: prevents `eslint .` from
+                                      // recursing into sibling stacked worktrees
+                                      // and double-linting parent files
+      'eslint.config.mjs',           // narrowed from `*.config.*` — only the
+                                      // lint config itself. Other top-level
+                                      // configs (next.config.ts, postcss.config.mjs,
+                                      // playwright.config.ts) remain lintable.
+                                      // (Verified against actual repo top-level —
+                                      // no tailwind.config.* exists; Tailwind v4
+                                      // uses CSS-first config.)
+    ],
+    // Note: `.next/**` covers both build output AND Next's auto-generated
+    // type files at `.next/types/**` and `.next/dev/types/**`. We never
+    // want to lint these.
+  },
+
+  // Next 16's flat config — brings react, react-hooks, import (with resolver),
+  // jsx-a11y, @next/next, typescript-eslint parser, globals (browser+node),
+  // and Next-specific bundled ignores (next-env.d.ts redundantly covered).
+  ...nextCoreWebVitals,
+
+  // Project-specific overrides (rules previously in the legacy .eslintrc.json)
+  {
+    plugins: {
+      prettier: prettierPlugin,
+    },
+    rules: {
+      'prettier/prettier': 'warn',
+      'react/no-unescaped-entities': 'off',
+
+      'import/order': [
+        'warn',
+        {
+          groups: ['type', ['external', 'builtin', 'internal']],
+          pathGroups: [
+            { pattern: '{react,react-dom}', group: 'type', position: 'before' },
+            { pattern: '@lib/**', group: 'external', position: 'after' },
+            { pattern: '@store/**', group: 'external', position: 'after' },
+            { pattern: '@api/**', group: 'external', position: 'after' },
+            { pattern: '@utils/**', group: 'external', position: 'after' },
+            { pattern: '@hooks/**', group: 'external', position: 'after' },
+            { pattern: '@config/**', group: 'external', position: 'after' },
+            { pattern: '@interfaces/**', group: 'external', position: 'after' },
+            { pattern: '@/**', group: 'external', position: 'after' },
+          ],
+          pathGroupsExcludedImportTypes: ['react', 'react-dom'],
+          distinctGroup: true,
+          'newlines-between': 'always',
+          alphabetize: { order: 'asc', caseInsensitive: false },
+        },
+      ],
+
+      'sort-imports': [
+        'warn',
+        {
+          ignoreCase: false,
+          ignoreDeclarationSort: true,
+          ignoreMemberSort: false,
+          memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+        },
+      ],
+    },
+  },
+
+  // Prettier — disables stylistic rules that fight prettier. Must be last.
+  prettierConfig,
+]
+```
+
+**Translation notes — what changed and why:**
+
+1. **`extends: ["next/core-web-vitals"]`** → direct flat-array import + spread. `eslint-config-next/core-web-vitals` exports a flat-config array (verified by Censor + Provocator via direct read of `node_modules/eslint-config-next/dist/core-web-vitals.js`). `FlatCompat.extends()` is the LEGACY-config bridge and is the wrong tool for a flat-native package; using it would either fail or double-wrap.
+
+2. **`extends: ["plugin:import/recommended"]`** → DROPPED. `eslint-config-next@16`'s flat array already registers `import` plugin and applies `import/recommended` semantics. Adding `eslint-plugin-import`'s flat preset on top would register the plugin a second time and clobber Next's `import/resolver` settings (which include `typescript: { alwaysTryTypes: true }` and a tuned node resolver).
+
+3. **`extends: ["plugin:prettier/recommended"]`** → split into pieces and rewired correctly:
+   - `prettier-plugin` registered as a plugin.
+   - `prettier/prettier` rule enabled at warn.
+   - `eslint-config-prettier/flat` (note `/flat` subpath — package root exports the legacy shape) placed last to disable conflicting stylistic rules.
+
+4. **`pathGroups` cleanup:**
+   - **Dropped:** `@layout/**`, `@components/**`, `@styles/**` (dead aliases per `CLAUDE.md` Import Alias Guide).
+   - **Kept:** `@lib/**`, `@store/**`, `@api/**`, `@utils/**` (already there, active).
+   - **Added specific aliases:** `@hooks/**`, `@config/**`, `@interfaces/**` (active per `CLAUDE.md`, used in `src/`, missing from previous config).
+   - **Added `@/**` catch-all:** replaces the previous-revision proposal of `@/app/_domain/**`. The catch-all gives consistent grouping behavior to ALL imports routed through the generic `@/*` alias (`@/components/foo`, `@/lib/foo`, `@/app/_domain/bar` all land in the same group). The previous specific-only entry would have grouped `@/app/_domain/**` differently from `@/components/**`, producing surprising `import/order` warnings. (Per Censor: pathGroup specificity collisions resolve to last-defined; the catch-all is placed last so it captures any non-specific-aliased imports.)
+
+5. **`import/resolver` settings** → REMOVED from this config. Next's flat block already provides a tuned resolver (`typescript: { alwaysTryTypes: true }` + node object). The previous-revision spec replaced it with a cruder version (`typescript: { project: './tsconfig.json' }, node: true`); leaving Next's settings in place is correct.
+
+6. **`ignores` block calibrated to actual repo contents.** Verified via repo walk (Provocator):
+   - **`.worktrees/**`** is the critical addition. Without it, `eslint .` from the parent repo recurses into `.worktrees/feat-product-library/`, `.worktrees/feat-standard-pdp-visual-parity/`, etc., and double-lints every file. Operationally fatal for the Imperator's stacked-worktree workflow.
+   - **`e2e/**` is intentionally NOT ignored.** Per Imperator decision: Playwright tests are first-class TS code and benefit from lint hygiene the same as `src/`.
+   - `playwright-report/**`, `test-results/**`, `.playwright-mcp/**`, `.vercel/**` — confirmed-present artifact dirs that ESLint would otherwise walk.
+   - `next-env.d.ts` — defensively ignored even though Next's bundled flat config includes it; cheap insurance against ordering surprises.
+   - `storybook-static/**` — DROPPED from ignores. No `.storybook/` config exists in the repo and no `*.stories.*` files exist (verified). Dead defensive code.
+   - `*.config.{js,mjs,cjs,ts}` glob NARROWED to `eslint.config.mjs` only. Other config files (`next.config.js`, `tailwind.config.ts`, `postcss.config.js`) remain lintable.
+
+**Rules NOT changed:** `react/no-unescaped-entities: off`, `import/order` rule semantics, `sort-imports` semantics. All preserved bit-for-bit except the documented `pathGroups` cleanup.
+
+**Important caveat — effective rule set IS expanded.** Per Provocator: `eslint-config-next@16` ships an expanded React 19 / Server Component / accessibility rule pack vs prior majors. The TRANSLATION is faithful to the prior project-specific overrides, but the upstream rule pack is bigger. This is expected and correct (we want the new rules); it just means the violation backlog will be larger than a strict 1:1 migration would imply. Treated explicitly in `Violation handling` below.
+
+**Confidence: High** — design corrected per Censor + Provocator direct package reads.
+
+### 4. `.nvmrc`
+
+Single line:
+
+```
+22.22.2
+```
+
+Reasoning: ESLint 9 supports Node `^18.18.0 || ^20.9.0 || >=21.1.0`. `next@16` requires Node ≥20.9.0. Node 22.22.2 matches the Medusa backend's pinned version (per `reference_medusa_backend_boot.md`).
+
+**Caveat — pin only, not autoswitch.** `nvm use` (no args) reads `.nvmrc` and switches the current shell's Node version, but only when invoked manually or via shell hooks (`nvm`'s `--no-use` + `chpwd`/`avn`/`fnm`). The pin does NOT automatically switch on `cd` unless the Imperator's shell is configured for it. The pin's value is: (a) documents the intended runtime; (b) `nvm use` works without arguments anywhere in the repo; (c) Vercel and other Node-version-aware tools read it automatically. Shell-hook configuration is out of scope.
+
+**Confidence: High**
+
+---
+
+## Stacked-PR workflow (operational guidance, not implementation)
+
+This section documents the workflow the Imperator will follow. It is not a code deliverable — it is the operational contract that makes the migration usable while the PR sits in review.
+
+### Branch strategy
+
+- **Migration branch:** `fix/lint-migration-eslint9` from `develop`.
+- **PR is opened immediately** so review timer starts.
+- **Revisions during review** land as ADDITIONAL commits on the same branch (NOT amended via force-push). The PR is squash-merged at the end into a single commit on `develop`.
+
+### For existing in-flight worktrees (already branched from `develop`)
+
+```bash
+# In each existing worktree
+git cherry-pick <migration-sha>
+yarn install
+yarn lint:changed   # see what your branch's changes have surfaced
+```
+
+The cherry-picked commit will appear in those PRs' diffs until the migration PR merges. Reviewers may be told: "this is from the lint migration PR I'm trying to land in parallel."
+
+After the migration PR squash-merges to `develop`, rebasing each worktree onto fresh `develop` will cause git's patch-id matching to drop the duplicate cherry-pick automatically.
+
+### For new worktrees (created during the review window)
+
+Branch from `fix/lint-migration-eslint9` rather than from `develop`. Same dedupe story on rebase post-merge.
+
+### Mitigations against revision pain
+
+- **Single-commit-on-merge discipline.** Squash-merge produces a single patch byte-identical to the cherry-picks → clean dedupe.
+- **Additive commits during review.** If reviewer asks for tweaks, add them as new commits (`B1`, `C1`); cherry-pick those onto stacked worktrees too. Both deduplicate independently.
+- **`git config --global rerere.enabled true`.** If the same conflict arises across multiple worktrees post-rebase, git replays your first resolution.
+
+### Caveat — yarn.lock dedupe is conditional
+
+The dedupe story assumes no concurrent `package.json`/`yarn.lock` changes across worktrees during the review window. If any in-flight worktree adds new dependencies (any other `yarn add`), running `yarn install` in that worktree after the cherry-pick regenerates `yarn.lock` with both that worktree's deps AND the migration's deps merged. The cherry-picked `yarn.lock` patch and the squash-merged `yarn.lock` patch then differ → patch-id dedupe fails for that worktree. Recovery: `git rebase --interactive`, drop the orphan cherry-pick, resolve conflicts manually. Per spec deliberation, ~5-15 min per affected worktree (rare unless the Imperator adds new deps in flight).
+
+**Confidence: High**
+
+---
+
+## Violation handling
+
+The repo has not been linted in some time. When `yarn lint` runs successfully against the migrated config, it WILL surface a non-trivial backlog of pre-existing violations. Two contributing factors compound the count:
+
+1. **Dormant rule resurrection.** The legacy `.eslintrc.json` rule set was active but lint was broken — violations accumulated unseen.
+2. **Expanded rule pack.** `eslint-config-next@16` ships more rules than prior majors (React 19, Server Components, expanded a11y). Even files that would have been clean under the old rule set may surface new violations.
+
+**Treatment (per Imperator Decision 2(a)):**
+
+1. **The migration PR ships even if `yarn lint` exits non-zero.** No `--max-warnings=N` cap (cap doesn't catch errors anyway, only warnings — Provocator finding). The non-zero exit is the honest state of the codebase under the new rule set.
+2. **`yarn lint:changed` is the daily driver.** It surfaces only violations in files the Imperator has touched on the current branch. This is the practically usable lint surface.
+3. **`yarn lint` (full repo) is a known-failing audit** until the cleanup PR lands.
+4. **No source files are modified in this PR.** Adding fixes would inflate scope, delay review, and pollute git history.
+5. **Cleanup of the backlog is a separate future case.** Either an opportunistic per-feature pattern (fix violations in files you naturally touch) or a dedicated cleanup PR.
+
+**Why not downgrade rules to `warn`** (the rejected alternative): doing so bakes "we tolerate these errors" into config; future-you has to remember to re-promote. Honest non-zero floor makes the cleanup motivation visible.
+
+**Confidence: High** — policy is explicit and Imperator-confirmed.
+
+---
+
+## Success criteria
+
+The migration is done when:
+
+1. `yarn lint` executes against the new config and exits with code **0 (no problems) or 1 (lint problems)**. Exit code **2 (config error / fatal error / unhandled exception) is a failure** and triggers rollback. This is the mechanically-verifiable boundary between "rules fired" (acceptable per `Violation handling`) and "config broke" (regression).
+2. `yarn lint:changed` executes successfully on a branch with TS/TSX changes:
+   - Reports issues only in files modified vs `origin/develop`.
+   - Reports a clear error (not silent "No changed files") if `origin/develop` ref does not exist locally.
+3. `eslint.config.mjs` exists; `.eslintrc.json` does not.
+4. `package.json` has `eslint@^9` and `eslint-config-next@^16`; `globals`, `eslint-import-resolver-typescript`, `@eslint/eslintrc`, `typescript-eslint` are NOT in direct devDependencies (all transitive via `eslint-config-next@16`).
+5. `.nvmrc` exists with content `22.22.2`.
+6. The PR squash-merges to a single commit on `develop`. Multiple commits on the branch during review are acceptable; the merge collapses them.
+7. Running `yarn lint` from the parent repo does NOT recurse into `.worktrees/` (verified by absence of duplicate file paths in lint output when worktrees are present).
+8. A fresh worktree checked out from `fix/lint-migration-eslint9` runs `yarn install && yarn lint` end-to-end without manual config edits. (Smoke test that no machine-local state is required for the migration to function.)
+
+**Confidence: High** — every criterion is mechanically verifiable.
+
+---
+
+## Risks
+
+| Risk | Likelihood | Mitigation |
+|-|-|-|
+| `yarn lint` exits non-zero post-migration due to expanded rule pack and pre-existing backlog | Very High (expected) | Decision 2(a) — ship anyway. `lint:changed` for daily use. Cleanup as separate future case. |
+| `eslint-config-next@16`'s flat array changes shape between minor versions, breaking the `nextCoreWebVitals` direct-spread pattern | Low | Pin `eslint-config-next` to `^16` (semver caret) — minor/patch updates respect breaking-change conventions. If a minor breaks the spread, error surfaces visibly on `yarn lint`. |
+| `eslint-plugin-import` resolves to a version below 2.31 in some future install, breaking `flatConfigs.recommended` (currently moot — config doesn't use this export) | Very Low | Config does not import from `eslint-plugin-import` directly; relies on Next's bundled use. Risk is moot for this spec. |
+| Reviewer asks for substantive rewrite of the migration | Low | Single-commit-on-merge discipline + tight scope; if it happens, follow `git rerere` + interactive rebase per worktree. |
+| `pathGroups` cleanup (catch-all `@/**`) changes import-order behavior in ways that produce many new `import/order` warnings | Medium | Warnings are warnings, not errors. `eslint --fix` auto-fixes `import/order`. Surfaces in lint output. |
+| Concurrent `yarn add` in a stacked worktree breaks yarn.lock dedupe on rebase | Low (if Imperator avoids new deps during review) | Documented in Stacked-PR section. ~5-15 min recovery per worktree via interactive rebase. |
+| `.worktrees/` ignore missing entirely (root-cause severity if forgotten) | Avoided | Explicitly covered in `ignores` block + success criterion #7 verifies it. |
+| `pathGroups` design tension: imports of `@hooks/foo` vs `@/app/_hooks/foo` (semantically same destination, different alias styles) land in different groups, producing `import/order` warnings on file pairs that mix styles | Medium | Accepted as known noise per ship-as-is policy. Not fixable in lint config without picking one alias style and migrating the codebase (out of scope). `eslint --fix` cannot reorder across different group classifications. |
+| Storybook tooling installed (`@storybook/*` devDeps + `storybook` script) but no `.storybook/` config or `*.stories.*` files exist; `storybook-static/**` ignore was dropped | Low (situational) | If Storybook config returns to repo, re-add `storybook-static/**` to ignores. Note for future-edit. (Playwright tests reference Storybook iframe paths — implies config existed previously.) |
+| `e2e/**` files (linted per Imperator Decision 1) inherit React/jsx-a11y/Next rules from Next's flat block. Most won't fire (no JSX in test files); some `import/*` rules may. | Low | Accepted as noise per ship-as-is. Future override block disabling `react/*`, `jsx-a11y/*`, `@next/next/*` for `e2e/**` is a clean follow-up if noise is bothersome. |
+| Future minor of `eslint-config-next` removes a transitive dep (`globals`, `eslint-import-resolver-typescript`, `typescript-eslint`) that the corrected config relies on by reach-through | Low | Failure mode is loud — `yarn lint` fails immediately with "cannot find module." Resolution: add the affected dep as a direct devDep at that point. No silent-failure exposure. |
+
+**Confidence: High**
+
+---
+
+## Confidence map summary
+
+| Section | Confidence | Notes |
+|-|-|-|
+| Context & breakage diagnosis | High | Both points reproduced by scout; corroborated by Censor + Provocator reads of `node_modules/eslint-config-next/`. |
+| Goals & non-goals | High | Negotiated explicitly with Imperator. |
+| File scope | High | Six files, exhaustive. |
+| Script changes (`lint`, `lint:changed`) | High | Hardened per Provocator R1 + R2 findings: rev-parse precheck, ACMR filter, NUL-delimited bash 3.2-compatible loop, mktemp + explicit exit-code capture (closes process-substitution silent-failure), `--` separator on `exec eslint -- "$@"` (closes leading-dash filename misinterpretation). |
+| Dependency changes | High | Verified via direct read of `node_modules/eslint-config-next/package.json`. Three deps the previous revision proposed are NOT needed (transitive). |
+| `eslint.config.mjs` translation | High | Corrected per Censor + Provocator: direct import + spread, no `FlatCompat`, no second `importPlugin`, no resolver clobber, `eslint-config-prettier/flat` subpath. |
+| `ignores` block | High | Calibrated via repo walk; `.worktrees/` critical addition; `e2e/` intentionally lintable per Imperator Decision 1; `storybook-static/**` dropped (dead). |
+| `.nvmrc` value & ergonomics | High | Aligned with backend pin; "pin only, not autoswitch" framing honest. |
+| Stacked-PR workflow | High | Three turns of deliberation; yarn.lock dedupe caveat made explicit. |
+| Violation handling | High | Decision 2(a) explicit: ship-as-is; `--max-warnings` removed (wrong tool). |
+| Success criteria | High | Eight criteria, all mechanically verifiable. |
+| Risks | High | Enumerated with mitigations. |
+
+No Medium or Low ratings remain. Every High rating is backed by either Imperator directive, doctrine reference, or direct package-source verification (per Censor + Provocator rounds 1 and 2).
+
+---
+
+## Revision history
+
+- **R0 (initial):** First spec draft. Built `eslint.config.mjs` design on outdated assumptions about how `eslint-config-next@16` ships (assumed legacy-compat-bridged via `FlatCompat`).
+- **R1:** Corrected per Censor + Provocator round 1 findings:
+  - 3 MISUNDERSTANDINGs fixed (FlatCompat misuse, plugin over-specification, prettier flat subpath).
+  - 4 GAPs fixed (`globals` version conflict, `.worktrees/` recursion, `next-env.d.ts` ignore, `*.config.*` over-broad).
+  - 4 CONCERNs addressed (`lint:changed` silent fail + filename safety + `--diff-filter=ACMR`; `--max-warnings` wrong tool; `.nvmrc` ergonomics overstatement; success criterion #6 wording).
+  - 1 internal-consistency fix (success criterion #6 squash-merge framing).
+  - Per Imperator decisions: lint `e2e/`; ship-as-is non-zero floor.
+  - 5 SOUNDs from R0 preserved (file scope, dead-alias removal, single-commit dedupe strategy, `.nvmrc` value, zero-arg footgun guard).
+- **R1.1 (this revision):** Patch-level cleanup per Censor + Provocator round 2 findings (auto-feed iteration cap reached; no R3 verification dispatched):
+  - 2 must-fix GAPs landed:
+    - `exec eslint -- "$@"` (added `--` separator so leading-dash filenames are not interpreted as flags — Provocator R2).
+    - Success criterion #1 tightened to specify ESLint exit codes 0/1 = pass, 2 = fail (mechanically verifiable boundary — Provocator R2).
+  - 1 script hardening landed:
+    - `mktemp` + explicit `if !` capture for `git diff` runtime failures, replacing process substitution that swallowed exit codes under `set -e` (Censor R2 + Provocator R2 corroborated).
+  - 3 narrative cleanups landed (Censor R2):
+    - Comment on ignores block updated to actual top-level config files (`next.config.ts`, `postcss.config.mjs`, `playwright.config.ts`); `tailwind.config.*` removed (doesn't exist; Tailwind v4 uses CSS-first config).
+    - One-line acknowledgement that `.next/**` covers `.next/types/**` and `.next/dev/types/**`.
+    - Misleading `^2.29` floor sentence dropped (corrected config doesn't use `eslint-plugin-import` directly).
+  - 4 risks added explicitly (acknowledged-as-accepted per Provocator R2):
+    - `pathGroups` design tension between specific aliases and generic `@/*`.
+    - Storybook regression risk if config returns.
+    - `e2e/**` rule noise from inheriting React/jsx-a11y/Next rules.
+    - Future minor of `eslint-config-next` removing a transitive dep.
+  - 3 cosmetic R2 findings skipped (idiomatic `eslint-plugin-prettier/recommended` preset; six-files framing pedantry; `.worktrees/**` asymmetric verification).
+  - 11 SOUNDs from R2 preserved as the spec's verification spine (FlatCompat removal, prettier flat subpath, Next's bundled resolver covers project paths, `globals` removal safe, `.worktrees/**` parent-direction ignore, `--diff-filter=ACMR`, `prettierConfig` last placement does not clobber rule, pre-commit and ESLint walk on separate planes, bash 3.2 `read -r -d ''` works on macOS default, pathGroups first-wins behavior).

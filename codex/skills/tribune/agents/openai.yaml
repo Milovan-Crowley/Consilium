@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tribune Debugging"
+  short_description: "Diagnose bugs before fixes"
+  default_prompt: "Use $tribune to diagnose this bug, verify the root cause, and route the fix through the right Consilium rank."
