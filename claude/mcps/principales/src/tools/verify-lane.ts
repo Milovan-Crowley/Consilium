@@ -49,6 +49,12 @@ export interface VerifyLaneDeps {
   sessionFamily: string;
   // Precomputed hashed user identifier for safety_identifier (no raw secret material).
   safetyIdentifier: string;
+  // Operator-level thinking gate. Read from CONSILIUM_KIMI_DISABLE_THINKING at MCP startup.
+  // v1 substrate does NOT send a thinking parameter to Moonshot — this flag is reserved
+  // for the integration case to compose with per-lane `thinking_allowed` metadata.
+  // When the integration case wires the actual Moonshot thinking API parameter, it will
+  // be enabled per-call only when (disableThinking === false) AND (lane.thinking_allowed === true).
+  disableThinking: boolean;
 }
 
 const PRICE_USD_PER_1M = {

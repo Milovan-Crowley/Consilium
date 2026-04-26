@@ -34,6 +34,7 @@ function makeDeps(result: MoonshotResult): VerifyLaneDeps {
     allowedLanes: new Set(['upstream-coverage']),
     sessionFamily: 'sess-test',
     safetyIdentifier: 'hash-test',
+    disableThinking: true,
   };
 }
 

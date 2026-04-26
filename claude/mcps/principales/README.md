@@ -28,7 +28,7 @@ Environment variables (set via Claude Code's `mcpServers` config):
 - `CONSILIUM_KIMI_SESSION_BUDGET_USD` — default `5`. Per-session, in-memory.
 - `CONSILIUM_KIMI_MAX_CONCURRENCY` — default `4`.
 - `CONSILIUM_KIMI_TIMEOUT_MS` — default `45000`.
-- `CONSILIUM_KIMI_DISABLE_THINKING` — default `true`.
+- `CONSILIUM_KIMI_DISABLE_THINKING` — operator-level thinking gate. Default `true` (thinking disabled). Read at MCP startup; plumbed through to `verify_lane` deps. v1 substrate does not yet wire it to a Moonshot API parameter (no current lane has `thinking_allowed: true`); the integration case adds the actual Moonshot wiring. Set to `false` to permit thinking at the process level for future lanes that opt in.
 
 ## Tools
 

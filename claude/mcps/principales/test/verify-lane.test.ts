@@ -62,6 +62,7 @@ function makeDeps(result: MoonshotResult, laneTemplate?: string, allowedLanes?: 
     allowedLanes: allowedLanes ?? new Set(['upstream-coverage', 'task-ordering']),
     sessionFamily: 'sess-test',
     safetyIdentifier: 'hash-test',
+    disableThinking: true,
   };
 }
 

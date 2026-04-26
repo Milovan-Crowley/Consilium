@@ -66,6 +66,14 @@ export async function startServer(): Promise<void> {
   const rawTimeout = parseInt(env.CONSILIUM_KIMI_TIMEOUT_MS ?? '45000', 10);
   const timeoutMs = Number.isFinite(rawTimeout) && rawTimeout > 0 ? rawTimeout : 45000;
 
+  // Operator-level thinking gate. v1 default is 'true' — substrate ships dormant per spec.
+  // The integration case will compose this with per-lane `thinking_allowed` metadata
+  // to enable thinking only when both gates permit. Currently no lane has thinking_allowed=true,
+  // so this gate is observed but does not change Moonshot request shape until the integration
+  // case wires the actual API parameter.
+  const rawDisableThinking = (env.CONSILIUM_KIMI_DISABLE_THINKING ?? 'true').toLowerCase().trim();
+  const disableThinking = rawDisableThinking !== 'false';
+
   const moonshot = MoonshotClient.fromEnv(env);
   const semaphore = new Semaphore(concurrency);
   const budget = new SessionBudget(budgetUsd);
@@ -116,6 +124,7 @@ export async function startServer(): Promise<void> {
     allowedLanes,
     sessionFamily,
     safetyIdentifier,
+    disableThinking,
   });
 
   const health = createHealth({

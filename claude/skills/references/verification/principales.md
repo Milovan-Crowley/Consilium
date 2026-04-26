@@ -88,6 +88,13 @@ A Principalis runs under one of four profiles, set by the dispatcher at request 
 
 Thinking mode is OFF by default. Lane metadata may permit thinking on a case-by-case basis (`thinking_allowed: true`); the substrate does not enable thinking unless the lane explicitly grants it.
 
+The substrate honors **two gates** for thinking mode:
+
+- **Operator-level gate** — `CONSILIUM_KIMI_DISABLE_THINKING` env var (default `'true'`). Read at MCP startup. Operator can flip to `'false'` to permit thinking at the process level.
+- **Lane-level gate** — `thinking_allowed` field per lane in `lanes.md` (all `false` in v1). Per-lane authorization for thinking on a specific verification task.
+
+Thinking is enabled on a Moonshot request only when **both** gates permit: `disableThinking === false` AND `lane.thinking_allowed === true`. v1 substrate observes the operator-level gate via the deps interface but does not yet wire it to a Moonshot API parameter — the integration case adds that wiring when per-lane metadata loading lands.
+
 ---
 
 ## What This Doctrine Does NOT Define
