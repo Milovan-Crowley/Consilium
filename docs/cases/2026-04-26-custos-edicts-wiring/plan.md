@@ -133,6 +133,7 @@ Per-case decision and audit log. Append-only. Each entry is a decision, override
 **Trigger:** <what surfaced this — e.g., "Custos returned BLOCKER on bash quoting at plan.md task 3 step 2">
 **Decision:** <what was decided>
 **Rationale:** <why; cite finding text or evidence verbatim where applicable>
+**Plan SHA:** <`git rev-parse HEAD:<plan-path>` short SHA at the time of the entry; required for `verdict` and `revert` entries; optional for other types>
 ````
 
 Entries are appended in chronological order. Old entries are never edited or removed (append-only discipline). A redaction or correction is itself a new entry of type `revert` referencing the prior entry.
@@ -416,14 +417,14 @@ git -C /Users/milovan/projects/Consilium commit -m "chore(verification): add cus
 
 ## Task 4: Insert "Authoring for Custos" subsection in `edicts/SKILL.md`
 
-> **Confidence: High** — spec named the placement (after "Are my symbols consistent?" paragraph, before the `---` separator that closes "Review Before Dispatch"), the content (paragraph naming quoting/env/baseline discipline + required-reading citation), and the structural relationship (subsection of "Review Before Dispatch", H3 not H2).
+> **Confidence: Medium** — spec gives a placement range ("after 'Are my symbols consistent?' paragraph, before the `---` separator") with an explicit predecessor-line cite at line 245 (Symbols), and writes the heading literally as `## Authoring for Custos` (H2). Plan honors the spec-literal predecessor (insertion immediately follows Symbols paragraph, preserves "Fixes are made inline..." as Review Before Dispatch's closing sentinel) but uses **H3** to subordinate the new section to its parent "Review Before Dispatch" — `## Authoring for Custos` (H2) would split the parent section mid-flow because "Fixes are made inline..." is the parent's closing sentinel, and an interleaving H2 makes it orphan. The H3 deviation must be recorded in `decisions.md` (see Step 5 below) so the Imperator may override.
 
 **Files:**
-- Modify: `claude/skills/edicts/SKILL.md` (insert `### Authoring for Custos` H3 subsection between "Fixes are made inline..." paragraph and the `---` separator)
+- Modify: `claude/skills/edicts/SKILL.md` (insert `### Authoring for Custos` H3 subsection immediately after the "Are my symbols consistent?" paragraph, before the "Fixes are made inline..." paragraph)
 
 - [ ] **Step 1: Read SKILL.md to confirm the anchor**
 
-Use the Read tool on `/Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md`. Confirm the anchor text (the "Fixes are made inline..." paragraph immediately followed by a blank line and then `---`) is intact.
+Use the Read tool on `/Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md`. Confirm the anchor text (the "Are my symbols consistent?" paragraph immediately followed by a blank line and then "Fixes are made inline...") is intact.
 
 - [ ] **Step 2: Apply the Edit**
 
@@ -433,17 +434,15 @@ File: `/Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md`
 old_string:
 
 ```
+**Are my symbols consistent?** `clearLayers()` in Task 3 and `clearFullLayers()` in Task 7 is not a clever evolution — it is a bug I have written into the Legatus's hand, costing him an hour when he hits it. Names match. Types match. Signatures match. I do not leave discovery work for soldiers.
+
 Fixes are made inline. I do not re-review — I fix and advance. The march does not wait for a consul who second-guesses his own hand.
-
----
-
-## Dispatching Verification
 ```
 
 new_string:
 
 ````
-Fixes are made inline. I do not re-review — I fix and advance. The march does not wait for a consul who second-guesses his own hand.
+**Are my symbols consistent?** `clearLayers()` in Task 3 and `clearFullLayers()` in Task 7 is not a clever evolution — it is a bug I have written into the Legatus's hand, costing him an hour when he hits it. Names match. Types match. Signatures match. I do not leave discovery work for soldiers.
 
 ### Authoring for Custos
 
@@ -459,28 +458,42 @@ The Custos walks the operational layer the magistrates leave intact — shell qu
 
 The Authoring Awareness raises the content bar. It does not change the plan template schema — tasks still use the existing `### Task N` / `**Files:**` / `- [ ] **Step**` shape.
 
----
-
-## Dispatching Verification
+Fixes are made inline. I do not re-review — I fix and advance. The march does not wait for a consul who second-guesses his own hand.
 ````
 
 - [ ] **Step 3: Read SKILL.md to verify**
 
 Use the Read tool on `/Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md`. Confirm:
 
-- New `### Authoring for Custos` H3 heading appears immediately after the "Fixes are made inline..." paragraph.
+- New `### Authoring for Custos` H3 heading appears immediately after the "Are my symbols consistent?" paragraph.
 - The paragraph beginning "The Custos walks the operational layer..." is present.
 - The four labeled paragraphs (Quoting discipline / Env classification / Baseline / Required reading) are present in that order.
 - The closing paragraph beginning "The Authoring Awareness raises the content bar..." is present.
+- The "Fixes are made inline..." paragraph still follows the new subsection (preserved as Review Before Dispatch's closing sentinel).
 - The `---` separator and `## Dispatching Verification` heading still follow.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Record the H3 deviation in `decisions.md`**
+
+Append to `/Users/milovan/projects/Consilium/docs/cases/2026-04-26-custos-edicts-wiring/decisions.md`:
+
+```
+## Entry: 2026-04-26 — Task 4 H3 deviation from spec literal H2
+
+**Type:** decision
+**Actor:** Consul
+**Trigger:** Provocator GAP on plan iteration 1 — spec text writes `## Authoring for Custos` (H2) but spec wording calls the addition a "subsection." H2 placement between "Are my symbols consistent?" paragraph and "Fixes are made inline..." paragraph would split the parent `## Review Before Dispatch` section mid-flow and orphan its closing sentinel.
+**Decision:** Use H3 (`### Authoring for Custos`) instead of spec-literal H2 to subordinate the new section to its parent "Review Before Dispatch."
+**Rationale:** The spec uses the word "subsection" (parent-child relationship) but writes H2 markup (sibling relationship). The two are contradictory at the markdown structural level. H3 honors the conceptual subsection wording and preserves "Fixes are made inline..." as the parent section's closing sentinel; H2 would force a structural choice (orphan the closer, or move the closer above the new H2 — both invasive). Codex Deviation-as-Improvement Rule applies: cleaner structure is the better path. Imperator may override at the legion-awaits review by directing a re-edit to H2 (one-character change in the SKILL.md edit).
+**Plan SHA:** <commit SHA after Task 4 commit lands>
+```
+
+- [ ] **Step 5: Commit**
 
 Run:
 
 ```bash
-git -C /Users/milovan/projects/Consilium add claude/skills/edicts/SKILL.md
-git -C /Users/milovan/projects/Consilium commit -m "feat(edicts): add authoring for custos subsection"
+git -C /Users/milovan/projects/Consilium add claude/skills/edicts/SKILL.md docs/cases/2026-04-26-custos-edicts-wiring/decisions.md
+git -C /Users/milovan/projects/Consilium commit -m "feat(edicts): add authoring for custos subsection (H3 deviation logged)"
 ```
 
 ---
@@ -527,7 +540,7 @@ I dispatch the Custos only when Praetor+Provocator are "returned clean" — five
 1. **No MISUNDERSTANDING currently in escalation.** A MISUNDERSTANDING that was escalated to the Imperator and resolved (Imperator clarified, plan revised, decision logged in `decisions.md` of type `decision`) closes the escalation. The revised plan is eligible for Custos. Forced re-dispatch of Praetor+Provocator on every MISUNDERSTANDING resolution is NOT required — case-by-case at the Imperator review gate handles the rare re-skinned-misunderstanding risk.
 2. **No unresolved GAPs after the 2-iteration cap.** GAPs the consul addressed in the auto-feed loop count as resolved. GAPs that exhausted the cap are escalations and disqualify the plan from Custos until the Imperator resolves them and the resolution is logged in `decisions.md`.
 3. **All CONCERNs explicitly handled.** Adopted-and-revised, or rejected with reasoning per protocol section 6. **Split-verifier sub-clause:** when Praetor returns CONCERN on a surface and Provocator returns SOUND on the same surface (or vice versa), the SOUND from one verifier does NOT auto-neutralize the CONCERN from the other. The consul must explicitly handle the CONCERN and record the resolution in `decisions.md`.
-4. **No silent plan modifications since plan verification cleared.** Run `git diff <plan-path>` (or staged-vs-committed equivalent) against the SHA the plan-verification dispatch saw. If the diff is non-empty, announce: *"Plan modified since plan verification cleared — diff: <output>. Re-dispatch plan verification, or proceed to Custos?"* Wait for Imperator decision; log the decision in `decisions.md` (type `decision`).
+4. **No silent plan modifications since plan verification cleared.** Run `git diff <plan-path>` (working tree vs HEAD; this assumes the standard flow — the consul commits the plan as part of plan-writing close-out, before announcing "Dispatching Praetor and Provocator"). If the diff is non-empty, announce: *"Plan modified since plan verification cleared — diff: <output>. Reply 'redispatch' to re-run plan verification, or 'proceed' to dispatch Custos."* Match the reply against the two tokens (case-insensitive, after the same trim rule used for skip syntax): `redispatch` or `re-dispatch` triggers re-run; `proceed`, `continue`, `go` triggers dispatch. Anything else (including bare `no`, `yes`, or vague replies) triggers one clarification: *"Reply 'redispatch' or 'proceed' — anything else needs clarification."* Log the gate decision in `decisions.md` (type `decision`). If the consul edited the plan post-verification but pre-commit (a flow violation), surface this directly to the Imperator: *"Plan was edited after plan verification but before being committed — the diff baseline is lost. Re-dispatch plan verification?"*
 5. **Imperator overrides recorded.** Override means the Imperator explicitly directed the consul against the verifier's recommendation (e.g., *"revert that fix"* or *"proceed despite this finding"*) — log in `decisions.md` (type `override`). Implicit acceptance (Imperator agreed with consul handling without overriding) does NOT require a separate entry — the consul's handling is already in the summary.
 
 I announce: "Dispatching the Custos for dispatch-readiness verification."
@@ -545,7 +558,7 @@ The Imperator may say "skip" to bypass. The recognition contract is **strict** (
 - `don't`
 - `stop`
 
-**Trim rule** before matching: strip surrounding `**` (bold), `*` (italic), `` ` `` (code), leading `> ` (blockquote), leading `- ` and `* ` (list markers), trailing whitespace, and trailing punctuation (`.`, `,`, `;`, `:`, `!`, `?`). Lowercase. Compare against the whitelist.
+**Trim rule** before matching: strip surrounding `**` (bold), `*` (italic), `` ` `` (code), `"` and `'` (straight quotes), `“`, `”`, `‘`, `’` (curly quotes — macOS auto-substitutes these for straight quotes by default), leading `> ` (blockquote), leading `- ` and `* ` (list markers), trailing whitespace, and trailing punctuation (`.`, `,`, `;`, `:`, `!`, `?`). Then normalize any remaining curly quotes to straight quotes (so smart-quote `don’t` matches `don't` in the whitelist). Lowercase. Compare against the whitelist. The trim+normalize rule is consistent with the override matcher's quote handling in the BLOCKER override flow below — both code paths strip and normalize quotes the same way.
 
 Vague replies that do not match the whitelist (`not now`, `maybe later`, `up to you`, `hmm`, `idk`, `unsure`) trigger one clarification: *"Skip Custos, or proceed?"* Anything else proceeds to dispatch.
 
@@ -559,6 +572,8 @@ I read the protocol and the template before dispatch:
 I follow the template exactly. Custos walks alone — no parallel partner. He returns one of three verdicts.
 
 ### Verdict Action
+
+Every `decisions.md` entry of type `verdict` or `revert` written from this phase MUST populate the `**Plan SHA:**` field with the output of `git rev-parse HEAD:<plan-path>` at the moment of the entry. The session-resumption check below depends on this SHA being recorded.
 
 - **`OK TO MARCH`** — present the attributed summary to the Imperator (verdict, findings list including SOUND findings, mandatory Do Not Widen section). Proceed to "The Legion Awaits."
 
@@ -620,7 +635,7 @@ The contradiction is a Custos report bug, not a dispatcher decision.
 - **Partial-result-with-failure**: if the Agent tool returns `failed` with a partial body, attempt to parse a verdict from the partial body per the parsing contract above. If a valid verdict parses, honor it with note *"Custos failed mid-report; verdict parsed from partial output."* If no valid verdict parses, treat as non-return: `BLOCKER` + escalate with note *"Custos dispatch did not return — treated as BLOCKER, no verdict available."*
 - **Mid-dispatch skip**: see Skip Syntax above. Skip honored only before the Agent tool fires; in-flight dispatch runs to completion; on return, present verdict with the pre-skip note.
 - **Re-walk inheritance**: the second walk after `PATCH BEFORE DISPATCH` inherits the same failure semantics — non-return on the second walk treats as `BLOCKER` + escalate. There is no re-re-walk.
-- **Session termination**: if the main session terminates during a Custos dispatch, the in-flight Agent call is orphaned. On session resumption, check `decisions.md` for a `verdict` entry matching the current case and plan SHA. If absent, announce: *"Custos dispatch from prior session has no recorded verdict. Re-dispatch, or proceed without?"* The Imperator decides; either choice is logged in `decisions.md`.
+- **Session termination**: if the main session terminates during a Custos dispatch, the in-flight Agent call is orphaned. On session resumption, run `git rev-parse HEAD:<plan-path>` to get the current plan SHA, then scan `decisions.md` for the most recent `verdict` entry whose `**Plan SHA:**` field matches. If no matching entry is present, the dispatch did not complete (or did not log) — announce: *"Custos dispatch from prior session has no recorded verdict for plan SHA `<sha>`. Re-dispatch, or proceed without?"* The Imperator decides; either choice is logged in `decisions.md` (type `decision`, with the current plan SHA recorded).
 
 After verdict handling completes (or override is confirmed), proceed to "The Legion Awaits."
 
@@ -635,10 +650,13 @@ Use the Read tool on `/Users/milovan/projects/Consilium/claude/skills/edicts/SKI
 
 - New `## Dispatching the Custos` H2 heading appears between the `---` after "Dispatching Verification" and the `## The Legion Awaits` heading.
 - All five "returned clean" gate conditions are present and numbered 1–5.
-- Skip whitelist contains exactly 10 entries (`skip`, `skip custos`, `no`, `no custos`, `no, skip`, `nope`, `cancel`, `none`, `don't`, `stop`).
+- Skip whitelist contains exactly 10 entries AND each entry matches the spec verbatim character-by-character: `skip`, `skip custos`, `no`, `no custos`, `no, skip`, `nope`, `cancel`, `none`, `don't`, `stop` (verify the apostrophe in `don't` is U+0027 not U+2019; verify the comma-space in `no, skip` is exactly `,` then one space). A typo in any phrase passes a count check but breaks Test 2 in `smoke-tests.md`.
+- Trim rule lists straight quotes (`"`, `'`) AND curly quotes (`“`, `”`, `‘`, `’`) AND the Unicode normalization step.
+- Gate #4 prompt uses the explicit reply tokens `redispatch` / `proceed` (not the older free-form "Re-dispatch plan verification, or proceed to Custos?" phrasing).
+- Verdict Action subsection opens with the Plan SHA recording requirement.
 - Verdict Action subsection covers all three verdicts (OK TO MARCH, PATCH BEFORE DISPATCH, BLOCKER).
 - Verdict Parsing Contract subsection lists all six malformed cases.
-- Failure / Abort Handling subsection covers all five failure modes.
+- Failure / Abort Handling subsection covers all five failure modes; session-termination clause references the `**Plan SHA:**` field in decisions.md verdict entries.
 - The new phase ends with "After verdict handling completes (or override is confirmed), proceed to 'The Legion Awaits.'" and a `---` separator before `## The Legion Awaits`.
 
 - [ ] **Step 4: Commit**
@@ -652,16 +670,27 @@ git -C /Users/milovan/projects/Consilium commit -m "feat(edicts): wire custos di
 
 ---
 
-## Task 6: Final gates — drift check, staleness check, smoke-test checklist
+## Task 6: Collateral-safety gates and smoke-test checklist
 
-> **Confidence: High** — drift and staleness checks are mechanical; smoke-test scenarios are mechanical applications of the spec's "Verification Expectations" section to the concrete dispatcher behavior.
+> **Confidence: High** — the collateral-safety gates are mechanical; smoke-test scenarios are mechanical applications of the spec's "Verification Expectations" section to the concrete dispatcher behavior.
+
+**What these gates DO and DO NOT verify** (Provocator GAP on plan iteration 1, addressed inline):
+
+The drift check (`check-codex-drift.py`) only validates that the canonical Codex matches the 6 user-scope agent files' Codex sections at `~/.claude/agents/consilium-{censor,praetor,provocator,tribunus,soldier,custos}.md`. It does NOT scan any file this plan modifies (`docs/CONVENTIONS.md`, `claude/skills/edicts/SKILL.md`, `claude/skills/references/verification/protocol.md`, the new template, the smoke-tests file).
+
+The staleness check (`check-tribune-staleness.py`) only scans `claude/skills/tribune/` (and the plugin cache mirror). It does NOT scan any file this plan modifies.
+
+**These gates therefore verify "no collateral damage to tribune wiring or agent-Codex parity," not "this work is clean."** Their value here is collateral-damage detection: confirming this work did not accidentally break adjacent systems. The actual verification of THIS work happens via:
+1. Per-task Read-after-Edit verification steps (Step 3 of Tasks 1, 3, 4, 5; Step 3 of Task 2 and Task 6).
+2. The 9 manual smoke tests in `smoke-tests.md` (run by the Imperator).
+3. The CONVENTIONS lint (Step 6 below).
 
 **Files:**
 - Create: `docs/cases/2026-04-26-custos-edicts-wiring/smoke-tests.md`
-- Run: `python3 /Users/milovan/projects/Consilium/claude/scripts/check-codex-drift.py`
-- Run: `python3 /Users/milovan/projects/Consilium/claude/scripts/check-tribune-staleness.py`
+- Run: `python3 /Users/milovan/projects/Consilium/claude/scripts/check-codex-drift.py` (collateral-safety gate)
+- Run: `python3 /Users/milovan/projects/Consilium/claude/scripts/check-tribune-staleness.py` (collateral-safety gate)
 
-- [ ] **Step 1: Run the Codex drift check**
+- [ ] **Step 1: Run the Codex drift collateral-safety gate**
 
 Run:
 
@@ -669,9 +698,9 @@ Run:
 python3 /Users/milovan/projects/Consilium/claude/scripts/check-codex-drift.py
 ```
 
-Expected: clean exit (exit code 0); no drift reported. (This work does not modify the canonical Codex or any agent's Codex section.) If drift is reported, halt and surface to the Legatus — drift indicates an unrelated breakage that pre-existed this work, not a failure of this work itself, but the Legatus must decide whether to address it before merging.
+Expected: clean exit (exit code 0); no drift reported. **This gate does not validate this work's edits** — the script only checks 6 user-scope agent files, none of which this work modifies. A clean pass here means: this work did not accidentally break agent-Codex parity. If drift IS reported, the drift pre-existed this work; surface to the Legatus and the Legatus decides whether to address it before merging this work.
 
-- [ ] **Step 2: Run the tribune staleness check**
+- [ ] **Step 2: Run the tribune staleness collateral-safety gate**
 
 Run:
 
@@ -679,7 +708,7 @@ Run:
 python3 /Users/milovan/projects/Consilium/claude/scripts/check-tribune-staleness.py
 ```
 
-Expected: clean exit (exit code 0); no stale references reported. If staleness is reported and points at this work's edits, fix inline before continuing. If the staleness is unrelated to this work, surface to the Legatus.
+Expected: clean exit (exit code 0); no stale references reported. **This gate does not validate this work's edits** — the script only scans `claude/skills/tribune/` (and the plugin cache mirror), none of which this work modifies. A clean pass here means: this work did not accidentally break tribune skill staleness invariants. If staleness IS reported, it pre-existed this work; surface to the Legatus.
 
 - [ ] **Step 3: Confirm the smoke-tests path is empty**
 
