@@ -79,6 +79,43 @@ Handoff files use `handoff-NN-to-MM.md`.
 
 Retros use `retro.md`.
 
+## Audit Artifacts
+
+A case folder may include `decisions.md` — an append-only audit log for decisions, overrides, and verdicts that affect the case but are not part of `spec.md`, `plan.md`, or `STATUS.md`.
+
+**Required when** any of the following fires for the case:
+
+- Imperator overrides a verifier finding.
+- Custos returns a verdict (any of `BLOCKER`, `PATCH BEFORE DISPATCH`, `OK TO MARCH`); both walks logged when re-walk fires.
+- Plan modification gate (per the `edicts` skill "Dispatching the Custos" phase) triggers and the Imperator decides.
+- Iteration count exceeded by Imperator authority (Codex auto-feed cap of 2 surpassed).
+- Any other consequential decision the actor wants preserved separately from the spec/plan substrate.
+
+**Optional when** the case has no overrides, no Custos verdicts, no gate decisions, and no iteration overrides.
+
+**Schema:**
+
+````markdown
+---
+case: <slug matching the case folder name>
+---
+
+# Decisions
+
+Per-case decision and audit log. Append-only. Each entry is a decision, override, or verdict that affects the case but is not part of the spec, plan, or STATUS itself.
+
+## Entry: YYYY-MM-DD — <short title>
+
+**Type:** [decision | override | verdict | revert | other]
+**Actor:** [Imperator | Consul | Legatus | Custos | Praetor | Provocator | Censor | Tribunus | Medicus]
+**Trigger:** <what surfaced this — e.g., "Custos returned BLOCKER on bash quoting at plan.md task 3 step 2">
+**Decision:** <what was decided>
+**Rationale:** <why; cite finding text or evidence verbatim where applicable>
+**Plan SHA:** <`git rev-parse HEAD:<plan-path>` short SHA at the time of the entry; required for `verdict` and `revert` entries; optional for other types>
+````
+
+Entries are appended in chronological order. Old entries are never edited or removed (append-only discipline). A redaction or correction is itself a new entry of type `revert` referencing the prior entry.
+
 ## Phase 1 Case Scan
 
 Phase 1 surfaces a case only when all three conditions are true:
