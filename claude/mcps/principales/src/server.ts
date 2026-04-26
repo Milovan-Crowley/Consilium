@@ -27,7 +27,7 @@ const VerifyLaneArgs = z
     bundle_id: z.string(),
     profile: z.enum(['principalis_light', 'principalis_grounded', 'principalis_adversarial', 'principalis_batch']),
     model: z.string().optional(),
-    artifact_slice: z.string(),
+    artifact_slice: z.string().min(1, 'artifact_slice must be non-empty'),
     evidence_bundle: z
       .object({
         sources: z.array(
@@ -38,10 +38,10 @@ const VerifyLaneArgs = z
               content: z.string(),
             })
             .strict(),
-        ),
+        ).min(1, 'evidence_bundle.sources must contain at least one source'),
       })
       .strict(),
-    claims: z.array(z.object({ claim_id: z.string(), claim: z.string() }).strict()),
+    claims: z.array(z.object({ claim_id: z.string(), claim: z.string() }).strict()).min(1, 'claims must contain at least one claim'),
     max_completion_tokens: z.number().int().min(100).max(16000).optional(),
     timeout_ms: z.number().int().min(1000).max(120000).optional(),
   })

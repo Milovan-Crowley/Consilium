@@ -151,3 +151,41 @@ describe('verify_lane tool', () => {
     expect(docket.completion_status).toBe('schema_error');
   });
 });
+
+describe('verify_lane error containment (GAP-A fix)', () => {
+  it('maps loadLaneTemplate ENOENT to refused', async () => {
+    const deps = makeDeps({ ok: true, content: validKimiResponse, finish_reason: 'stop', prompt_tokens: 1, completion_tokens: 1, cached_tokens: 0, attempts: 1 });
+    const enoentErr = Object.assign(new Error('ENOENT: no such file'), { code: 'ENOENT' });
+    deps.loadLaneTemplate = async () => { throw enoentErr; };
+    const tool = createVerifyLane(deps);
+    const docket = await tool(baseInput);
+    expect(docket.completion_status).toBe('refused');
+  });
+
+  it('maps buildRequest throw (empty artifact_slice) to schema_error', async () => {
+    // Bypass Layer-1 Zod gate by passing the input directly to the tool factory.
+    // buildRequest throws because artifactSlice is empty after trim.
+    const deps = makeDeps({ ok: true, content: validKimiResponse, finish_reason: 'stop', prompt_tokens: 1, completion_tokens: 1, cached_tokens: 0, attempts: 1 });
+    const tool = createVerifyLane(deps);
+    const docket = await tool({ ...baseInput, artifact_slice: '' });
+    expect(docket.completion_status).toBe('schema_error');
+  });
+
+  it('maps unexpected throw to schema_error', async () => {
+    const deps = makeDeps({ ok: true, content: validKimiResponse, finish_reason: 'stop', prompt_tokens: 1, completion_tokens: 1, cached_tokens: 0, attempts: 1 });
+    deps.loadLaneTemplate = async () => { throw new Error('weird'); };
+    const tool = createVerifyLane(deps);
+    const docket = await tool(baseInput);
+    expect(docket.completion_status).toBe('schema_error');
+  });
+
+  it('releases semaphore even when verify-lane body throws', async () => {
+    let released = 0;
+    const deps = makeDeps({ ok: true, content: validKimiResponse, finish_reason: 'stop', prompt_tokens: 1, completion_tokens: 1, cached_tokens: 0, attempts: 1 });
+    deps.semaphore = { acquire: async () => () => { released += 1; } };
+    deps.loadLaneTemplate = async () => { throw new Error('boom'); };
+    const tool = createVerifyLane(deps);
+    await tool(baseInput);
+    expect(released).toBe(1);
+  });
+});

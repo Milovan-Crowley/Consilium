@@ -231,6 +231,19 @@ export function createVerifyLane(deps: VerifyLaneDeps) {
       });
 
       return docket;
+    } catch (err) {
+      // Defense-in-depth: any unexpected throw from loadLaneTemplate or buildRequest
+      // (or anywhere else inside this try block) must still produce a synthetic-failure
+      // docket so the dispatcher's "always returns a docket" contract holds. The Layer 1
+      // Zod gate in server.ts catches the empty-bundle / empty-artifact cases at the MCP
+      // boundary; this catch covers the deployment-race case (prompt file deleted between
+      // startup-allowlist scan and dispatch) and any future caller path that bypasses
+      // VerifyLaneArgs validation.
+      const code = (err as { code?: unknown }).code;
+      const isFsError = typeof code === 'string' &&
+        ['ENOENT', 'EISDIR', 'EACCES', 'EPERM'].includes(code);
+      const failureClass: 'refused' | 'schema_error' = isFsError ? 'refused' : 'schema_error';
+      return mapFailureToDocket(failureClass, { ...ctx, finished_at: deps.now() });
     } finally {
       release();
     }
