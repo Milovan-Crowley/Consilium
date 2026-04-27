@@ -100,7 +100,7 @@ Stance is declared by the dispatcher in the prompt.
 
 **Frontmatter edits required:**
 - `tools:` adds `mcp__consilium-principales__verify_lane`, **`Write`** (the design and persistent-executor stances both author artifacts; existing patrol/diagnosis stances are read-only and remain so behaviorally even though the tool is now available).
-- `mcpServers:` adds `principales`.
+- `mcpServers:` adds `consilium-principales` (the registered MCP server key in `~/.claude.json`; the bare token `principales` does NOT match any registered server).
 - `description:` line edited from *"Read-only with Bash"* to *"Read-only with Bash in patrol/diagnosis stances; writes `tribune-protocol.md` and `tribune-log.md` in design and persistent-executor stances."*
 
 **Persona body doctrine added:** explicit role separation — *"The Tribunus is the judge of deviation. The principales are claim-verifiers. The Tribunus reads dockets, applies the Codex's Deviation-as-Improvement Rule, and renders verdict. Principales return yes/no per claim and never judge."*
