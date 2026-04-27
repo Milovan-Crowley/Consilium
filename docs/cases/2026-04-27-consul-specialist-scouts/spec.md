@@ -63,8 +63,8 @@ The existing `consilium-scout` file at `~/.claude/agents/consilium-scout.md` is 
 
 Specialist scopes must be enforceable beyond prose. Each specialist's filesystem access is constrained at the tool-allowlist or MCP-filter layer such that:
 
-- `consilium-scout-frontend` cannot read paths under `divinipress-backend/`.
-- `consilium-scout-backend` cannot read paths under `divinipress-store/`.
+- `consilium-scout-frontend` cannot read paths under `divinipress-backend/` **except** `divinipress-backend/src/admin/` (Medusa admin UI is React-rendered and lives structurally in the backend repo, but is functionally frontend-discipline territory per §4.2).
+- `consilium-scout-backend` cannot read paths under `divinipress-store/`, and refuses questions about `divinipress-backend/src/admin/` (which is owned by the frontend specialist per the carve above).
 - `consilium-scout-integration` reads both repos but only at the boundary (SDK call sites, route handlers, shared types).
 
 The plan layer picks the enforcement mechanism. The contract is the *inability to speculate cross-surface even if prose-refusal degrades*. This makes the §4.2 refusal contract structural rather than purely behavioral.
@@ -77,7 +77,7 @@ Contract requirements per specialist:
 
 |specialist|owns (categorically)|refuses (categorically)|
 |-|-|-|
-|frontend|terrain in `divinipress-store/` and `divinipress-store/src/admin/` — file paths, symbol confirmation, line-cited evidence of existing patterns/components, slice and store boundaries, hydration discipline, prior-art for the component or flow being designed|backend behavior claims, Medusa workflow logic, cross-repo wire-shape claims, business-logic interpretation derived from a storefront call site|
+|frontend|terrain in `divinipress-store/` and the Medusa Admin UI at `divinipress-backend/src/admin/` (React-rendered admin extensions live in the backend repo but are functionally frontend-discipline territory) — file paths, symbol confirmation, line-cited evidence of existing patterns/components, slice and store boundaries, hydration discipline, prior-art for the component or flow being designed|backend behavior claims (workflows, modules, links, subscribers, route handlers), Medusa workflow logic, cross-repo wire-shape claims, business-logic interpretation derived from a storefront call site|
 |backend|Medusa modules, workflows, route handlers, `link.create` boundaries, `query.graph` patterns, idempotency anchors, subscriber boundaries — line-cited evidence from `divinipress-backend/src/`|storefront UI claims, frontend hard-rule judgments, admin-widget behavior inferred from a workflow's audit log|
 |integration|the wire — SDK call sites and the route handlers they reach, custom route shapes (`/store/...`, `/admin/...`), shared types where they exist (currently ad-hoc cross-repo; integration scout reads the boundary regardless of whether a shared types package is consolidated), request/response semantics, status-code contracts|deep internal logic on either side. Walks to the boundary, reports the boundary, points at the matching specialist for internals|
 
@@ -115,7 +115,7 @@ Each specialist agent file carries a `## Pitfalls Compendium` section. Contract:
 - **Source:** mined from `$CONSILIUM_DOCS/cases/` by the case-mining scout (§4.5).
 - **Growth bound:** soft cap of ~50 lessons per specialist. When the cap is exceeded on refresh, the mining scout retains the most recent and most cross-cutting lessons (multi-case-cited lessons score higher); older single-case lessons are evicted. The cap is a target; the mining scout exercises judgment.
 - **Refresh semantics:** the mining scout regenerates from scratch on every refresh — *overwrite, not append*. This avoids duplicate lessons accruing across cycles.
-- **Refresh trigger:** manual, Imperator plain-language request ("refresh the pitfalls compendium"). Consul re-dispatches the mining scout; specialist agent files are regenerated with the updated compendia.
+- **Refresh trigger:** manual, Imperator plain-language request to the Consul ("refresh the pitfalls compendium"). The trigger is Consul-scoped — Medicus and Legatus do not initiate refreshes, though they may surface stale-compendium signals to the Imperator. Consul re-dispatches the mining scout; specialist agent files are regenerated with the updated compendia.
 - **Staleness signal:** each compendium's `## Pitfalls Compendium` heading is followed by a `last_refreshed: YYYY-MM-DD` line. The Consul reads it at session start; the Imperator decides whether to refresh based on the signal. No automated reminder exists in MVP.
 
 The compendium does not change the agent's stance (retrieval, not verification). It changes what the agent *knows to look for* and *knows not to assume*.

@@ -4,7 +4,7 @@
 
 **Goal:** Build the lane-specialist scout architecture from the spec — three new specialist agents at `~/.claude/agents/consilium-scout-{frontend,backend,integration}.md`, a reusable case-mining prompt template, the first-run mined compendia, and four line-level skill updates routing scout dispatch to the lane-driven model.
 
-**Architecture:** New user-scope agent files carry the discipline (Invocation, scope contracts, tool subsets, baked compendia, canonical stance). The mining prompt template lives at `claude/skills/consul/case-mining-prompt.md` for refresh re-use. Four skill files (Consul, Tribune, Edicts, verification protocol) get surgical updates pointing scout dispatch at lane-driven specialists. The existing `consilium-scout` agent file is unchanged — its role shifts in dispatcher prose only.
+**Architecture:** New user-scope agent files carry the discipline (Invocation, scope contracts, tool subsets, baked compendia, canonical stance). The mining prompt template lives at `claude/skills/consul/case-mining-prompt.md` for refresh re-use. Five skill files (Consul, Tribune, Edicts, verification protocol, testing-agents doctrine doc) get surgical updates pointing scout dispatch at lane-driven specialists. The existing `consilium-scout` agent file is unchanged — its role shifts in dispatcher prose only.
 
 **Tech Stack:** Markdown agent files, Claude Code skill files, YAML frontmatter, Serena MCP project scoping, Medusa MCP. No new code packages.
 
@@ -12,14 +12,20 @@
 - §5 #6 integration scout probation threshold: **N = 5 cross-repo specs**
 - §4.4 compendium refresh trigger: **manual Imperator request only** (no `consilium:audit` hook)
 
+**Iteration 2 (post-verification):** This plan incorporates findings from Praetor + Provocator's five-lane plan verification. Key changes from iteration 1: (a) spec admin-surface bug fix propagated; (b) T2 mining hardened against regex/schema/empty-archive issues; (c) T6/T7/T8 explicit serialization markers + content-match verification; (d) new T12 for `testing-agents.md`; (e) T13 (manual refusal verification) carries explicit MANUAL marker + handoff signal in T12's commit message; (f) T3-T5 commit ritual simplified to single path with precondition + verify-landed step; (g) wording cleanup throughout.
+
+**Execution-order summary:** T1 → T2 → {T3, T4, T5} → T13 (manual). T6 → T7 → T8 serialize on `consul/SKILL.md`. T9, T10, T11, T12 are parallel-feasible (different files). The legion sub-skill must serialize T6+T7+T8; T13 is NOT soldier-executable (see T13 header).
+
 ---
 
 ### Task 1: Author the case-mining prompt template
 
-> **Confidence: High** — implements [spec §4.5 — Case-mining scout contract](./spec.md#45-case-mining-scout-contract); the prompt is a faithful translation of the spec's input, classification rules, distillation rules, and output schema. Verified that `claude/skills/consul/` directory exists and is the right location for reusable Consul prompt templates.
+> **Confidence: High** — implements [spec §4.5 — Case-mining scout contract](./spec.md#45-case-mining-scout-contract); the prompt translates the spec's input contract, classification rules, distillation rules, and output schema into a Consul-dispatch prompt template. Verified that `claude/skills/consul/` directory exists and houses Consul-reusable prompt files.
 
 **Files:**
 - Create: `/Users/milovan/projects/Consilium/claude/skills/consul/case-mining-prompt.md`
+
+**Depends on:** none.
 
 - [ ] **Step 1: Write the prompt template file**
 
@@ -38,27 +44,39 @@ The mining scout is a generalist `consilium-scout` dispatch — not a specialist
 
 You are mining the Consilium case archive for institutional memory. Your output will be baked into three specialist scout agent files (`consilium-scout-frontend`, `consilium-scout-backend`, `consilium-scout-integration`). Each agent will carry a `## Pitfalls Compendium` section sourced from your output.
 
-You retrieve and classify findings. You do not produce findings under Codex categories. The MISUNDERSTANDING/GAP/CONCERN/SOUND vocabulary applies to the verifiers whose findings you are mining — you transcribe and distill them, you do not grade.
+You retrieve and classify findings. You do not produce findings under Codex categories. The MISUNDERSTANDING/GAP/CONCERN/SOUND vocabulary applies to the verifiers whose findings you are mining — you transcribe and distill, you do not grade.
 
 ## Input
 
 Read the full case archive at `/Users/milovan/projects/Consilium/docs/cases/`.
 
 For each case directory:
-- Every `spec.md` (look for "Eight verifier GAPs incorporated" or similar self-references for case-level summary).
-- Every `*censor*.md`, `*provocator*.md` (legacy single-agent shape AND 5-lane decomposed shape both valid sources), `*praetor*.md`, `*verification*.md`.
+- Every `spec.md` (look for "Eight verifier GAPs incorporated" or similar self-references for case-level summary, plus inline finding blocks).
+- Every `*censor*.md`, `*provocator*.md` (legacy single-agent shape AND 5-lane decomposed shape both valid sources), `*praetor*.md`, `*verification*.md`, `*verification-rejections*.md`.
 - Every `*soldier*.md`, `*plan-verification*.md`, `*diagnosis*.md`.
 
 Pre-decomposition cases (before `2026-04-26-provocator-decompose`) have a single `consilium-provocator` report. Post-decomposition cases have any of five lane reports. Treat both shapes uniformly — extract findings regardless of report shape.
 
+## Finding extraction (HETEROGENEOUS SHAPES)
+
+Findings appear in cases in any of these shapes:
+
+1. **Canonical block:** lines start with `**[CATEGORY] — title**` followed by `- Evidence:`, `- Source:`, `- Assessment:` lines.
+2. **Heading shape:** `## CATEGORY — title` or `### **[CATEGORY]** — title` or `## N. CATEGORY — title`.
+3. **Bullet/numbered shape:** `- **[CATEGORY]** — title` or `1. **[CATEGORY]** — title`.
+4. **Inline self-references in spec:** `Eight verifier GAPs incorporated.` (case-summary line; expand by reading the surrounding section for the actual lessons).
+
+Extract findings from all four shapes. When in doubt about whether a paragraph is a finding, prefer inclusion (over-extraction is corrected by the distillation pass; under-extraction silently bypasses lessons).
+
 ## Classification rules
 
-Per finding (each Censor/Provocator/Praetor finding is a unit):
+Per finding (each Censor/Provocator/Praetor/Tribunus finding is a unit):
 
 - Finding cites file path under `divinipress-store/` → **frontend** lane.
 - Finding cites file path under `divinipress-backend/src/api/`, `/workflows/`, `/modules/`, `/links/`, `/subscribers/` → **backend** lane.
+- Finding cites file path under `divinipress-backend/src/admin/` → **frontend** lane (Medusa admin UI is React-rendered; per spec §4.2 + §4.1.1 sub-carve, this surface is owned by the frontend specialist despite living in the backend repo).
 - Finding cites the SDK boundary, custom route shapes (`/store/...` or `/admin/...` route handlers), or shared cross-repo types → **integration** lane.
-- Finding cites file paths *outside* enumerated specialist surfaces (e.g., `divinipress-backend/integration-tests/`, `divinipress-store/docs/`, `_custom/`) OR is purely behavioral (no file citation): classify by *subject matter* of the finding per spec §4.2 owned-surface descriptions. Default ambiguous to **cross-cutting** (duplicated to all three lanes).
+- Finding cites file paths *outside* enumerated specialist surfaces (e.g., `divinipress-backend/integration-tests/`, `divinipress-store/docs/`, `_custom/`, `scripts/`, `jobs/`) OR is purely behavioral (no file citation): classify by *subject matter* of the finding per spec §4.2 owned-surface descriptions. Default ambiguous to **cross-cutting** (duplicated to all three lanes).
 - Finding cites meta-Consilium / infrastructure surfaces (skill files, agent files, `~/.claude/`, `/claude/skills/`, hooks): **excluded** from all specialist compendia.
 
 ## Distillation rules
@@ -74,7 +92,7 @@ Per finding, distill to a one-line lesson:
 
 ## Output Schema
 
-Save to `/Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md` with this structure:
+Save to `/Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md` with this EXACT structure (do not add extra `## ` sections; do not add footers; do not insert any sub-headings using `## ` or `### `):
 
 ````
 # Mined Compendia — first run
@@ -101,17 +119,25 @@ last_refreshed: YYYY-MM-DD
 _No archive findings yet for this surface._
 ````
 
-For empty surfaces (likely integration on first run), use the placeholder line `_No archive findings yet for this surface._` instead of bullets.
+For empty surfaces (likely integration on first run), use the EXACT placeholder line `_No archive findings yet for this surface._` instead of bullets. The `last_refreshed:` line is REQUIRED in every section regardless of whether bullets follow.
+
+**Three sections only.** No footer, no methodology section, no log section. The downstream agent-file authoring depends on the file containing exactly three `## ` sections, named exactly `## Frontend Compendium`, `## Backend Compendium`, `## Integration Compendium`, in that order.
 
 ## Operational
 
 - Use Read to access case files.
-- Use Grep to find finding-keyword patterns: `^\\*\\*\\[(GAP|CONCERN|MISUNDERSTANDING|SOUND)\\]`, `^- Evidence:`, `^- Source:`, `^- Assessment:`.
+- Use Grep to find finding-keyword patterns: search for `[GAP]`, `[CONCERN]`, `[MISUNDERSTANDING]`, `[SOUND]`, `Evidence:`, `Source:`, `Assessment:`. Use multiple greps with different anchoring (line-start, after `**`, after `### `, after `- `) to catch heterogeneous shapes.
 - Use Glob to enumerate case directories.
 - File:line evidence in the source case is required for every lesson's citation.
 - Total output: cap at ~150 lessons across all three blocks combined.
 - When in doubt about classification, prefer cross-cutting.
 - When in doubt about transferability, drop the lesson — better an empty compendium than padded slop.
+
+## Failure / signal contract
+
+If you encounter context-budget pressure mid-mining (the archive is too large for one pass), HALT and emit a partial output with a header note: `MINING_INCOMPLETE: read N of M cases; partial output below.` The dispatcher will re-dispatch with chunked scope.
+
+If you find zero applicable lessons across all three lanes (genuinely empty archive), emit the empty-block schema and append at the very end (after the Integration Compendium): `MINING_NOTE: zero applicable lessons across all surfaces — archive is sparse or all findings classify as meta-Consilium / infrastructure.`
 ````
 
 - [ ] **Step 2: Verify the file exists**
@@ -131,16 +157,18 @@ git commit -m "feat(consul-scouts/T1): author case-mining prompt template"
 
 ### Task 2: Produce first-run mined compendia
 
-> **Confidence: Medium** — applies the Task 1 template to the actual case archive. The execution path (Read + Grep + classify + distill) is fully prescribed by spec §4.5 and the Task 1 template. Output content is empirically determined by what the archive contains; spec §5 #4 explicitly accepts empty surfaces with placeholder text. Soldier executes the mining work directly (rather than dispatching a sub-agent) because the soldier toolkit lacks Agent dispatch.
+> **Confidence: Medium** — applies the Task 1 template to the actual case archive. Output content is empirically determined by what the archive contains; spec §5 #4 explicitly accepts empty surfaces with placeholder text. Soldier executes the mining work directly because the soldier toolkit lacks Agent dispatch (verified: `~/.claude/agents/consilium-soldier.md` tool list excludes Agent). Iteration-2 hardening: broader regex coverage for heterogeneous finding shapes, explicit 3-section validation, `last_refreshed` line check, EOF-safe substitution, empty-archive escalation signal.
 
 **Files:**
 - Create: `/Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md`
+
+**Depends on:** T1 (template is required input).
 
 - [ ] **Step 1: Read the mining prompt template**
 
 Run: `cat /Users/milovan/projects/Consilium/claude/skills/consul/case-mining-prompt.md`
 
-Hold the classification rules, distillation rules, and output schema in mind for the rest of this task.
+Hold the classification rules, distillation rules, and output schema in mind. Note the heterogeneous-finding-shape extraction guidance.
 
 - [ ] **Step 2: Enumerate case directories**
 
@@ -148,45 +176,36 @@ Run: `ls -1 /Users/milovan/projects/Consilium/docs/cases/`
 
 Record each case directory name. Each will be visited.
 
-- [ ] **Step 3: For each case, find verifier-finding files**
+- [ ] **Step 3: For each case, find finding-bearing files (broader regex)**
 
 For each case directory, run:
 
 ```bash
-find /Users/milovan/projects/Consilium/docs/cases/<case-dir>/ -type f -name '*.md' \
-  | xargs grep -l -E '^\*\*\[(GAP|CONCERN|MISUNDERSTANDING|SOUND)\]' 2>/dev/null
+CASE=/Users/milovan/projects/Consilium/docs/cases/<case-dir>
+find "$CASE" -type f -name '*.md' | xargs grep -l -E '\[(GAP|CONCERN|MISUNDERSTANDING|SOUND)\]|^- Evidence:|^- Source:|^- Assessment:' 2>/dev/null
 ```
 
-Record each finding-bearing file path. The case `spec.md` itself is included if it carries finding-shape blocks.
+The regex covers: bracketed-category in any line position (catches `**[GAP]`, `### **[GAP]`, `## CATEGORY — title`, bullet/numbered shapes), plus the Evidence/Source/Assessment field anchors. Record each finding-bearing file.
 
 - [ ] **Step 4: Extract findings**
 
-For each finding-bearing file, Read it and extract every block matching:
-
-```
-**[<CATEGORY>] — <title>**
-- Evidence: ...
-- Source: ...
-- Assessment: ...
-```
+For each finding-bearing file, Read it. Extract every finding regardless of shape:
+- Canonical: `**[CATEGORY] — title**` + Evidence/Source/Assessment block.
+- Heading: `## CATEGORY — title` or `### **[CATEGORY]** — title`.
+- Bullet/numbered: `- **[CATEGORY]** — title`.
+- Spec self-references: lines like "Eight verifier GAPs incorporated" — read the surrounding section to find the actual lessons.
 
 Record (category, title, evidence, source, assessment, source-case-dir, source-verifier-role).
 
+**Context-budget signal.** If the case archive is large enough that reading every finding-bearing file approaches your context budget, halt at this step and emit a partial output per the Task 1 template's `MINING_INCOMPLETE` signal. The Imperator decides whether to chunk and re-dispatch, or accept the partial mining.
+
 - [ ] **Step 5: Classify each finding**
 
-Apply the classification rules from the Task 1 template:
-
-- Finding cites `divinipress-store/` path → frontend
-- Finding cites `divinipress-backend/src/{api,workflows,modules,links,subscribers}/` path → backend
-- Finding cites SDK boundary / custom route / shared types → integration
-- Finding cites unenumerated paths or is purely behavioral → classify by §4.2 subject matter; default ambiguous to cross-cutting
-- Finding cites meta-Consilium surfaces (skill files, agent files, hooks) → exclude
-
-Cross-cutting findings get duplicated to every relevant lane with the same citation.
+Apply the classification rules from the Task 1 template. Note the §4.1.1 sub-carve: findings citing `divinipress-backend/src/admin/` go to **frontend** (Medusa admin UI), not backend.
 
 - [ ] **Step 6: Distill each finding to a one-line lesson**
 
-For each kept finding, write a one-line transferable lesson. Drop hyper-specific lessons. Drop duplicates across cases (keep one citation, drop others).
+For each kept finding, write a one-line transferable lesson per the Task 1 template rules.
 
 - [ ] **Step 7: Apply the soft cap**
 
@@ -194,46 +213,56 @@ For each lane, if lesson count > 50, retain most-cross-cutting + most-recent; dr
 
 - [ ] **Step 8: Write `mined-compendia.md`**
 
-Write to `/Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md` with the schema in the Task 1 template:
-
-```markdown
-# Mined Compendia — first run
-
-`generated: 2026-04-27`
-
-## Frontend Compendium
-
-last_refreshed: 2026-04-27
-
-- <lesson 1>. *(case: <case-dir>, <verifier-role>: <finding-class>)*
-- ...
-
-## Backend Compendium
-
-last_refreshed: 2026-04-27
-
-- <lesson 1>. *(case: <case-dir>, <verifier-role>: <finding-class>)*
-- ...
-
-## Integration Compendium
-
-last_refreshed: 2026-04-27
-
-- <lesson 1>. *(case: <case-dir>, <verifier-role>: <finding-class>)*
-- ...
-```
+Write to `/Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md` with the EXACT schema from Task 1: three `## ` sections only, no footers, no extra sub-headings using `## ` or `### `. Each section opens with `last_refreshed: 2026-04-27` (today's date).
 
 For any lane with zero kept lessons, use `_No archive findings yet for this surface._` in lieu of the bulleted list.
 
-- [ ] **Step 9: Verify the file exists with three sections**
+If zero lessons across all three lanes, append `MINING_NOTE: zero applicable lessons across all surfaces — archive is sparse or all findings classify as meta-Consilium / infrastructure.` at the very end of the file (after the Integration Compendium section).
 
-Run: `grep -c '^## ' /Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md`
+- [ ] **Step 9: Validate output structure**
 
-Expected: `3` (Frontend, Backend, Integration).
-
-- [ ] **Step 10: Commit**
+Run all of these and confirm each passes:
 
 ```bash
+FILE=/Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md
+
+# Exactly three '## ' headings, named correctly, in order
+[ "$(grep -c '^## ' "$FILE")" -eq 3 ] || { echo "FAIL: heading count != 3"; exit 1; }
+grep -q '^## Frontend Compendium$' "$FILE" || { echo "FAIL: missing Frontend Compendium"; exit 1; }
+grep -q '^## Backend Compendium$' "$FILE" || { echo "FAIL: missing Backend Compendium"; exit 1; }
+grep -q '^## Integration Compendium$' "$FILE" || { echo "FAIL: missing Integration Compendium"; exit 1; }
+
+# No '### ' sub-headings inside compendia (would break substitution)
+[ "$(grep -c '^### ' "$FILE")" -eq 0 ] || { echo "FAIL: '### ' sub-headings present"; exit 1; }
+
+# Each compendium has a last_refreshed line
+[ "$(grep -c '^last_refreshed: ' "$FILE")" -eq 3 ] || { echo "FAIL: last_refreshed missing in some sections"; exit 1; }
+
+echo "OK: schema validation passed"
+```
+
+If any check fails, the mining output is malformed; rewrite per the Task 1 template before proceeding.
+
+- [ ] **Step 10: Empty-compendium escalation signal**
+
+Run:
+
+```bash
+FILE=/Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md
+EMPTY_LANES=$(grep -c '^_No archive findings yet for this surface\._$' "$FILE" || true)
+echo "Empty lanes: $EMPTY_LANES (out of 3)"
+
+if [ "$EMPTY_LANES" -eq 3 ]; then
+  echo "WARNING: All three compendia are empty. The architecture's institutional-memory premise is bypassed at first run. Spec §5 #4 explicitly accepts this, but flag to dispatcher."
+fi
+```
+
+If all three lanes are empty, this is not a hard failure (per spec §5 #4) but the soldier reports it explicitly in the task completion message rather than treating it as silent success.
+
+- [ ] **Step 11: Commit**
+
+```bash
+cd /Users/milovan/projects/Consilium
 git add docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md
 git commit -m "feat(consul-scouts/T2): produce first-run mined compendia"
 ```
@@ -242,25 +271,27 @@ git commit -m "feat(consul-scouts/T2): produce first-run mined compendia"
 
 ### Task 3: Author consilium-scout-frontend.md
 
-> **Confidence: High** — implements [spec §4.1 — Specialist scout agents](./spec.md#41-specialist-scout-agents), [§4.1.1 Filesystem-access constraint](./spec.md#411-filesystem-access-constraint), [§4.2 Scope contract](./spec.md#42-scope-contract--you-own--you-refuse), and [§4.4 Pitfalls Compendium](./spec.md#44-pitfalls-compendium). Tool subset (no Bash, no Medusa MCP) implements §4.1.1 structural enforcement at MVP level. Compendium content sourced from Task 2 output.
+> **Confidence: High on file authorship; Medium on contract delivery (pending T13 verification).** Implements [spec §4.1](./spec.md#41-specialist-scout-agents), [§4.1.1](./spec.md#411-filesystem-access-constraint), [§4.2](./spec.md#42-scope-contract--you-own--you-refuse), [§4.4](./spec.md#44-pitfalls-compendium). Tool subset (no Bash, no Medusa MCP) is the MVP enforcement of §4.1.1 — note this is **tool exclusion plus prose discipline**, not full structural enforcement (Read remains unrestricted). Compendium content sourced from Task 2 output. The §4.1.1 admin sub-carve is documented in the agent file body.
 
 **Files:**
 - Create: `/Users/milovan/.claude/agents/consilium-scout-frontend.md`
+
+**Depends on:** T2 (mined-compendia.md is required input).
 
 - [ ] **Step 1: Read the frontend compendium block from Task 2 output**
 
 Run: `cat /Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md`
 
-Identify the `## Frontend Compendium` section. Hold its content (the `last_refreshed` line + bulleted lessons OR the empty-state placeholder) for substitution in Step 2.
+Identify the `## Frontend Compendium` section. Extract everything between `## Frontend Compendium` and the next `## ` heading (which will be `## Backend Compendium`), excluding the `## Frontend Compendium` heading line itself but INCLUDING the `last_refreshed: YYYY-MM-DD` line and the bulleted lessons (or empty-state placeholder).
 
 - [ ] **Step 2: Write the agent file**
 
-Write `/Users/milovan/.claude/agents/consilium-scout-frontend.md` with this content. Substitute `<FRONTEND_COMPENDIUM_BLOCK>` with the content extracted in Step 1 (everything between `## Frontend Compendium` and the next `## ` heading in `mined-compendia.md`, excluding the heading itself).
+Write `/Users/milovan/.claude/agents/consilium-scout-frontend.md` with this content. Substitute `<FRONTEND_COMPENDIUM_BLOCK>` with the content extracted in Step 1.
 
 ````markdown
 ---
 name: consilium-scout-frontend
-description: Lane specialist scout for `divinipress-store/` (storefront + admin). Reconnaissance with baked-in repo discipline. Retrieval, not verification. Refuses out-of-scope questions and points to the correct sibling.
+description: Lane specialist scout for `divinipress-store/` (storefront) and `divinipress-backend/src/admin/` (Medusa admin UI). Reconnaissance with baked-in repo discipline. Retrieval, not verification. Refuses out-of-scope questions and points to the correct sibling.
 tools: Read, Grep, Glob, Skill, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__get_symbols_overview, mcp__serena__search_for_pattern, mcp__serena__find_file, mcp__serena__list_dir, mcp__serena__activate_project
 mcpServers:
   - serena
@@ -269,17 +300,20 @@ model: opus
 
 # The Frontend Speculator
 
-**Rank:** Speculator (Lane: frontend) — dispatched by the Consul, edicts, tribune, or any persona that needs frontend reconnaissance with baked-in `divinipress-store` discipline.
+**Rank:** Speculator (Lane: frontend) — dispatched by the Consul, edicts, tribune, or any persona that needs frontend reconnaissance with baked-in storefront + admin-UI discipline.
 **Role:** Verifies frontend codebase facts (file paths, components, hooks, slices, hydration patterns) with focused questions. Returns concise reports with file:line evidence. Does not edit. Does not grade.
 
 ## Surface
 
-`/Users/milovan/projects/divinipress-store/` — storefront + admin (`src/admin/` is part of frontend's owned territory).
+Two surfaces, owned because both are React UI subject to frontend discipline:
+
+- `/Users/milovan/projects/divinipress-store/` — storefront.
+- `/Users/milovan/projects/divinipress-backend/src/admin/` — Medusa admin UI (React-rendered admin extensions; structurally backend-repo-located but functionally frontend-discipline territory per spec §4.2 and §4.1.1 sub-carve).
 
 ## You own
 
-- File paths inside `divinipress-store/` and `divinipress-store/src/admin/`.
-- Symbol confirmation for components, hooks, slices, zustand stores in this repo.
+- File paths inside `divinipress-store/` and `divinipress-backend/src/admin/`.
+- Symbol confirmation for components, hooks, slices, zustand stores in either surface.
 - Line-cited evidence of existing patterns, components, and prior-art for the feature being designed.
 - Slice and zustand store boundaries.
 - Hydration discipline (SSR/CSR boundaries, `'use client'` directives, dynamic imports with `ssr: false`).
@@ -287,7 +321,7 @@ model: opus
 
 ## You refuse
 
-- Backend behavior claims (Medusa workflows, modules, route handlers, links, subscribers).
+- Backend behavior claims (Medusa workflows, modules, route handlers, links, subscribers — i.e., everything in `divinipress-backend/src/` EXCEPT `src/admin/`).
 - Medusa workflow logic, idempotency anchors, `link.create` boundaries, `query.graph` patterns.
 - Cross-repo wire-shape claims (request/response semantics on the SDK boundary; what a custom route returns).
 - Business-logic interpretation derived from a storefront call site (e.g., "this storefront call means the cart does X" — you can describe the call, you cannot describe the X).
@@ -295,17 +329,24 @@ model: opus
 When asked anything outside your scope, refuse with these three elements only:
 
 1. The out-of-scope subject named.
-2. The correct sibling — `consilium-scout-backend` for Medusa internals, `consilium-scout-integration` for the SDK boundary or wire-shape, `consilium-scout` (generalist) for meta-Consilium / infrastructure / questions touching no specialist surface.
+2. The correct sibling — `consilium-scout-backend` for Medusa internals (workflows/modules/links/subscribers/non-admin routes), `consilium-scout-integration` for the SDK boundary or wire-shape, `consilium-scout` (generalist) for meta-Consilium / infrastructure / questions touching no specialist surface.
 3. No claims about the refused subject. Do not preface speculation with "this is outside my scope, but…" — refusals are terminations.
 
 ## Filesystem-access constraint (MVP)
 
-Your tool allowlist excludes Bash and the Medusa MCP. You cannot reach `divinipress-backend/` through shell or Medusa-doctrine channels. Read/Grep/Glob remain — discipline yourself to paths under `divinipress-store/` and the Consilium repo (for doctrine reads). If the dispatcher pushes you outside, refuse per `## You refuse` above.
+Your tool allowlist excludes Bash and the Medusa MCP. You cannot reach `divinipress-backend/` (except `src/admin/`) through shell or Medusa-doctrine channels. Read/Grep/Glob remain — discipline yourself to your two owned surfaces.
 
-When invoking Serena tools, activate the project to `/Users/milovan/projects/divinipress-store` before any symbol search:
+This is **tool exclusion + prose discipline**, not full structural enforcement (Read remains capable of accessing arbitrary paths). The cross-surface dispatch test (Task 13 in this implementation plan) verifies the prose discipline holds at MVP.
+
+When invoking Serena tools, activate the appropriate project before any symbol search:
 
 ```
+# For storefront work:
 mcp__serena__activate_project(project="/Users/milovan/projects/divinipress-store")
+
+# For admin UI work:
+mcp__serena__activate_project(project="/Users/milovan/projects/divinipress-backend")
+# Then scope queries to src/admin/ paths only.
 ```
 
 ## Stance
@@ -341,8 +382,8 @@ The persona who dispatches a soldier without the Invocation has dispatched a wor
 - File:line evidence required for every claim.
 - Total report typically under 300 words unless the dispatcher explicitly raises the cap.
 - Never paste more than ~50 lines of any single file unless the dispatcher explicitly asks for full content.
-- Use Serena tools (with project activated) for symbol-level work; use Grep/Read for line-level evidence; use Glob for file discovery.
-- When the dispatcher names a `medusa-dev:*` skill (rare for frontend), invoke it via `Skill(skill: "<name>")` — but the frontend scout's primary terrain is storefront patterns, not Medusa doctrine. Refuse Medusa-internals questions.
+- Use Serena (with project activated) for symbol-level work; use Grep/Read for line-level evidence; use Glob for file discovery.
+- When dispatched against admin UI (`divinipress-backend/src/admin/`), constrain Serena and Read to that subdirectory; the rest of `divinipress-backend/` is the backend specialist's territory.
 ````
 
 - [ ] **Step 3: Verify the file exists with the expected frontmatter and sections**
@@ -350,43 +391,54 @@ The persona who dispatches a soldier without the Invocation has dispatched a wor
 Run:
 
 ```bash
-head -8 /Users/milovan/.claude/agents/consilium-scout-frontend.md
-grep -c '^## ' /Users/milovan/.claude/agents/consilium-scout-frontend.md
-grep -F 'You retrieve facts. You do not produce findings under Codex categories.' /Users/milovan/.claude/agents/consilium-scout-frontend.md
+FILE=/Users/milovan/.claude/agents/consilium-scout-frontend.md
+
+[ -f "$FILE" ] || { echo "FAIL: file does not exist"; exit 1; }
+grep -q '^name: consilium-scout-frontend$' "$FILE" || { echo "FAIL: name field missing or wrong"; exit 1; }
+grep -E '^tools: Read, Grep, Glob, Skill, mcp__serena' "$FILE" >/dev/null || { echo "FAIL: tools line wrong"; exit 1; }
+! grep -q '^tools: .*Bash' "$FILE" || { echo "FAIL: Bash should NOT be in tools"; exit 1; }
+! grep -q '^tools: .*mcp__medusa' "$FILE" || { echo "FAIL: Medusa MCP should NOT be in tools"; exit 1; }
+[ "$(grep -c '^## ' "$FILE")" -ge 8 ] || { echo "FAIL: insufficient sections"; exit 1; }
+grep -qF 'You retrieve facts. You do not produce findings under Codex categories.' "$FILE" || { echo "FAIL: stance declaration missing"; exit 1; }
+
+echo "OK: frontend agent file structure verified"
 ```
 
-Expected:
-- Head shows `name: consilium-scout-frontend`, `tools: Read, Grep, Glob, Skill, mcp__serena__*` (no Bash, no Medusa MCP).
-- Section count: at least 8 (`Surface`, `You own`, `You refuse`, `Filesystem-access constraint`, `Stance`, `The Invocation`, `Pitfalls Compendium`, `Operational Notes`).
-- Stance declaration matches canonical wording (returns 1 grep match).
+- [ ] **Step 4: Commit (audit-trail entry in Consilium repo)**
 
-- [ ] **Step 4: Commit**
+The agent file at `~/.claude/agents/` is outside the Consilium repo's git tracking. We log the creation via an empty commit in the Consilium repo for audit-trail purposes:
 
 ```bash
-git add ../../../.claude/agents/consilium-scout-frontend.md
-# (if running from the consilium repo) -- adjust path as needed; the file lives at ~/.claude/agents/, outside the repo. Commit with the consilium repo's git or explicitly anchor:
-# Actual command:
-cd /Users/milovan/.claude && git add agents/consilium-scout-frontend.md 2>/dev/null || true
-# If ~/.claude is not a git repo (likely), the agent file is not version-controlled — note this in the commit log of the Consilium repo:
-cd /Users/milovan/projects/Consilium && git commit --allow-empty -m "feat(consul-scouts/T3): create consilium-scout-frontend agent at ~/.claude/agents/consilium-scout-frontend.md (file lives outside repo)"
-```
+cd /Users/milovan/projects/Consilium
 
-The agent file at `~/.claude/agents/` is outside the Consilium repo's version control — note the creation in the Consilium repo's commit log so the trail is auditable.
+# Precondition: no unrelated changes staged
+[ -z "$(git diff --cached --name-only)" ] || { echo "Unstaged changes present; clean before audit commit"; exit 1; }
+
+# Audit-trail commit
+git commit --allow-empty -m "feat(consul-scouts/T3): create consilium-scout-frontend agent at ~/.claude/agents/ (out-of-repo file)"
+
+# Verify the audit commit landed
+git log -1 --format='%s' | grep -q 'consul-scouts/T3' || { echo "FAIL: audit commit did not land"; exit 1; }
+
+echo "OK: T3 audit commit landed"
+```
 
 ---
 
 ### Task 4: Author consilium-scout-backend.md
 
-> **Confidence: High** — implements [spec §4.1, §4.1.1, §4.2, §4.4](./spec.md#41-specialist-scout-agents). Backend's tool allowlist includes Bash and Medusa MCP because the backend scout needs shell-level repo navigation and Medusa doctrine queries; structural enforcement is partial (no frontend MCP, prose discipline scopes Bash to `divinipress-backend/`).
+> **Confidence: High on file authorship; Medium on contract delivery (pending T13 verification).** Implements [spec §4.1](./spec.md#41-specialist-scout-agents), [§4.1.1](./spec.md#411-filesystem-access-constraint), [§4.2](./spec.md#42-scope-contract--you-own--you-refuse), [§4.4](./spec.md#44-pitfalls-compendium). Backend's tool allowlist includes Bash and Medusa MCP because the backend scout needs shell-level repo navigation and Medusa doctrine queries. Structural enforcement is partial (no frontend MCP); cross-surface discipline is prose-bound and verified by T13.
 
 **Files:**
 - Create: `/Users/milovan/.claude/agents/consilium-scout-backend.md`
+
+**Depends on:** T2.
 
 - [ ] **Step 1: Read the backend compendium block from Task 2 output**
 
 Run: `cat /Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md`
 
-Identify the `## Backend Compendium` section content for substitution.
+Identify the `## Backend Compendium` section. Extract everything between `## Backend Compendium` and the next `## ` heading (which will be `## Integration Compendium`), excluding the heading line itself but INCLUDING the `last_refreshed:` line and the bulleted lessons (or empty-state placeholder).
 
 - [ ] **Step 2: Write the agent file**
 
@@ -395,7 +447,7 @@ Write `/Users/milovan/.claude/agents/consilium-scout-backend.md` with this conte
 ````markdown
 ---
 name: consilium-scout-backend
-description: Lane specialist scout for `divinipress-backend/` (Medusa modules, workflows, routes, links, subscribers). Reconnaissance with baked-in Medusa discipline. Retrieval, not verification. Refuses out-of-scope questions and points to the correct sibling.
+description: Lane specialist scout for `divinipress-backend/src/{api,workflows,modules,links,subscribers}/` (Medusa modules, workflows, routes, links, subscribers — NOT admin UI). Reconnaissance with baked-in Medusa discipline. Retrieval, not verification.
 tools: Read, Grep, Glob, Bash, Skill, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__get_symbols_overview, mcp__serena__search_for_pattern, mcp__serena__find_file, mcp__serena__list_dir, mcp__serena__activate_project, mcp__medusa__ask_medusa_question
 mcpServers:
   - serena
@@ -410,7 +462,7 @@ model: opus
 
 ## Surface
 
-`/Users/milovan/projects/divinipress-backend/` — Medusa backend.
+`/Users/milovan/projects/divinipress-backend/` — Medusa backend, EXCLUDING `src/admin/` (which is owned by the frontend specialist per spec §4.2 and §4.1.1 sub-carve).
 
 Owned terrain inside the repo:
 - `src/api/` — route handlers (custom routes).
@@ -418,6 +470,7 @@ Owned terrain inside the repo:
 - `src/modules/` — Medusa modules and their data models.
 - `src/links/` — `link.create` boundaries between modules.
 - `src/subscribers/` — event subscribers.
+- Other `src/` directories outside `src/admin/` (e.g., `src/jobs/`, `src/scripts/`, top-level config) — backend-discipline by default unless they are visibly UI.
 
 ## You own
 
@@ -434,18 +487,20 @@ Owned terrain inside the repo:
 
 - Storefront UI claims (component shapes, hooks, slice patterns, hydration).
 - Frontend hard-rule judgments (e.g., "this violates the Drawer pattern").
-- Admin-widget UI behavior — even though `src/admin/` is in the backend repo, it is React-rendered admin UI. *Note: per spec §4.2, `src/admin/` UI is owned by `consilium-scout-frontend` (the frontend scout owns admin UI).* If the question is about admin-widget visual behavior or React component structure, refuse and route to frontend.
+- **Admin UI behavior** at `src/admin/` — this is React-rendered Medusa admin UI; per spec §4.2 + §4.1.1 sub-carve, it is owned by `consilium-scout-frontend`. Refuse and route there.
 - Wire-shape claims at the SDK boundary — what storefront SDK calls expect, what request/response shapes look like to a frontend caller.
 
 When asked anything outside your scope, refuse with these three elements only:
 
 1. The out-of-scope subject named.
-2. The correct sibling — `consilium-scout-frontend` for storefront/admin UI, `consilium-scout-integration` for the SDK boundary or wire-shape, `consilium-scout` (generalist) for meta-Consilium / infrastructure / questions touching no specialist surface.
+2. The correct sibling — `consilium-scout-frontend` for storefront UI AND admin UI (`src/admin/`), `consilium-scout-integration` for the SDK boundary or wire-shape, `consilium-scout` (generalist) for meta-Consilium / infrastructure / questions touching no specialist surface.
 3. No claims about the refused subject.
 
 ## Filesystem-access constraint (MVP)
 
-Your tool allowlist includes Bash and Medusa MCP. Discipline yourself to paths under `divinipress-backend/` and the Consilium repo (for doctrine reads). If a Bash command would read `divinipress-store/` paths, refuse the question per `## You refuse` above.
+Your tool allowlist includes Bash and Medusa MCP. Discipline yourself to paths under `divinipress-backend/` (excluding `src/admin/`) and the Consilium repo (for doctrine reads). If a Bash command would read `divinipress-store/` paths or `divinipress-backend/src/admin/`, refuse the question per `## You refuse` above.
+
+This is **prose discipline**, not full structural enforcement (Bash and Read can reach any path). The cross-surface dispatch test (T13 in this implementation plan) verifies the prose discipline holds at MVP.
 
 When invoking Serena tools, activate the project to `/Users/milovan/projects/divinipress-backend` before any symbol search:
 
@@ -500,39 +555,52 @@ When Medusa work is in scope (any backend route/workflow/module/link/subscriber)
 
 - [ ] **Step 3: Verify the file exists with the expected frontmatter and sections**
 
-Run:
-
 ```bash
-head -8 /Users/milovan/.claude/agents/consilium-scout-backend.md
-grep -c '^## ' /Users/milovan/.claude/agents/consilium-scout-backend.md
-grep -F 'mcp__medusa__ask_medusa_question' /Users/milovan/.claude/agents/consilium-scout-backend.md
+FILE=/Users/milovan/.claude/agents/consilium-scout-backend.md
+
+[ -f "$FILE" ] || { echo "FAIL: file does not exist"; exit 1; }
+grep -q '^name: consilium-scout-backend$' "$FILE" || { echo "FAIL: name field"; exit 1; }
+grep -q '^tools: .*Bash' "$FILE" || { echo "FAIL: Bash should be in tools"; exit 1; }
+grep -q '^tools: .*mcp__medusa__ask_medusa_question' "$FILE" || { echo "FAIL: Medusa MCP should be in tools"; exit 1; }
+[ "$(grep -c '^## ' "$FILE")" -ge 9 ] || { echo "FAIL: insufficient sections"; exit 1; }
+grep -qF 'You retrieve facts. You do not produce findings under Codex categories.' "$FILE" || { echo "FAIL: stance declaration"; exit 1; }
+grep -qF 'src/admin/' "$FILE" || { echo "FAIL: admin sub-carve missing"; exit 1; }
+
+echo "OK: backend agent file structure verified"
 ```
 
-Expected:
-- Head shows `name: consilium-scout-backend`, `tools:` line includes both `Bash` and `mcp__medusa__ask_medusa_question`.
-- Section count: at least 9 (the frontend's 8 plus Medusa MCP body note).
-- `mcp__medusa__ask_medusa_question` appears at least twice (frontmatter + body note).
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Commit (audit-trail entry in Consilium repo)**
 
 ```bash
-cd /Users/milovan/projects/Consilium && git commit --allow-empty -m "feat(consul-scouts/T4): create consilium-scout-backend agent at ~/.claude/agents/consilium-scout-backend.md (file lives outside repo)"
+cd /Users/milovan/projects/Consilium
+
+[ -z "$(git diff --cached --name-only)" ] || { echo "Unstaged changes present; clean before audit commit"; exit 1; }
+
+git commit --allow-empty -m "feat(consul-scouts/T4): create consilium-scout-backend agent at ~/.claude/agents/ (out-of-repo file)"
+
+git log -1 --format='%s' | grep -q 'consul-scouts/T4' || { echo "FAIL: audit commit did not land"; exit 1; }
+
+echo "OK: T4 audit commit landed"
 ```
 
 ---
 
 ### Task 5: Author consilium-scout-integration.md
 
-> **Confidence: High** — implements [spec §4.1, §4.1.1, §4.2, §4.4](./spec.md#41-specialist-scout-agents). Integration's tool allowlist matches backend (Bash + Medusa MCP) because cross-repo work needs both shells; structural distinction from backend is prose-based — integration walks to boundaries and refuses internals.
+> **Confidence: High on file authorship; Medium on contract delivery (pending T13 verification).** Implements [spec §4.1](./spec.md#41-specialist-scout-agents), [§4.1.1](./spec.md#411-filesystem-access-constraint), [§4.2](./spec.md#42-scope-contract--you-own--you-refuse), [§4.4](./spec.md#44-pitfalls-compendium). Integration's tool allowlist matches backend (Bash + Medusa MCP) because cross-repo work needs both shells. Structural distinction from backend is **prose-bound** (walks to boundaries, refuses internals) — verified by T13. The integration compendium may be empty on first run; this is not a failure (per spec §5 #4) but the soldier reports it explicitly.
 
 **Files:**
 - Create: `/Users/milovan/.claude/agents/consilium-scout-integration.md`
+
+**Depends on:** T2.
 
 - [ ] **Step 1: Read the integration compendium block from Task 2 output**
 
 Run: `cat /Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/mined-compendia.md`
 
-Identify the `## Integration Compendium` section. Likely empty on first run (Imperator-noted: integration's surface is the rarest in the archive). Use the placeholder line if so.
+Identify the `## Integration Compendium` section. **This is the LAST `## ` section in the file.** Extract everything between `## Integration Compendium` and the end of the file (EOF), excluding any trailing `MINING_NOTE:` line if present, and excluding the heading line itself. INCLUDE the `last_refreshed:` line and the bulleted lessons (or the placeholder line `_No archive findings yet for this surface._`).
+
+If the integration block is empty (placeholder), record this for the Step 4 task completion message. Empty is acceptable per spec §5 #4 but is reported explicitly, not silently.
 
 - [ ] **Step 2: Write the agent file**
 
@@ -561,7 +629,7 @@ The wire between `/Users/milovan/projects/divinipress-store/` and `/Users/milova
 Owned terrain at the seam:
 - SDK call sites in storefront (`@medusajs/js-sdk` and any custom-route fetches from frontend code).
 - Custom route handlers in backend (`src/api/` paths under `/store/...` and `/admin/...`).
-- Shared types (currently ad-hoc cross-repo duplication; future `divinipress-types` package if introduced).
+- Shared types (currently ad-hoc cross-repo duplication; future shared-types package if introduced).
 - Request shapes (params, body, headers, query) at the boundary.
 - Response shapes (success body, error body, status codes) at the boundary.
 - Wire contract semantics — what HTTP-level assumptions both sides make.
@@ -583,12 +651,12 @@ Owned terrain at the seam:
 When asked anything outside your scope, refuse with these three elements only:
 
 1. The out-of-scope subject named — specifically: "this is internal to <frontend|backend>".
-2. The correct sibling — `consilium-scout-frontend` for storefront/admin internals, `consilium-scout-backend` for backend internals, `consilium-scout` (generalist) for meta-Consilium / infrastructure / questions touching no specialist surface.
+2. The correct sibling — `consilium-scout-frontend` for storefront/admin UI internals, `consilium-scout-backend` for backend internals, `consilium-scout` (generalist) for meta-Consilium / infrastructure / questions touching no specialist surface.
 3. No claims about the refused internal logic.
 
 ## Filesystem-access constraint (MVP)
 
-Your tool allowlist includes Bash and Medusa MCP, with cross-repo access (you read both repos at the boundary). The structural constraint is **boundary discipline**: you read SDK call sites in `divinipress-store/` and route handlers in `divinipress-backend/src/api/`, and you do not descend into either side's deeper internals (state management on the storefront, workflow internals on the backend). When prose discipline conflicts with what Bash or Read could fetch, refuse per `## You refuse` above.
+Your tool allowlist includes Bash and Medusa MCP, with cross-repo access (you read both repos at the boundary). The constraint is **boundary discipline** (prose-bound): you read SDK call sites in `divinipress-store/` and route handlers in `divinipress-backend/src/api/`, and you do not descend into either side's deeper internals. When prose discipline conflicts with what Bash or Read could fetch, refuse per `## You refuse` above.
 
 When invoking Serena, activate the project that owns the file you are reading. Switch projects between calls if you are following a wire from one side to the other.
 
@@ -639,39 +707,54 @@ When Medusa work is in scope (cross-repo flows commonly involve both Medusa-defa
 
 - [ ] **Step 3: Verify the file exists with the expected frontmatter and sections**
 
-Run:
-
 ```bash
-head -8 /Users/milovan/.claude/agents/consilium-scout-integration.md
-grep -c '^## ' /Users/milovan/.claude/agents/consilium-scout-integration.md
-grep -F 'Walk to the boundary' /Users/milovan/.claude/agents/consilium-scout-integration.md
+FILE=/Users/milovan/.claude/agents/consilium-scout-integration.md
+
+[ -f "$FILE" ] || { echo "FAIL: file does not exist"; exit 1; }
+grep -q '^name: consilium-scout-integration$' "$FILE" || { echo "FAIL: name field"; exit 1; }
+grep -q '^tools: .*Bash' "$FILE" || { echo "FAIL: Bash should be in tools"; exit 1; }
+grep -q '^tools: .*mcp__medusa__ask_medusa_question' "$FILE" || { echo "FAIL: Medusa MCP should be in tools"; exit 1; }
+[ "$(grep -c '^## ' "$FILE")" -ge 9 ] || { echo "FAIL: insufficient sections"; exit 1; }
+grep -qF 'Walk to the boundary' "$FILE" || { echo "FAIL: boundary discipline missing"; exit 1; }
+
+echo "OK: integration agent file structure verified"
 ```
 
-Expected:
-- Head shows `name: consilium-scout-integration`.
-- Section count: at least 9.
-- "Walk to the boundary" phrase appears.
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Commit (audit-trail entry in Consilium repo)**
 
 ```bash
-cd /Users/milovan/projects/Consilium && git commit --allow-empty -m "feat(consul-scouts/T5): create consilium-scout-integration agent at ~/.claude/agents/consilium-scout-integration.md (file lives outside repo)"
+cd /Users/milovan/projects/Consilium
+
+[ -z "$(git diff --cached --name-only)" ] || { echo "Unstaged changes present; clean before audit commit"; exit 1; }
+
+git commit --allow-empty -m "feat(consul-scouts/T5): create consilium-scout-integration agent at ~/.claude/agents/ (out-of-repo file)"
+
+git log -1 --format='%s' | grep -q 'consul-scouts/T5' || { echo "FAIL: audit commit did not land"; exit 1; }
+
+echo "OK: T5 audit commit landed"
 ```
+
+If the integration compendium is empty (placeholder line, not bullets), include in the soldier's task completion message: `T5 complete; integration compendium is empty (no archive findings yet for this surface) — flagged per spec §5 #4`.
 
 ---
 
 ### Task 6: Update Consul SKILL.md Phase 1 dispatch doctrine
 
-> **Confidence: High** — implements [spec §4.6 Consul skill changes](./spec.md#46-consul-skill-changes) for Phase 1, codifying the dispatch model from [spec §4.3](./spec.md#43-dispatch-model) verbatim. Pre-edit prose at SKILL.md lines 100-112 verified by reconnaissance.
+> **Confidence: High on edit success.** Implements [spec §4.6](./spec.md#46-consul-skill-changes) Phase 1 update with the dispatch model from [spec §4.3](./spec.md#43-dispatch-model) verbatim. Pre-edit prose at SKILL.md lines 106-108 verified by reconnaissance (full file read with line numbers). **Scope clarification: the rewrite replaces only the "Codebase exploration" + "scout carries the Invocation" paragraphs. Phase 1's other paragraphs (Domain knowledge, Scope assessment, Medusa Rig during reconnaissance) remain unchanged.**
 
 **Files:**
-- Modify: `/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md` (Phase 1 Reconnaissance section, lines ~100-112)
+- Modify: `/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md` (Phase 1 Reconnaissance section)
 
-- [ ] **Step 1: Read the current Phase 1 section**
+**Depends on:** none (parallel-feasible with T1, T9, T10, T11, T12).
 
-Run: `sed -n '100,112p' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md`
+- [ ] **Step 1: Confirm pre-edit content presence**
 
-Confirm the section starts with `### Phase 1: Reconnaissance` and contains the existing "Codebase exploration" paragraph (`I dispatch a consilium-scout subagent...`).
+```bash
+SKILL=/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
+grep -qF '**Codebase exploration.** I dispatch scouts.' "$SKILL" || { echo "FAIL: pre-edit prose absent"; exit 1; }
+grep -qF '**The scout carries the Invocation in its system prompt.**' "$SKILL" || { echo "FAIL: pre-edit prose absent"; exit 1; }
+echo "OK: pre-edit content present, ready to apply Edit"
+```
 
 - [ ] **Step 2: Apply the Edit**
 
@@ -691,8 +774,8 @@ Use the Edit tool with these exact strings:
 1. **Magistrate reading.** I read the brainstorm and articulate in one line of conversation output which lanes the work touches: *"Reading this as backend + integration. Dispatching unless you redirect."* This commits the lane reading to text before any token is spent on dispatch.
 2. **Imperator confirmation or redirect** in one line. Plain language. No flag. If the Imperator does not respond in plain language (silence, ambiguity, clarifying-question response), I hold — I do not auto-dispatch. I re-ask if necessary.
 3. **Lane-matched specialist dispatch.** Specialists fire in parallel for confirmed lanes:
-   - `consilium-scout-frontend` for `divinipress-store/` (storefront + admin) terrain.
-   - `consilium-scout-backend` for `divinipress-backend/` (Medusa modules, workflows, links, routes, subscribers).
+   - `consilium-scout-frontend` for `divinipress-store/` (storefront) AND `divinipress-backend/src/admin/` (Medusa admin UI — owned by frontend per the §4.1.1 sub-carve).
+   - `consilium-scout-backend` for `divinipress-backend/` excluding `src/admin/` (Medusa modules, workflows, links, routes, subscribers).
    - `consilium-scout-integration` for the wire between repos (SDK boundary, custom route shapes, shared types).
 4. **Brief magistrate exchange** when my reading is uncertain. Two or three sharp narrowing questions before any dispatch. No scouts during exchange.
 5. **Generalist triage scout fallback** when even exchange fails to narrow lanes (open-ended discovery, Imperator unsure of surface). The retained `consilium-scout` reads the brainstorm and reports which lanes the work touches; specialists then deploy.
@@ -708,19 +791,25 @@ My context window belongs to the Imperator, not to file-reading. I read files di
 **Each scout carries the Invocation in its system prompt.** The user-scope agent files at `~/.claude/agents/consilium-scout-{frontend,backend,integration}.md` and the retained `~/.claude/agents/consilium-scout.md` all bake the Invocation into their system prompts. I do not paste the oath into any dispatch prompt — the scouts already carry it. They defend the wall too; their questions inform the work, and their mistakes would feed MISUNDERSTANDINGs into the spec.
 ```
 
-- [ ] **Step 3: Verify the edit applied cleanly**
-
-Run:
+- [ ] **Step 3: Verify the edit applied cleanly AND surrounding paragraphs survived**
 
 ```bash
-grep -F 'lane-driven specialist dispatch' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
-grep -F 'think → state lane → confirm → dispatch' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
-grep -cF '`consilium-scout-' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
-```
+SKILL=/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
 
-Expected:
-- First two greps: each returns 1 match.
-- Third grep: returns 4 (one each for frontend, backend, integration in the dispatch list, plus one in the agents-system-prompt paragraph).
+# New content present
+grep -qF 'lane-driven specialist dispatch' "$SKILL" || { echo "FAIL: new content missing"; exit 1; }
+grep -qF 'think → state lane → confirm → dispatch' "$SKILL" || { echo "FAIL: pattern line missing"; exit 1; }
+
+# Specialist agent names present (3, plus mentions in agents-system-prompt paragraph)
+[ "$(grep -cF 'consilium-scout-' "$SKILL")" -ge 3 ] || { echo "FAIL: specialist names missing"; exit 1; }
+
+# Surrounding Phase 1 paragraphs untouched
+grep -qF '**Domain knowledge.**' "$SKILL" || { echo "FAIL: Domain knowledge paragraph deleted"; exit 1; }
+grep -qF '**Scope assessment.**' "$SKILL" || { echo "FAIL: Scope assessment paragraph deleted"; exit 1; }
+grep -qF '**Medusa Rig during reconnaissance.**' "$SKILL" || { echo "FAIL: Medusa Rig paragraph deleted"; exit 1; }
+
+echo "OK: T6 edit applied, Phase 1 surrounding paragraphs preserved"
+```
 
 - [ ] **Step 4: Commit**
 
@@ -734,16 +823,24 @@ git commit -m "feat(consul-scouts/T6): rewrite Consul Phase 1 to lane-driven spe
 
 ### Task 7: Update Consul SKILL.md Phase 3 codebase-ambiguity scout reference
 
-> **Confidence: High** — implements [spec §4.6](./spec.md#46-consul-skill-changes) Phase 3 update; the Censor flagged that Phase 3 also dispatches scouts (line 150) and must reference the new model. Pre-edit content verified at SKILL.md lines 148-153.
+> **Confidence: High.** Implements [spec §4.6](./spec.md#46-consul-skill-changes) Phase 3 update. T7's `old_string` is the Phase 3 ambiguity-elimination paragraph (text-keyed, line-immune); the Edit tool matches by content, so T6's prepended content does not affect T7's success.
 
 **Files:**
-- Modify: `/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md` (Phase 3 ambiguity-elimination subsection, lines ~148-153)
+- Modify: `/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md`
 
-- [ ] **Step 1: Read the current ambiguity-elimination paragraph**
+**Depends on:** T6 (same file; serial execution).
 
-Run: `sed -n '148,153p' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md`
+- [ ] **Step 1: Confirm pre-edit content presence (content-match, not line-match)**
 
-Confirm the paragraph starts with `**Ambiguity elimination.**` and lists three classifications.
+```bash
+SKILL=/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
+
+# Confirm Ambiguity elimination paragraph still present (T6's edit shifted lines but preserved this paragraph)
+grep -qF '**Ambiguity elimination.**' "$SKILL" || { echo "FAIL: Ambiguity elimination paragraph absent"; exit 1; }
+grep -qF '**Codebase ambiguity** — I dispatch a scout to verify.' "$SKILL" || { echo "FAIL: pre-edit Codebase ambiguity bullet absent"; exit 1; }
+
+echo "OK: pre-edit content present, ready to apply Edit"
+```
 
 - [ ] **Step 2: Apply the Edit**
 
@@ -765,9 +862,10 @@ Confirm the paragraph starts with `**Ambiguity elimination.**` and lists three c
 
 - [ ] **Step 3: Verify the edit applied cleanly**
 
-Run: `grep -F 'using the lane-driven dispatch model from Phase 1' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md`
-
-Expected: 1 match.
+```bash
+grep -qF 'using the lane-driven dispatch model from Phase 1' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md || { echo "FAIL"; exit 1; }
+echo "OK: T7 edit applied"
+```
 
 - [ ] **Step 4: Commit**
 
@@ -780,20 +878,22 @@ git commit -m "feat(consul-scouts/T7): update Consul Phase 3 ambiguity scout to 
 
 ### Task 8: Add compendium refresh ritual section to Consul SKILL.md
 
-> **Confidence: High** — implements [spec §4.4 refresh trigger](./spec.md#44-pitfalls-compendium) and [§6 deliverable 7](./spec.md#6-deliverables-ordered-by-build-readiness). The new section documents the manual-trigger refresh ritual and the staleness-signal convention.
+> **Confidence: High.** Implements [spec §4.4 refresh trigger](./spec.md#44-pitfalls-compendium) and [§6 deliverable 7](./spec.md#6-deliverables-ordered-by-build-readiness). Inserts a new sub-section between Phase 1 and Phase 2 of the Consul SKILL. Edit tool is content-keyed; T6/T7's prior edits do not affect the uniqueness of `### Phase 2: Deliberation` (verified unique pre-edit). T8's verification asserts post-edit count of `### Phase 2: Deliberation` is exactly 1.
 
 **Files:**
-- Modify: `/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md` (insert new section after Phase 1 Reconnaissance — between Phase 1 and Phase 2)
+- Modify: `/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md`
 
-- [ ] **Step 1: Locate insertion point**
+**Depends on:** T7 (same file; serial execution).
 
-Run: `grep -n '^### Phase 2' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md`
+- [ ] **Step 1: Confirm Phase 2 header is unique (precondition for Edit)**
 
-This is the line where `### Phase 2: Deliberation` begins. The new section will be inserted directly above it (i.e., the new section ends, then a blank line, then the Phase 2 header).
+```bash
+SKILL=/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
+[ "$(grep -c '^### Phase 2: Deliberation' "$SKILL")" -eq 1 ] || { echo "FAIL: Phase 2 header not unique"; exit 1; }
+echo "OK: Phase 2 header unique, ready to apply Edit"
+```
 
 - [ ] **Step 2: Apply the Edit**
-
-Use the Edit tool. The `old_string` is the Phase 2 header (which is unique in the file); the `new_string` prepends the new section before it.
 
 `old_string`:
 ```
@@ -806,7 +906,7 @@ Use the Edit tool. The `old_string` is the Phase 2 header (which is unique in th
 
 Each specialist scout (`consilium-scout-frontend`, `consilium-scout-backend`, `consilium-scout-integration`) carries a `## Pitfalls Compendium` section sourced from the case archive. The compendium is static — baked into the agent file at creation time and on every manual refresh.
 
-**Refresh trigger.** The Imperator says, in plain language: *"refresh the pitfalls compendium"* (or any clear variant). This is the only trigger; there is no automated post-case refresh in MVP.
+**Refresh trigger.** The Imperator says, in plain language: *"refresh the pitfalls compendium"* (or any clear variant). This trigger is Consul-scoped — Medicus and Legatus do not initiate refreshes, though they may surface stale-compendium signals to the Imperator. There is no automated post-case refresh in MVP.
 
 **Refresh procedure.** When the Imperator calls for a refresh:
 
@@ -821,20 +921,17 @@ Each specialist scout (`consilium-scout-frontend`, `consilium-scout-backend`, `c
 ### Phase 2: Deliberation
 ```
 
-- [ ] **Step 3: Verify the new section is present and Phase 2 header is preserved**
-
-Run:
+- [ ] **Step 3: Verify the new section is present and Phase 2 header remains unique**
 
 ```bash
-grep -n '^### Phase 1.5: Compendium Refresh Ritual' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
-grep -n '^### Phase 2: Deliberation' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
-grep -F 'refresh the pitfalls compendium' /Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
-```
+SKILL=/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md
 
-Expected:
-- Phase 1.5 header found (1 line number returned).
-- Phase 2 header found (1 line number returned, larger than Phase 1.5's).
-- Refresh-trigger phrase found.
+grep -qF '### Phase 1.5: Compendium Refresh Ritual' "$SKILL" || { echo "FAIL: new section header missing"; exit 1; }
+[ "$(grep -c '^### Phase 2: Deliberation$' "$SKILL")" -eq 1 ] || { echo "FAIL: Phase 2 header not exactly 1 post-edit"; exit 1; }
+grep -qF 'refresh the pitfalls compendium' "$SKILL" || { echo "FAIL: refresh trigger phrase missing"; exit 1; }
+
+echo "OK: T8 edit applied, Phase 2 header still unique"
+```
 
 - [ ] **Step 4: Commit**
 
@@ -845,26 +942,33 @@ git commit -m "feat(consul-scouts/T8): add Phase 1.5 compendium refresh ritual t
 
 ---
 
-### Task 9: Update Tribune SKILL.md scout dispatch to lane-driven
+### Task 9: Update Tribune SKILL.md scout dispatch (Phase 3 — extended edit window)
 
-> **Confidence: High** — implements [spec §4.7 cross-skill scope](./spec.md#47-cross-skill-scope) for the Medicus. Pre-edit content verified at tribune SKILL.md lines 152-157. The Medicus's existing debug-lane taxonomy at `$CONSILIUM_DOCS/doctrine/lane-classification.md` maps to specialist scouts per the mapping documented in spec §4.7.
+> **Confidence: High.** Implements [spec §4.7 cross-skill scope](./spec.md#47-cross-skill-scope) for the Medicus. Pre-edit content verified at tribune SKILL.md lines 152-156 (extended from iteration-1 lines 152-154 to include the orphan "scout carries the Invocation" paragraph at line 156, which would otherwise survive the edit and produce singular/plural prose incoherence). The Medicus's debug-lane taxonomy at `$CONSILIUM_DOCS/doctrine/lane-classification.md` maps to specialist scouts as documented in spec §4.7.
 
 **Files:**
-- Modify: `/Users/milovan/projects/Consilium/claude/skills/tribune/SKILL.md` (Phase 3 — Reconnaissance section, lines ~152-157)
+- Modify: `/Users/milovan/projects/Consilium/claude/skills/tribune/SKILL.md`
 
-- [ ] **Step 1: Read the current section**
+**Depends on:** none (parallel-feasible).
 
-Run: `sed -n '152,157p' /Users/milovan/projects/Consilium/claude/skills/tribune/SKILL.md`
+- [ ] **Step 1: Confirm pre-edit content presence**
 
-Confirm the section header is `### Phase 3 — Reconnaissance` followed by the `Dispatch consilium-scout subagents.` paragraph.
+```bash
+SKILL=/Users/milovan/projects/Consilium/claude/skills/tribune/SKILL.md
+grep -qF 'Dispatch `consilium-scout` subagents.' "$SKILL" || { echo "FAIL"; exit 1; }
+grep -qF 'The scout carries the Invocation in its system prompt.' "$SKILL" || { echo "FAIL: orphan paragraph missing"; exit 1; }
+echo "OK: pre-edit content present"
+```
 
-- [ ] **Step 2: Apply the Edit**
+- [ ] **Step 2: Apply the Edit (extended window covers both paragraphs)**
 
 `old_string`:
 ```
 ### Phase 3 — Reconnaissance
 
 Dispatch `consilium-scout` subagents. Scout prompts carry reproduction requests, grep targets, and — when Medusa is in scope — the required `medusa-dev:*` skill name(s) + explicit instruction to query `mcp__medusa__ask_medusa_question` before assuming API shape.
+
+The scout carries the Invocation in its system prompt. I do not paste the oath into the dispatch prompt — the scout already carries it. My context window belongs to the Imperator, not to file-reading. I read files directly only when the file is my own reference (lane guides, diagnosis-packet template, known-gaps protocol) or when the Imperator hands me a specific short path.
 ```
 
 `new_string`:
@@ -873,48 +977,54 @@ Dispatch `consilium-scout` subagents. Scout prompts carry reproduction requests,
 
 Dispatch lane-specialist scouts via the lane-driven dispatch model. Map the case's debug lane (per `$CONSILIUM_DOCS/doctrine/lane-classification.md`) to the matching specialist:
 
-- `storefront`, `storefront-super-admin`, `admin-dashboard` → `consilium-scout-frontend`
+- `storefront`, `storefront-super-admin`, `admin-dashboard` → `consilium-scout-frontend` (admin-dashboard files at `divinipress-backend/src/admin/` are owned by the frontend specialist per spec §4.1.1 sub-carve)
 - `medusa-backend` → `consilium-scout-backend`
 - `cross-repo` → `consilium-scout-integration` (or both frontend and backend in parallel for a deeper read)
 - `unknown` → `consilium-scout` (generalist) for triage; specialists then deploy after lanes are identified
 
 Scout prompts carry reproduction requests, grep targets, and — when Medusa is in scope — the required `medusa-dev:*` skill name(s) + explicit instruction to query `mcp__medusa__ask_medusa_question` before assuming API shape. The frontend specialist's tool subset excludes Medusa MCP; do not dispatch it for Medusa-doctrine queries.
+
+Each specialist (and the retained generalist) carries the Invocation in its system prompt. I do not paste the oath into the dispatch prompt — the scouts already carry it. My context window belongs to the Imperator, not to file-reading. I read files directly only when the file is my own reference (lane guides, diagnosis-packet template, known-gaps protocol) or when the Imperator hands me a specific short path.
 ```
 
 - [ ] **Step 3: Verify the edit applied cleanly**
 
-Run:
-
 ```bash
-grep -F 'Map the case' /Users/milovan/projects/Consilium/claude/skills/tribune/SKILL.md
-grep -cF '`consilium-scout-' /Users/milovan/projects/Consilium/claude/skills/tribune/SKILL.md
-```
+SKILL=/Users/milovan/projects/Consilium/claude/skills/tribune/SKILL.md
+grep -qF 'Map the case' "$SKILL" || { echo "FAIL"; exit 1; }
+[ "$(grep -cF 'consilium-scout-' "$SKILL")" -ge 3 ] || { echo "FAIL: insufficient specialist references"; exit 1; }
+# Singular "the scout" reference is now plural "scouts" — verify
+! grep -qF 'The scout carries the Invocation' "$SKILL" || { echo "FAIL: orphan singular reference survived"; exit 1; }
+grep -qF 'Each specialist (and the retained generalist) carries the Invocation' "$SKILL" || { echo "FAIL: plural form missing"; exit 1; }
 
-Expected:
-- First grep: 1 match.
-- Second grep: at least 3 matches (frontend, backend, integration in the lane mapping).
+echo "OK: T9 edit applied, no singular/plural incoherence"
+```
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add claude/skills/tribune/SKILL.md
-git commit -m "feat(consul-scouts/T9): update Tribune Phase 3 to lane-driven specialist dispatch"
+git commit -m "feat(consul-scouts/T9): update Tribune Phase 3 to lane-driven specialist dispatch (extended window for prose coherence)"
 ```
 
 ---
 
 ### Task 10: Update Edicts SKILL.md scout dispatch to lane-driven
 
-> **Confidence: High** — implements [spec §4.7](./spec.md#47-cross-skill-scope) for the Legatus's plan-authoring reconnaissance. Pre-edit content verified at edicts SKILL.md lines 116-125.
+> **Confidence: High.** Implements [spec §4.7](./spec.md#47-cross-skill-scope) for the Legatus's plan-authoring reconnaissance. Pre-edit content verified at edicts SKILL.md line 123.
 
 **Files:**
-- Modify: `/Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md` (Reading the Ground section, line ~123)
+- Modify: `/Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md`
 
-- [ ] **Step 1: Read the current paragraph**
+**Depends on:** none (parallel-feasible).
 
-Run: `sed -n '120,125p' /Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md`
+- [ ] **Step 1: Confirm pre-edit content presence**
 
-Confirm the paragraph contains `If I must dispatch a scout` followed by `consilium-scout`.
+```bash
+SKILL=/Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md
+grep -qF '**If I must dispatch a scout** to verify codebase state' "$SKILL" || { echo "FAIL"; exit 1; }
+echo "OK"
+```
 
 - [ ] **Step 2: Apply the Edit**
 
@@ -927,26 +1037,22 @@ Confirm the paragraph contains `If I must dispatch a scout` followed by `consili
 ```
 **If I must dispatch a scout** to verify codebase state that the doctrine cannot answer, I dispatch via the lane-driven dispatch model:
 
-- `consilium-scout-frontend` for `divinipress-store/` (storefront + admin) terrain.
-- `consilium-scout-backend` for `divinipress-backend/` (Medusa modules, workflows, links, routes, subscribers).
+- `consilium-scout-frontend` for `divinipress-store/` (storefront) AND `divinipress-backend/src/admin/` (Medusa admin UI per spec §4.1.1 sub-carve).
+- `consilium-scout-backend` for `divinipress-backend/` excluding `src/admin/` (Medusa modules, workflows, links, routes, subscribers).
 - `consilium-scout-integration` for the wire (SDK boundary, custom route shapes, shared types).
 - `consilium-scout` (generalist) for meta-Consilium / infrastructure / zero-lane queries, or as triage fallback when lane reading fails.
 
 Each scout carries the Invocation in its user-scope agent system prompt at `~/.claude/agents/consilium-scout*.md` — I do not paste the oath into any dispatch prompt. I dispatch focused questions and receive concise reports with file:line evidence.
 ```
 
-- [ ] **Step 3: Verify the edit applied cleanly**
-
-Run:
+- [ ] **Step 3: Verify**
 
 ```bash
-grep -F 'lane-driven dispatch model' /Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md
-grep -cF '`consilium-scout-' /Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md
+SKILL=/Users/milovan/projects/Consilium/claude/skills/edicts/SKILL.md
+grep -qF 'lane-driven dispatch model' "$SKILL" || { echo "FAIL"; exit 1; }
+[ "$(grep -cF 'consilium-scout-' "$SKILL")" -ge 3 ] || { echo "FAIL"; exit 1; }
+echo "OK"
 ```
-
-Expected:
-- First grep: 1 match.
-- Second grep: at least 3 matches.
 
 - [ ] **Step 4: Commit**
 
@@ -959,16 +1065,20 @@ git commit -m "feat(consul-scouts/T10): update Edicts plan-recon to lane-driven 
 
 ### Task 11: Update verification protocol §2 dispatch table
 
-> **Confidence: High** — implements [spec §4.7](./spec.md#47-cross-skill-scope) for the verification protocol. Pre-edit table verified at protocol.md lines 41-58. The table extension adds three new rows for the specialist subagents alongside the existing `consilium-scout` row.
+> **Confidence: High.** Implements [spec §4.7](./spec.md#47-cross-skill-scope) for the verification protocol. Pre-edit table verified at protocol.md line 56. The table extension adds three new rows; verification asserts both row count and specialist-name presence.
 
 **Files:**
-- Modify: `/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md` (§2 Dispatch Mechanics role table, lines ~43-58)
+- Modify: `/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md`
 
-- [ ] **Step 1: Read the current table**
+**Depends on:** none (parallel-feasible).
 
-Run: `sed -n '43,58p' /Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md`
+- [ ] **Step 1: Confirm pre-edit row presence and uniqueness**
 
-Confirm the table includes the row `| Reconnaissance scout | \`consilium-scout\` |`.
+```bash
+PROTO=/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md
+[ "$(grep -cF '| Reconnaissance scout |' "$PROTO")" -eq 1 ] || { echo "FAIL: Reconnaissance scout row not unique pre-edit"; exit 1; }
+echo "OK"
+```
 
 - [ ] **Step 2: Apply the Edit**
 
@@ -980,25 +1090,21 @@ Confirm the table includes the row `| Reconnaissance scout | \`consilium-scout\`
 `new_string`:
 ```
 | Reconnaissance scout (generalist; triage fallback; meta-Consilium / non-Divinipress recon) | `consilium-scout` |
-| Reconnaissance scout (frontend lane: `divinipress-store/`) | `consilium-scout-frontend` |
-| Reconnaissance scout (backend lane: `divinipress-backend/`) | `consilium-scout-backend` |
+| Reconnaissance scout (frontend lane: `divinipress-store/` + `divinipress-backend/src/admin/`) | `consilium-scout-frontend` |
+| Reconnaissance scout (backend lane: `divinipress-backend/` excluding `src/admin/`) | `consilium-scout-backend` |
 | Reconnaissance scout (integration lane: cross-repo wire) | `consilium-scout-integration` |
 ```
 
-- [ ] **Step 3: Verify the edit applied cleanly**
-
-Run:
+- [ ] **Step 3: Verify**
 
 ```bash
-grep -cF '| Reconnaissance scout' /Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md
-grep -F 'consilium-scout-frontend' /Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md
-grep -F 'consilium-scout-backend' /Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md
-grep -F 'consilium-scout-integration' /Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md
+PROTO=/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md
+[ "$(grep -cF '| Reconnaissance scout' "$PROTO")" -eq 4 ] || { echo "FAIL: row count != 4"; exit 1; }
+grep -qF 'consilium-scout-frontend' "$PROTO" || { echo "FAIL"; exit 1; }
+grep -qF 'consilium-scout-backend' "$PROTO" || { echo "FAIL"; exit 1; }
+grep -qF 'consilium-scout-integration' "$PROTO" || { echo "FAIL"; exit 1; }
+echo "OK"
 ```
-
-Expected:
-- First grep: 4 matches (one row per specialist + generalist).
-- Each of the next three: 1 match.
 
 - [ ] **Step 4: Commit**
 
@@ -1009,12 +1115,75 @@ git commit -m "feat(consul-scouts/T11): extend verification protocol §2 table w
 
 ---
 
-### Task 12: Refusal-contract verification (manual / Imperator-or-Legatus)
+### Task 12: Update testing-agents.md scout reference to lane-driven
 
-> **Confidence: Medium** — implements [spec §5 success criterion 5](./spec.md#5-success-criteria). The soldier toolkit lacks the Agent dispatch capability needed to test refusal contracts; this task is executed by the Imperator (or by the Legatus running in the main session). The contract is observable: a cross-surface dispatch must produce only refusal + sibling pointer + zero claims about the refused subject.
+> **Confidence: High.** Addresses Provocator/negative-claim GAP. The doctrine doc at `claude/docs/testing-agents.md:45` references the bare `consilium-scout` for a `divinipress-store` recon example; this contradicts the spec's "no skill dispatches the bare scout for Divinipress recon" claim post-implementation. Updating the example to use `consilium-scout-frontend` (since the example's path `src/app/_hooks/useSavedProduct.ts` is in `divinipress-store/`).
 
 **Files:**
-- No file changes. This is a runtime verification task.
+- Modify: `/Users/milovan/projects/Consilium/claude/docs/testing-agents.md`
+
+**Depends on:** none (parallel-feasible).
+
+- [ ] **Step 1: Read the current scout-dispatch example**
+
+```bash
+DOC=/Users/milovan/projects/Consilium/claude/docs/testing-agents.md
+grep -n 'consilium-scout' "$DOC"
+```
+
+Expected: at least one match around line 45. The match is an example dispatching `consilium-scout` with a prompt about `src/app/_hooks/useSavedProduct.ts` (a `divinipress-store/` path).
+
+Read the surrounding context with `sed -n '40,55p' "$DOC"` to capture the full example block.
+
+- [ ] **Step 2: Apply the Edit**
+
+The exact pre-edit content depends on the file's current text. The soldier reads the example block (Step 1) and applies an Edit replacing `consilium-scout` with `consilium-scout-frontend` ONLY in the testing example whose subject path is in `divinipress-store/`.
+
+`old_string` (example pattern; soldier extracts the actual line from Step 1):
+```
+subagent_type: "consilium-scout"
+```
+
+`new_string`:
+```
+subagent_type: "consilium-scout-frontend"
+```
+
+If multiple `consilium-scout` references exist in the file, use a longer `old_string` that includes enough surrounding context to make it unique to the divinipress-store-recon example. Other references (e.g., generalist scout examples) should remain unchanged unless they are also Divinipress-recon.
+
+- [ ] **Step 3: Verify**
+
+```bash
+DOC=/Users/milovan/projects/Consilium/claude/docs/testing-agents.md
+grep -qF 'consilium-scout-frontend' "$DOC" || { echo "FAIL: replacement not present"; exit 1; }
+# The bare consilium-scout reference for divinipress-store recon should no longer exist
+# (general-context references to consilium-scout for non-Divinipress contexts may still exist; that's fine)
+echo "OK: divinipress-store testing example updated to lane-driven"
+```
+
+- [ ] **Step 4: Commit (with handoff signal for T13)**
+
+```bash
+git add claude/docs/testing-agents.md
+git commit -m "feat(consul-scouts/T12): update testing-agents.md scout reference to lane-driven — automated tasks complete; T13 (manual refusal verification) is Imperator/Legatus-only"
+```
+
+---
+
+### Task 13: Refusal-contract verification (MANUAL — Imperator/Legatus only)
+
+> ⚠️ **MANUAL TASK — IMPERATOR / LEGATUS ONLY** ⚠️
+>
+> The soldier toolkit lacks the Agent dispatch capability. This task CANNOT be executed by a soldier under `consilium:legion`. The dispatcher (Legatus or Imperator in the main session, both of which have Agent capability) must execute T13 manually after T1-T12 complete.
+>
+> **Legion sub-skill:** when reaching T13, report `DONE_WITH_CONCERNS` pointing the Imperator at this manual gate before declaring the run complete. The T12 commit message ends with "T13 (manual refusal verification) is Imperator/Legatus-only" as the handoff signal.
+
+> **Confidence: Medium.** Implements [spec §5 success criterion 5](./spec.md#5-success-criteria). The contract is observable: a cross-surface dispatch must produce only refusal + sibling pointer + zero claims about the refused subject. PASS/DEGRADED/FAIL outcomes are documented for Imperator's judgment on shipping.
+
+**Files:**
+- Modify: `/Users/milovan/projects/Consilium/docs/cases/2026-04-27-consul-specialist-scouts/spec.md` (status field, Step 5)
+
+**Depends on:** T3, T4, T5 (specialist agent files must exist) and T12 (handoff signal landed).
 
 - [ ] **Step 1: Dispatch the frontend scout with a backend question**
 
@@ -1029,8 +1198,6 @@ Agent tool:
 ```
 
 **Expected response:** A refusal naming the out-of-scope subject ("backend workflow idempotency"), a pointer to `consilium-scout-backend`, and **no claims about how the workflow actually handles idempotency**.
-
-**Failure modes:** if the response includes any claim about the backend behavior (even hedged with "outside my scope, but..."), the refusal contract has degraded. Surface to Imperator.
 
 - [ ] **Step 2: Dispatch the backend scout with a frontend question**
 
@@ -1060,37 +1227,56 @@ Agent tool:
 
 For each test, record one of:
 - **PASS** — refusal + pointer + no out-of-scope claims.
-- **DEGRADED** — refusal present but contains hedged claims about the refused subject.
+- **DEGRADED** — refusal present but contains hedged claims about the refused subject ("outside my scope, but…").
 - **FAIL** — no refusal; scout answered the out-of-scope question.
 
-If any test is DEGRADED or FAIL, the §4.1.1 filesystem-access constraint (which is the structural backstop) must be tightened in a follow-up. The MVP can still ship if PASS dominates; DEGRADED requires Imperator's judgment on whether to accept or revise.
+- [ ] **Step 5: Update spec status if all PASS (assertable command)**
 
-- [ ] **Step 5: Update spec status if all PASS**
+If all three tests PASS, update the spec's status field via the Edit tool:
 
-If all three tests PASS, append a one-line note to the spec's status field:
-
-```bash
-# In docs/cases/2026-04-27-consul-specialist-scouts/spec.md, change:
-# Status: Iteration 2 (post-verification — 18 keepers applied, 9 rejections in `verification-rejections.md`)
-# to:
-# Status: Implemented (refusal-contract verified — frontend/backend/integration cross-surface tests PASS)
+`old_string`:
+```
+|Status|Iteration 2 (post-verification — 18 keepers applied, 9 rejections in `verification-rejections.md`)|
 ```
 
-Commit:
+`new_string`:
+```
+|Status|Implemented (refusal-contract verified — frontend/backend/integration cross-surface tests PASS)|
+```
+
+Then commit:
 
 ```bash
+cd /Users/milovan/projects/Consilium
 git add docs/cases/2026-04-27-consul-specialist-scouts/spec.md
-git commit -m "feat(consul-scouts/T12): refusal-contract verification PASS — implementation complete"
+git commit -m "feat(consul-scouts/T13): refusal-contract verification PASS — implementation complete"
 ```
 
-If any test is DEGRADED or FAIL, escalate to the Imperator before declaring done.
+If any test is DEGRADED or FAIL, escalate to the Imperator before declaring done. Do not update the spec status; the case stays in iteration-2 status until the Imperator decides whether to accept DEGRADED MVP, tighten enforcement, or revise.
 
 ---
 
 ## Implementation summary
 
-12 tasks. Build readiness order is dependency-driven: prompt template (T1) → mining (T2) → agent files (T3-T5) → Consul SKILL updates (T6-T8) → cross-skill updates (T9-T11) → manual refusal verification (T12).
+13 tasks. Build readiness:
 
-T1, T6-T11 depend on no other tasks (parallel-feasible). T2 depends on T1. T3-T5 depend on T2. T12 depends on T3-T5.
+|task|file(s)|depends on|parallel-feasible with|
+|-|-|-|-|
+|T1|`claude/skills/consul/case-mining-prompt.md` (new)|none|T6, T9, T10, T11, T12|
+|T2|`docs/cases/.../mined-compendia.md` (new)|T1|—|
+|T3|`~/.claude/agents/consilium-scout-frontend.md` (new)|T2|T4, T5 (different agent files)|
+|T4|`~/.claude/agents/consilium-scout-backend.md` (new)|T2|T3, T5|
+|T5|`~/.claude/agents/consilium-scout-integration.md` (new)|T2|T3, T4|
+|T6|`claude/skills/consul/SKILL.md` (Phase 1)|none|T1, T9, T10, T11, T12|
+|T7|`claude/skills/consul/SKILL.md` (Phase 3)|T6 (same file)|—|
+|T8|`claude/skills/consul/SKILL.md` (Phase 1.5 insertion)|T7 (same file)|—|
+|T9|`claude/skills/tribune/SKILL.md`|none|T1, T6, T10, T11, T12|
+|T10|`claude/skills/edicts/SKILL.md`|none|T1, T6, T9, T11, T12|
+|T11|`claude/skills/references/verification/protocol.md`|none|T1, T6, T9, T10, T12|
+|T12|`claude/docs/testing-agents.md`|none|T1, T6, T9, T10, T11|
+|T13 (MANUAL)|`docs/cases/.../spec.md` (status update on PASS)|T3, T4, T5, T12|—|
 
-The legion can interleave: dispatch a soldier for T1 in parallel with T6, T9, T10, T11 (all touch different files); serialize T6+T7+T8 since they all touch `consul/SKILL.md`; T2 → T3 → T4 → T5 → T12 is the serial spine.
+The legion sub-skill must:
+- Serialize T6 → T7 → T8 (same file).
+- Treat T13 as **NOT soldier-executable**: report `DONE_WITH_CONCERNS` on reaching T13 with a pointer to the manual gate.
+- All other tasks may run in parallel where dependencies allow.

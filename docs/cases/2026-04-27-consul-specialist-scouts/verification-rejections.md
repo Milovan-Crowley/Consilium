@@ -98,6 +98,70 @@ The §4.1.1 filesystem-access constraint added in iteration 2 *does* address the
 
 ---
 
-## Closing note
+## Closing note (Iteration 1 — spec verification)
 
 The Provocator lanes earned their keep on iteration 1 — eighteen findings produced concrete, addressable improvements that are now in the iteration-2 spec. These nine rejections are the magistrate's judgment, made on merit, with reasoning recorded so future verification rounds do not re-litigate them.
+
+---
+
+# Verification Rejections — Iteration 2 (Plan)
+
+After plan iteration 1 was written, the Praetor + five Provocator lanes verified the plan. The merge produced ~14 GAPs and ~9 CONCERNs. Substantive findings were applied as iteration-2 plan revisions (T2 hardening, T6/T7/T8 serialization markers, T9 extended edit window, new T12 for `testing-agents.md`, T13 manual-task discipline, T3-T5 commit ritual simplification, wording cleanup, admin-surface spec patch). Five CONCERNs are rejected here on merit per the Codex (CONCERN may be politely rejected with reasoning when the magistrate has context the verifier lacked).
+
+---
+
+## 10. "T11 whitespace-normalization defense"
+
+**Source:** Provocator / failure-mode-analysis lane.
+
+**Finding (paraphrased):** T11's Edit `old_string` for the verification protocol §2 table row has no whitespace-normalization defense. If the actual line in protocol.md has trailing whitespace, leading spaces, or alternative space-runs around pipe characters that the plan's `old_string` does not reproduce, Edit fails.
+
+**Rejection reasoning.** The Edit tool's failure mode is loud (the tool errors with a clear "old_string not found" message). The soldier reads the actual line via `sed -n` in Step 1 and corrects the `old_string` if needed. Defensive paranoia at the spec layer when the runtime catches the issue with a clear error message is over-engineering.
+
+---
+
+## 11. "T1 single-Write fragility (90 lines)"
+
+**Source:** Provocator / failure-mode-analysis lane.
+
+**Finding (paraphrased):** T1 Step 1 writes ~90 lines of markdown content as a single Write call. Markdown content includes nested code fences and escape sequences in regex examples. If the Write tool's content has any escape-issue, the Write fails or produces malformed content. There is no incremental write strategy.
+
+**Rejection reasoning.** Single Write calls of 90 lines are routine in the Consilium plan-execution flow. Failures are loud (file structurally malformed when the next task reads it via `cat`). Mitigation already exists: T2 Step 1 reads the template before using it; if the template is malformed, T2 halts. Adding incremental-write machinery for a routine operation is over-engineering.
+
+---
+
+## 12. "T6 grep verification expectation fragility re future references"
+
+**Source:** Provocator / overconfidence-audit lane.
+
+**Finding (paraphrased):** T6 Step 3 verifies `grep -cF '\`consilium-scout-' SKILL.md` returns 4. If a future reference to `consilium-scout-` is added to consul SKILL.md outside the dispatch list, this verification breaks.
+
+**Rejection reasoning.** Speculative future-edit risk. The verification tests the iteration-1 / iteration-2 implementation state, not all possible future states. Plans are not robust to all future edits; they verify the current intent. If a future edit changes the count, the verification step is updated then.
+
+---
+
+## 13. "T8 hidden-character drift"
+
+**Source:** Provocator / failure-mode-analysis lane.
+
+**Finding (paraphrased):** T8's `old_string` is a single-line heading. If the file has a hidden character difference (CRLF vs LF, BOM, invisible Unicode) on that heading line, the Edit fails.
+
+**Rejection reasoning.** The Consilium repo uses LF-encoded plain markdown by convention (verified across all skill files). Hidden-character drift would surface in many other places before T8. Defensive paranoia for a non-existent failure mode.
+
+---
+
+## 14. "Phase 1.5 numbering convention break"
+
+**Source:** Provocator / edge-case-hunting lane (CONCERN).
+
+**Finding (paraphrased):** T8 inserts `### Phase 1.5: Compendium Refresh Ritual` between Phase 1 and Phase 2. The Consul skill's Phase numbering convention is currently 0, 1, 2, 3 (linear integers). Introducing Phase 1.5 breaks the convention.
+
+**Rejection reasoning.** Aesthetic concern, not functional. The "Phase 1.5" naming reflects the section's logical placement (refresh is a Phase 1 sub-topic, not a new full phase). Renaming to a non-numbered subsection title is fine if the Imperator prefers, but functional behavior is identical either way. Magistrate's call: keep "Phase 1.5" as the working name.
+
+---
+
+## Closing note (Iteration 2 — plan verification)
+
+The Praetor + Provocator's five lanes earned their keep on iteration-1 plan verification — fourteen GAPs and four CONCERNs produced concrete improvements that are now in the iteration-2 plan. Most notably: the Praetor caught a load-bearing factual error in the spec (admin UI lives at `divinipress-backend/src/admin/`, not `divinipress-store/src/admin/`) that propagated into T3, T4, T9 — exactly the class of mistake the whole specialist-scout architecture is built to prevent. The verifiers worked.
+
+These five rejections are the magistrate's judgment on merit, recorded so future verification rounds do not re-litigate them.
