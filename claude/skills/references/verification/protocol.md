@@ -226,6 +226,8 @@ The Imperator sees the outcome, not the back-and-forth.
 - Plan verification: Praetor + Provocator (2 agents)
 - Campaign review: Censor + Praetor + Provocator (3 agents)
 
+> **Aggregation Contract note.** Counts above are *role* counts, not *dispatch* counts. The Provocator role is operationally decomposed into five lanes (Overconfidence Audit, Assumption Extraction, Failure Mode Analysis, Edge Case Hunting, Negative Claim Attack) for spec and plan verification — each lane is its own parallel dispatch under the Provocator role. Campaign review continues to use a single Provocator dispatch (separate case scope). See §14 Merge Protocol for the role-vs-dispatch wording and §11 Finding Attribution for the lane-suffix presentation rule.
+
 Default: Campaign. The Imperator prefers overkill to underestimation.
 
 ---
