@@ -141,3 +141,29 @@ Per-case decision and audit log. Append-only. Each entry is a decision, override
 **Next action:** Consul dispatches `consilium-custos` per the `Dispatching the Custos` phase of the `/edicts` skill. Pre-Custos five conditions verified: (1) no MISUNDERSTANDING in escalation; (2) no unresolved GAPs after the cap (all 4 fixed in iteration 2); (3) all CONCERNs explicitly handled (6 fixed inline, 6 deferred with documented rationale in this entry); (4) no silent plan modifications (working tree clean per `git status --porcelain` empty after `f30fc9a` commit); (5) Imperator override recorded (this entry).
 
 **Plan SHA:** 76c7a69b811f163f5c4e9536590649cb95873576
+
+---
+
+## Entry: 2026-04-27 — Custos walk 1 BLOCKER — Pre-flight 5 zsh `path` variable collision with `$PATH`
+
+**Type:** verdict
+**Actor:** Custos (Marcus Pernix)
+**Trigger:** First Custos walk on plan iteration 2 (commit `f30fc9a`, plan blob `76c7a69b811f163f5c4e9536590649cb95873576`).
+**Verdict:** BLOCKER
+**Findings:** One execution-blocking GAP (Walk 1 — Shell): Pre-flight 5's loop assigns to `path` and `path_sha`, both of which collide with zsh's special tied-array binding for `$PATH`. On the macOS-default `/bin/zsh`, the assignment `path="${path_sha%:*}"` rewrites `$PATH` to the case-relative file path being iterated; subsequent `git` invocations fail with `command not found` (verified live by Custos: `EXIT=127`). The `2>/dev/null` swallows the stderr; `|| echo "RESOLUTION_FAILED"` fires; conditional trips `DRIFT:`; loop exits 1. The pre-flight gate fires false-DRIFT on a clean repo and halts the campaign before Task 1 ever begins. Custos verified live by running both the broken loop (false-DRIFT exit 1) and a renamed-variable loop (`OK: all 5 target files match plan-authoring blob SHAs` exit 0). Plus 2 advisory CONCERNs (interactive-paste `exit 1` parent-shell hostile; calibration note bounds High to Edit-mechanics but does not name runtime-shell-correctness as a Custos-walk gap). 6 SOUND across all 6 walks.
+
+**Patch (Custos's own recommendation):** rename loop variables `path_sha` → `entry` and `path` → `file` in Pre-flight 5 (lines 78-91 of plan).
+
+**Plan SHA:** 76c7a69b811f163f5c4e9536590649cb95873576
+
+---
+
+## Entry: 2026-04-27 — Imperator action on Custos walk 1 BLOCKER — patch + re-dispatch Custos only
+
+**Type:** decision
+**Actor:** Imperator
+**Trigger:** Custos returned BLOCKER on a single execution-blocking shell-correctness GAP. Four options offered: (1) patch + full Praetor+Provocator+Custos cycle, (2) patch + Custos-only re-walk, (3) override and proceed, (4) escalate beyond Consul.
+**Decision:** Imperator directed: *"2"*. Apply Custos's mandated one-line patch (variable rename `path_sha` → `entry`, `path` → `file`) and re-dispatch Custos only with `## Re-walk Marker` populated. This counts as the one allowed re-walk under PATCH BEFORE DISPATCH semantics; a second non-OK escalates per the Codex 2-iteration cap.
+**Rationale:** The BLOCKER is a single, surgical, zsh-specific shell-correctness fix Custos's own recommendation provides verbatim. Full Praetor+Provocator re-cycle would re-attack ground that was iteration-2-cleared and is unaffected by this rename (the Edits are pure variable-name changes; no contract or semantic shift). The Custos-only re-walk verifies the patch and any walk-6-document-coherence side effects without re-litigating magistrate-territory.
+
+**Plan SHA:** 76c7a69b811f163f5c4e9536590649cb95873576

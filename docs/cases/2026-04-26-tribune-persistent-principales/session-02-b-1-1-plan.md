@@ -75,22 +75,24 @@ Expected: empty output (zero lines, exit code 0).
 Run:
 
 ```bash
-for path_sha in \
+for entry in \
   "claude/skills/references/verification/templates/tribune-persistent.md:8b9d7a8d8c33d89ab911d0f7f0e31d04a8c798ae" \
   "claude/skills/references/verification/templates/tribune-design.md:f30304ed3c47280cd81353d7ef30883b9761dd8d" \
   "claude/skills/references/verification/tribune-log-schema.md:1632e5cf556508b159a2080d1e4f1e4a0a0ddb0e" \
   "claude/skills/references/verification/tribune-protocol-schema.md:b2c5ef9b1f1ab2a30ecef57429a190b0d2637395" \
   "claude/skills/legion/SKILL.md:b8004f1513ab33262c0f4adb035d0224d1f2e663"; do
-  path="${path_sha%:*}"
-  expected="${path_sha##*:}"
-  actual=$(git -C "$HOME/projects/Consilium" rev-parse "HEAD:$path" 2>/dev/null || echo "RESOLUTION_FAILED")
+  file="${entry%:*}"
+  expected="${entry##*:}"
+  actual=$(git -C "$HOME/projects/Consilium" rev-parse "HEAD:$file" 2>/dev/null || echo "RESOLUTION_FAILED")
   if [ "$actual" != "$expected" ]; then
-    echo "DRIFT: $path expected=$expected actual=$actual"
+    echo "DRIFT: $file expected=$expected actual=$actual"
     exit 1
   fi
 done
 echo "OK: all 5 target files match plan-authoring blob SHAs"
 ```
+
+Note on variable naming: the loop uses `entry` and `file` rather than `path_sha` and `path` because zsh treats `path` as a special tied-array form of `$PATH` — assigning to `path` would rewrite `$PATH` to the case-relative file path and break subsequent `git` invocations in the same iteration. This is a zsh-specific runtime hazard the Custos walk surfaced; the Bash tool's default shell on macOS is zsh, so the variable name choice is load-bearing.
 
 Expected: `OK: all 5 target files match plan-authoring blob SHAs` (exit code 0).
 
