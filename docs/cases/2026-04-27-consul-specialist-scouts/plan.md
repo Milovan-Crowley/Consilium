@@ -140,15 +140,20 @@ If you encounter context-budget pressure mid-mining (the archive is too large fo
 If you find zero applicable lessons across all three lanes (genuinely empty archive), emit the empty-block schema and append at the very end (after the Integration Compendium): `MINING_NOTE: zero applicable lessons across all surfaces — archive is sparse or all findings classify as meta-Consilium / infrastructure.`
 ````
 
-- [ ] **Step 2: Verify the file exists**
+- [ ] **Step 2: Verify the file exists and is non-empty**
 
-Run: `ls -la /Users/milovan/projects/Consilium/claude/skills/consul/case-mining-prompt.md`
+Run:
+```bash
+[ -s /Users/milovan/projects/Consilium/claude/skills/consul/case-mining-prompt.md ] || { echo "FAIL: file empty or missing"; exit 1; }
+echo "OK: T1 file present and non-empty"
+```
 
-Expected: file exists, non-empty.
+Expected: `OK: T1 file present and non-empty`.
 
 - [ ] **Step 3: Commit**
 
 ```bash
+cd /Users/milovan/projects/Consilium
 git add claude/skills/consul/case-mining-prompt.md
 git commit -m "feat(consul-scouts/T1): author case-mining prompt template"
 ```
@@ -870,6 +875,7 @@ echo "OK: T7 edit applied"
 - [ ] **Step 4: Commit**
 
 ```bash
+cd /Users/milovan/projects/Consilium
 git add claude/skills/consul/SKILL.md
 git commit -m "feat(consul-scouts/T7): update Consul Phase 3 ambiguity scout to lane-driven model"
 ```
@@ -936,6 +942,7 @@ echo "OK: T8 edit applied, Phase 2 header still unique"
 - [ ] **Step 4: Commit**
 
 ```bash
+cd /Users/milovan/projects/Consilium
 git add claude/skills/consul/SKILL.md
 git commit -m "feat(consul-scouts/T8): add Phase 1.5 compendium refresh ritual to Consul SKILL"
 ```
@@ -1003,6 +1010,7 @@ echo "OK: T9 edit applied, no singular/plural incoherence"
 - [ ] **Step 4: Commit**
 
 ```bash
+cd /Users/milovan/projects/Consilium
 git add claude/skills/tribune/SKILL.md
 git commit -m "feat(consul-scouts/T9): update Tribune Phase 3 to lane-driven specialist dispatch (extended window for prose coherence)"
 ```
@@ -1057,6 +1065,7 @@ echo "OK"
 - [ ] **Step 4: Commit**
 
 ```bash
+cd /Users/milovan/projects/Consilium
 git add claude/skills/edicts/SKILL.md
 git commit -m "feat(consul-scouts/T10): update Edicts plan-recon to lane-driven specialist dispatch"
 ```
@@ -1109,6 +1118,7 @@ echo "OK"
 - [ ] **Step 4: Commit**
 
 ```bash
+cd /Users/milovan/projects/Consilium
 git add claude/skills/references/verification/protocol.md
 git commit -m "feat(consul-scouts/T11): extend verification protocol §2 table with specialist scouts"
 ```
@@ -1164,6 +1174,7 @@ echo "OK: divinipress-store testing example updated to lane-driven"
 - [ ] **Step 4: Commit (with handoff signal for T13)**
 
 ```bash
+cd /Users/milovan/projects/Consilium
 git add claude/docs/testing-agents.md
 git commit -m "feat(consul-scouts/T12): update testing-agents.md scout reference to lane-driven — automated tasks complete; T13 (manual refusal verification) is Imperator/Legatus-only"
 ```
