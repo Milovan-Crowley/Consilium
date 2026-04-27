@@ -5,12 +5,12 @@
 |Date|2026-04-27|
 |Author|Publius Auctor (Consul)|
 |Imperator|Milovan|
-|Status|Draft (pre-verification)|
+|Status|Iteration 2 (post-verification — 18 keepers applied, 9 rejections in `verification-rejections.md`)|
 |Case|`2026-04-27-consul-specialist-scouts`|
 
 ## 1. Problem
 
-The post-spec verification round routinely surfaces GAP and MISUNDERSTANDING findings whose root cause is *terrain misreading*. The Consul reads the codebase incorrectly during reconnaissance, bakes the wrong understanding into the spec, and the Censor or Provocator catches it after the artifact is written. DIV-100 incorporated eight terrain-flavored verifier GAPs into its iteration-2 spec (`docs/cases/2026-04-27-div-100-non-apparel-saved-product/spec.md:9`).
+The post-spec verification round routinely surfaces GAP and MISUNDERSTANDING findings whose root cause is *terrain misreading*. The Consul reads the codebase incorrectly during reconnaissance, bakes the wrong understanding into the spec, and the Censor or Provocator catches it after the artifact is written. DIV-100 incorporated eight verifier GAPs into its iteration-2 spec (`docs/cases/2026-04-27-div-100-non-apparel-saved-product/spec.md:9`); the majority cite codebase facts.
 
 Two structural causes:
 
@@ -30,12 +30,12 @@ Two structural causes:
 
 ## 3. Non-goals
 
-- No change to Censor or Provocator verification behavior.
-- No retirement of the existing `consilium-scout`. It retains its role for non-Divinipress / meta-Consilium recon and serves as triage scout when lane ambiguity blocks specialist dispatch.
+- No change to Censor or Provocator verification *evaluation logic*. Verification protocol's role table will be updated to enumerate the new specialist subagents (§4.7) — vocabulary update only; grading semantics untouched.
+- No retirement of the existing `consilium-scout`. The agent file is retained unchanged; the role shifts from default Consul scout to (a) triage fallback when lane reading fails and (b) recon for zero-lane brainstorms (meta-Consilium / infrastructure work).
 - No doctrine specialist scout. Doctrine reading remains the Consul's own discipline.
 - No depth flag, mode toggle, or `--swarm` parameter. All depth/multiplicity decisions are plain-language Imperator triggers.
 - No dynamic case-archive retrieval at scout dispatch time (out of scope for MVP; static compendium only).
-- No automated post-case compendium refresh. Manual Imperator trigger only.
+- MVP excludes automated post-case compendium refresh; manual Imperator trigger is the default. Auto-refresh via the existing `consilium:audit` skill is flagged for Imperator override at §8.
 
 ## 4. Architecture
 
@@ -51,13 +51,23 @@ Three new agents are created at user-scope (`~/.claude/agents/`):
 
 Each agent file carries:
 
-- The Consilium **Invocation** (verbatim from `consilium-scout`)
-- A **scope contract** in `You own:` / `You refuse:` form (see §4.2)
-- A **tool allowlist** appropriate to the surface (plan-level detail; allowlist must enable the owned scope and disable cross-surface calls that would invite scope creep)
-- A **`## Pitfalls Compendium`** section (see §4.4)
-- An explicit **stance declaration**: "I retrieve facts. I do not produce findings under Codex categories. I am not a verifier."
+- The Consilium **Invocation** (verbatim from `consilium-scout`).
+- A **scope contract** in `You own:` / `You refuse:` form (see §4.2).
+- A **tool allowlist** appropriate to the surface — see also the **filesystem-access constraint** in §4.1.1.
+- A **`## Pitfalls Compendium`** section (see §4.4).
+- An explicit **stance declaration** in second-person form, matching the canonical scout: *"You retrieve facts. You do not produce findings under Codex categories. The MISUNDERSTANDING/GAP/CONCERN/SOUND vocabulary applies to verifiers."*
 
-The existing `consilium-scout` at `~/.claude/agents/consilium-scout.md` is retained unchanged in role and contract; it is no longer the default Consul scout but remains available for triage and non-Divinipress contexts.
+The existing `consilium-scout` file at `~/.claude/agents/consilium-scout.md` is retained with no body changes; what shifts is its role assignment in dispatcher prose. Per §3, the generalist serves as triage fallback (when lane reading fails) and zero-lane recon (meta-Consilium / infrastructure brainstorms).
+
+### 4.1.1 Filesystem-access constraint
+
+Specialist scopes must be enforceable beyond prose. Each specialist's filesystem access is constrained at the tool-allowlist or MCP-filter layer such that:
+
+- `consilium-scout-frontend` cannot read paths under `divinipress-backend/`.
+- `consilium-scout-backend` cannot read paths under `divinipress-store/`.
+- `consilium-scout-integration` reads both repos but only at the boundary (SDK call sites, route handlers, shared types).
+
+The plan layer picks the enforcement mechanism. The contract is the *inability to speculate cross-surface even if prose-refusal degrades*. This makes the §4.2 refusal contract structural rather than purely behavioral.
 
 ### 4.2 Scope contract — `You own:` / `You refuse:`
 
@@ -69,9 +79,9 @@ Contract requirements per specialist:
 |-|-|-|
 |frontend|terrain in `divinipress-store/` and `divinipress-store/src/admin/` — file paths, symbol confirmation, line-cited evidence of existing patterns/components, slice and store boundaries, hydration discipline, prior-art for the component or flow being designed|backend behavior claims, Medusa workflow logic, cross-repo wire-shape claims, business-logic interpretation derived from a storefront call site|
 |backend|Medusa modules, workflows, route handlers, `link.create` boundaries, `query.graph` patterns, idempotency anchors, subscriber boundaries — line-cited evidence from `divinipress-backend/src/`|storefront UI claims, frontend hard-rule judgments, admin-widget behavior inferred from a workflow's audit log|
-|integration|the wire — SDK call sites and the route handlers they reach, custom route shapes (`/store/...`, `/admin/...`), shared types in `divinipress-types`, request/response semantics, status-code contracts|deep internal logic on either side. Walks to the boundary, reports the boundary, points at the matching specialist for internals|
+|integration|the wire — SDK call sites and the route handlers they reach, custom route shapes (`/store/...`, `/admin/...`), shared types where they exist (currently ad-hoc cross-repo; integration scout reads the boundary regardless of whether a shared types package is consolidated), request/response semantics, status-code contracts|deep internal logic on either side. Walks to the boundary, reports the boundary, points at the matching specialist for internals|
 
-**Refusal contract.** A refusal must (a) name the out-of-scope subject, (b) name the correct sibling specialist, (c) return without speculating. Refusals are not findings; they are terminations.
+**Refusal contract.** A refusal must (a) name the out-of-scope subject, (b) name the correct sibling specialist OR — when no specialist owns the surface (cross-all-three-scopes or meta-Consilium) — point back to the generalist `consilium-scout`, (c) return without speculating. Refusals are not findings; they are terminations.
 
 ### 4.3 Dispatch model
 
@@ -79,7 +89,7 @@ The Consul reconnaissance phase replaces the current "dispatch a `consilium-scou
 
 1. **Magistrate reading.** Consul reads the brainstorm and articulates in one line of conversation output which lanes the work touches: *"Reading this as backend + integration. Dispatching unless you redirect."* This commits the lane reading to text before any token is spent on dispatch.
 
-2. **Imperator confirmation or redirect** in one line. Plain language. No flag.
+2. **Imperator confirmation or redirect** in one line. Plain language. No flag. **If the Imperator does not respond in plain language (silence, ambiguity, clarifying-question response), Consul holds — does not auto-dispatch. Consul re-asks if necessary.**
 
 3. **Lane-matched specialist dispatch.** Specialists fire in parallel for confirmed lanes with focused questions sharpened by the lane confirmation.
 
@@ -87,7 +97,9 @@ The Consul reconnaissance phase replaces the current "dispatch a `consilium-scou
 
 5. **Generalist triage scout fallback** when even exchange fails to narrow lanes (open-ended discovery, Imperator unsure of surface). The retained `consilium-scout` reads the brainstorm and reports which lanes the work touches; specialists then deploy.
 
-6. **Self-correction safety net.** If a specialist receives an out-of-scope question (lane reading was wrong), it refuses per §4.2; Consul redispatches to the correct specialist.
+6. **Self-correction safety net.** If a specialist receives an out-of-scope question, it refuses per §4.2; Consul redispatches to the correct specialist. **Maximum 2 redispatch attempts in a refusal chain (mirrors Codex Auto-Feed Loop). If both refuse, escalate to Imperator.**
+
+7. **Zero-lane brainstorm.** When the brainstorm touches none of frontend / backend / integration (meta-Consilium work, infrastructure, doctrine), specialist dispatch is skipped entirely. Consul dispatches the generalist `consilium-scout` directly. *This very spec is a zero-lane brainstorm.*
 
 **Multiplicity** is Imperator-driven via plain language. *"Send 2 backend scouts on this one"* dispatches two backend scouts; Consul splits the surface between them at the magistrate's judgment. No mode flag, no parameter; just conversation.
 
@@ -98,10 +110,13 @@ The Consul reconnaissance phase replaces the current "dispatch a `consilium-scou
 Each specialist agent file carries a `## Pitfalls Compendium` section. Contract:
 
 - **Format:** one-line lessons, each with a citation. Bullet list.
-- **Citation format:** `*(case: <case-dir-name>, <verifier-role>: <finding-class>)*` — e.g. `*(case: 2026-04-27-div-100-non-apparel-saved-product, Censor: GAP §3)*`
-- **Scope:** lessons applicable to the specialist's owned surface only. Cross-cutting lessons (e.g., "money-path mutations need idempotency anchors at the cart-level") are duplicated to all relevant specialists.
+- **Citation format:** `*(case: <case-dir-name>, <verifier-role>: <finding-class>)*` — e.g. `*(case: 2026-04-27-div-100-non-apparel-saved-product, Censor: GAP §3)*`.
+- **Scope:** lessons applicable to the specialist's owned surface only. Cross-cutting lessons are duplicated to all relevant specialists with the same citation.
 - **Source:** mined from `$CONSILIUM_DOCS/cases/` by the case-mining scout (§4.5).
+- **Growth bound:** soft cap of ~50 lessons per specialist. When the cap is exceeded on refresh, the mining scout retains the most recent and most cross-cutting lessons (multi-case-cited lessons score higher); older single-case lessons are evicted. The cap is a target; the mining scout exercises judgment.
+- **Refresh semantics:** the mining scout regenerates from scratch on every refresh — *overwrite, not append*. This avoids duplicate lessons accruing across cycles.
 - **Refresh trigger:** manual, Imperator plain-language request ("refresh the pitfalls compendium"). Consul re-dispatches the mining scout; specialist agent files are regenerated with the updated compendia.
+- **Staleness signal:** each compendium's `## Pitfalls Compendium` heading is followed by a `last_refreshed: YYYY-MM-DD` line. The Consul reads it at session start; the Imperator decides whether to refresh based on the signal. No automated reminder exists in MVP.
 
 The compendium does not change the agent's stance (retrieval, not verification). It changes what the agent *knows to look for* and *knows not to assume*.
 
@@ -109,82 +124,99 @@ The compendium does not change the agent's stance (retrieval, not verification).
 
 A scout dispatched (a) once at agent-file creation time and (b) on every manual refresh.
 
-**Input:** the full `$CONSILIUM_DOCS/cases/` archive — every spec, every Censor report, every Provocator report (across all five lanes), every plan-verification, every soldier completion report.
+**Input:** the full `$CONSILIUM_DOCS/cases/` archive — every spec, every Censor report, every Provocator report, every plan-verification, every soldier completion report.
 
-**Output contract:** a structured set of per-lane compendia. For each surface (frontend, backend, integration), a list of one-line lessons. Each lesson:
+**Archive heterogeneity.** The archive contains cases from before and after the Provocator five-lane decomposition. The mining scout treats verifier reports uniformly: a single `consilium-provocator` report (legacy) and any of the five lane reports (current) are all valid finding sources. The mining scout does not distinguish iteration count or report shape.
 
-- Distilled from one or more verifier findings
-- Cited back to the source case and the verifier finding identifier
-- Applicable to terrain inside the specialist's owned scope (lessons inapplicable to any specialist surface are dropped)
+**Output schema.** The mining scout returns three drop-in markdown blocks ready to paste under each agent file's `## Pitfalls Compendium` heading. Each block contains:
+
+- A `last_refreshed: YYYY-MM-DD` line at the top (today's date at refresh time).
+- A bulleted lesson list per §4.4 format.
+- For empty surfaces: a single `_No archive findings yet for this surface._` placeholder line in lieu of the bulleted list.
 
 **Classification rules:**
 
-- Findings citing files under `divinipress-store/` → frontend lane
-- Findings citing files under `divinipress-backend/src/api/`, `divinipress-backend/src/workflows/`, `divinipress-backend/src/modules/`, `divinipress-backend/src/links/`, `divinipress-backend/src/subscribers/` → backend lane
-- Findings citing the SDK boundary, custom route shapes, or `divinipress-types` package → integration lane
-- Findings citing meta-Consilium / infrastructure surfaces (skill files, agent files, hooks) → excluded from all specialist compendia
+- Findings citing files under `divinipress-store/` → frontend lane.
+- Findings citing files under `divinipress-backend/src/api/`, `/workflows/`, `/modules/`, `/links/`, `/subscribers/` → backend lane.
+- Findings citing the SDK boundary, custom route shapes, or shared cross-repo types → integration lane.
+- Findings citing files outside the enumerated specialist surfaces, or findings about *behavior* that cite no files: classified by the §4.2 surface ownership of the *subject matter*, not the file path. The mining scout exercises judgment; ambiguous findings default to cross-cutting (duplicated to all specialists).
+- Findings citing meta-Consilium / infrastructure surfaces (skill files, agent files, hooks): excluded from all specialist compendia.
 
 **Cross-cutting lessons** (e.g. domain invariants that apply on both sides of the wire) are duplicated to every relevant specialist's compendium with the same citation.
 
-The path-specific classification above follows standard Medusa module-system conventions. Exact path boundaries against the actual `divinipress-backend` repo structure are confirmed by the mining scout at dispatch time; contractually, classification follows the surface ownership in §4.2 — terrain owned by a specialist receives lessons from findings that cite that terrain.
+**Empty / sparse surface handling.** If a specialist's surface has zero applicable findings (early Consilium, integration scout's common case), the mining scout returns the placeholder block per the output schema. The agent file is created with that placeholder section; this is not a failure state.
 
 ### 4.6 Consul skill changes
 
-The Consul skill at `claude/skills/consul/SKILL.md`, Phase 1 (Reconnaissance), is updated:
+The Consul skill at `/Users/milovan/projects/Consilium/claude/skills/consul/SKILL.md` is updated in two phases:
 
-- The "I dispatch scouts" doctrine is rewritten to codify the decision sequence in §4.3.
-- The think→state→confirm→dispatch pattern is explicit doctrine.
-- The retained generalist scout is documented as triage fallback and non-Divinipress recon.
-- The Imperator-driven multiplicity convention is documented.
+- **Phase 1 (Reconnaissance):** the "I dispatch scouts" doctrine is rewritten to codify the dispatch model in §4.3. The think → state → confirm → dispatch pattern becomes explicit doctrine. The retained generalist is documented as triage fallback and zero-lane recon. The Imperator-driven multiplicity convention is documented.
+- **Phase 3 (Codification, ambiguity elimination):** the codebase-ambiguity scout dispatch (currently a generic scout reference) is updated to invoke the same lane-driven dispatch model.
 
-The change is to Phase 1 only. Phases 0, 2, and 3 of the Consul are untouched.
+Phases 0 and 2 of the Consul are untouched.
+
+### 4.7 Cross-skill scope
+
+The lane-driven dispatch model extends to three other surfaces:
+
+- **Tribune SKILL.md** (Medicus reconnaissance scout dispatch): updated to lane-driven specialist dispatch. The Medicus's existing debug-lane taxonomy in `$CONSILIUM_DOCS/doctrine/lane-classification.md` (storefront / storefront-super-admin / admin-dashboard / medusa-backend / cross-repo / unknown) maps to specialist scouts as: storefront/super-admin/admin-dashboard → frontend, medusa-backend → backend, cross-repo → integration, unknown → generalist triage.
+- **Edicts SKILL.md** (Legatus codebase-verification scout dispatch): updated to lane-driven specialist dispatch.
+- **Verification protocol** (`claude/skills/references/verification/protocol.md` §2 Dispatch Mechanics role table): the new specialist subagent types are enumerated alongside `consilium-scout`.
+
+These updates are line-level (replacing one dispatch reference or extending a table); they do not expand the skill files structurally. After implementation, no skill in the Consilium dispatches the bare `consilium-scout` for Divinipress recon by default — all such dispatches go through lane-driven specialist routing.
 
 ## 5. Success criteria
 
 Observable outcomes:
 
-1. **Specialist agent files exist** at the three paths in §4.1, each carrying Invocation + scope contract + tool allowlist + Pitfalls Compendium + stance declaration.
-2. **Generalist scout retained** at its current path with no contract change.
-3. **Consul skill Phase 1 prose** dispatches lane-specialists by default, with the decision sequence in §4.3 documented inline.
-4. **Pitfalls Compendia populated** at agent-file creation by the mining scout. At least one lesson per specialist on the first run.
-5. **Refusal contract verified** by at least one cross-surface dispatch test before declaring done — dispatching the frontend scout with a backend question must produce a refusal with sibling pointer, not a speculation.
-6. **Probation measurement plan** for the integration scout: track verifier findings on the next cross-repo specs; if seam-specific findings the integration scout caught are zero across N cases (N to be set by Imperator), the integration scout is killed and its compendium folded into frontend + backend.
+1. **Specialist agent files exist** at the three paths in §4.1, each carrying Invocation + scope contract + tool allowlist + filesystem-access constraint + Pitfalls Compendium + canonical stance declaration.
+2. **Generalist scout retained** at its current path with no body change. Role-shift documented in dispatcher prose (Consul, tribune, edicts, verification protocol).
+3. **Consul skill Phase 1 + Phase 3 prose** dispatches lane-specialists by default; Phase 3 ambiguity-scout dispatch updated to match.
+4. **Pitfalls Compendia populated** at agent-file creation by the mining scout. For every specialist surface that has applicable findings in the case archive, the mining scout returns at least one lesson. Empty-archive surfaces get the `_No archive findings yet for this surface._` placeholder per §4.5; this is not a failure.
+5. **Refusal contract verified** by at least one cross-surface dispatch test before declaring done. The scout's response must contain only (a) the refusal naming the out-of-scope subject, (b) the sibling pointer (or generalist pointer if no specialist owns), (c) no claims about the refused subject. Any content beyond these three elements is a fail.
+6. **Probation review** for the integration scout. After N cross-repo specs (N at §8; default 5), Imperator reviews the integration scout's output history and decides retain or kill. The decision is judgment-based, not mechanical: Imperator judges whether the integration scout's outputs surfaced terrain that frontend + backend specialists running in parallel would not have caught. If killed, the integration compendium folds into frontend + backend.
+7. **Cross-skill consistency.** Tribune, edicts, and the verification protocol's role table updated to use the same dispatch model.
 
-## 6. Deliverables (ordered by dependency)
+## 6. Deliverables (ordered by build readiness)
 
-1. **Case-mining scout** — one-time dispatch. Output is the per-lane Pitfalls Compendia. Must run before agent files can be authored with their compendia baked in.
-2. **`consilium-scout-frontend.md`** — agent file. Built with frontend compendium baked in.
-3. **`consilium-scout-backend.md`** — agent file. Built with backend compendium baked in.
-4. **`consilium-scout-integration.md`** — agent file. Built with integration compendium baked in.
-5. **Consul skill Phase 1 update** — `claude/skills/consul/SKILL.md`. Dispatch model rewritten per §4.3.
-6. **Refusal-contract verification test** — one cross-surface dispatch per specialist. Must produce refusal-with-pointer, not speculation.
-7. **Compendium refresh ritual documentation** — one paragraph in the Consul skill describing the manual Imperator trigger.
+1. **Case-mining scout** — one-time dispatch. Output is the per-lane Pitfalls Compendia per §4.5 output schema. Must run before agent files can be authored with their compendia baked in.
+2. **`consilium-scout-frontend.md`** — agent file with frontend compendium baked in.
+3. **`consilium-scout-backend.md`** — agent file with backend compendium baked in.
+4. **`consilium-scout-integration.md`** — agent file with integration compendium baked in.
+5. **Consul skill Phase 1 + Phase 3 update** — `claude/skills/consul/SKILL.md`. Dispatch model rewritten per §4.3 in Phase 1; ambiguity-scout dispatch updated to match in Phase 3.
+6. **Refusal-contract verification test** — one cross-surface dispatch per specialist. Must produce refusal-with-pointer and no claims about the refused subject.
+7. **Compendium refresh ritual documentation** — paragraph in the Consul skill describing the manual Imperator trigger and the staleness-signal convention.
+8. **Tribune SKILL.md update** — line-level dispatch reference change to lane-driven dispatch.
+9. **Edicts SKILL.md update** — line-level dispatch reference change to lane-driven dispatch.
+10. **Verification protocol update** — `claude/skills/references/verification/protocol.md` §2 Dispatch Mechanics role table extended with new specialist subagent types.
 
 ## 7. Confidence map
 
 |section|confidence|evidence|
 |-|-|-|
-|§1 Problem|High|DIV-100 incorporated 8 terrain-flavored GAPs (case file, line 9). Imperator confirmed terrain-driven misunderstandings in deliberation.|
-|§2 Goals|High|All four goals confirmed across deliberation rounds with the Imperator.|
-|§3 Non-goals|High|Each non-goal corresponds to an Imperator decision in deliberation (cut doctrine scout, retain generalist, no mode flag, manual refresh, static MVP).|
-|§4.1 Specialist agents|High|Names, paths, surfaces, stance all confirmed.|
-|§4.2 Scope contract|High|Owns/refuses categories deliberated and accepted by Imperator.|
-|§4.3 Dispatch model|High|Six-step sequence is the *think→state→confirm→dispatch* pattern explicitly confirmed.|
-|§4.4 Pitfalls Compendium|High|Format, scope, refresh trigger confirmed.|
-|§4.5 Case-mining scout contract|Medium|Concept agreed; classification rules and exclusion rules are my synthesis from doctrine reading and code-map paths. Imperator did not deliberate the exact boundaries.|
-|§4.6 Consul skill changes|Medium|Imperator confirmed Phase 1 changes are needed but did not deliberate exact prose. Plan layer will own the prose.|
-|§5 Success criteria|Medium|Items 1–5 are direct contract outcomes; item 6 (probation measurement) carries a numerical threshold left to Imperator's judgment.|
-|§6 Deliverables|High|Ordering follows dependency chain explicitly walked in deliberation.|
+|§1 Problem|High|DIV-100 incorporated 8 verifier GAPs (case file, line 9); majority cite codebase facts. Imperator confirmed terrain-driven misunderstandings in deliberation.|
+|§2 Goals|High|All four goals confirmed across deliberation rounds.|
+|§3 Non-goals|High|Each non-goal corresponds to an Imperator decision.|
+|§4.1 Specialist agents|High|Names, paths, surfaces, stance all confirmed. Stance wording aligned to canonical `consilium-scout.md` per Censor finding.|
+|§4.1.1 Filesystem-access constraint|High|Promoted from Censor CONCERN — refusal contract becomes structural via tool-allowlist enforcement.|
+|§4.2 Scope contract|High|Owns/refuses categories deliberated and accepted. Refusal-pointer-to-generalist clause added per Edge-case finding. `divinipress-types` softened per Censor finding.|
+|§4.3 Dispatch model|High|Seven-step sequence is the *think→state→confirm→dispatch* pattern with operational fence-posts (silence handling, refusal-loop cap, zero-lane clause) added per Provocator findings.|
+|§4.4 Pitfalls Compendium|High|Format, scope, refresh trigger confirmed. Growth bound, refresh semantics, staleness signal added per Provocator findings.|
+|§4.5 Case-mining scout contract|Medium|Output schema, heterogeneity acknowledgement, empty-archive handling, classification fallback added per verification findings. Exact path enumeration is mining-scout judgment territory.|
+|§4.6 Consul skill changes|High|Phase 1 + Phase 3 scope confirmed. Path anchor corrected per Censor finding.|
+|§4.7 Cross-skill scope|Medium|Brings tribune, edicts, verification protocol into scope per Negative-claim findings. Each change is line-level; the line-level shape is contract.|
+|§5 Success criteria|Medium|Items 1–5, 7 are direct contract outcomes; item 6 (probation) is honestly relabeled as Imperator's judgment-based call.|
+|§6 Deliverables|High|Ordering follows build readiness. Cross-skill items added per §4.7.|
 
 ## 8. Open items flagged for Imperator review
 
-- **§4.5 mining-scope boundaries** — exclusion of meta-Consilium / infrastructure findings is a magistrate's call. Imperator may want infrastructure lessons available to specialists if they happen to apply to a specialist surface. *Default: exclude. Override: tell me at review.*
-- **§5 success criterion 6 — probation threshold N** — not specified. Imperator's call. *Default: 5 cross-repo specs. Override: tell me at review.*
-- **§4.4 refresh trigger** — manual Imperator-triggered. Alternative: hook into the existing `consilium:audit` skill so the compendium auto-refreshes after every approved post-implementation audit. *Default: manual. Override: tell me at review.*
+- **§5 #6 probation threshold N** — default 5 cross-repo specs. Override: tell me at edicts time.
+- **§4.4 refresh trigger** — manual default. Alternative: hook into `consilium:audit` for auto-refresh post-implementation. Override: tell me at edicts time.
 
 ## 9. Risk and cost
 
-- **Token cost.** Specialist dispatch with three scouts in parallel triples reconnaissance cost vs single generalist. Mitigation: lane-driven dispatch (only matching specialists fire); Imperator-driven multiplicity (Imperator controls when to deepen).
-- **Stale compendium.** Manual refresh means compendia drift if Imperator forgets. Mitigation: refresh triggered explicitly when new failure patterns surface; periodic Consul-prompted reminder ("compendium last refreshed N cases ago — refresh?").
-- **Wrong-lane dispatch.** Specialist receives out-of-scope question. Mitigation: §4.2 refusal contract. Cost of wrong dispatch is one wasted call, not a wrong-direction spec.
-- **Integration scout earns no keep.** Probation criterion in §5 item 6 governs.
+- **Token cost.** Specialist dispatch with multiple scouts in parallel multiplies reconnaissance cost vs single generalist. Mitigation: lane-driven dispatch fires only matching specialists; Imperator-driven multiplicity controls deepening. Cost bound is per dispatch, not per spec.
+- **Stale compendium.** Manual refresh means compendia drift if Imperator forgets. The §4.4 staleness signal (`last_refreshed: YYYY-MM-DD` per compendium) gives the Consul something to read at session start; whether to act is the Imperator's call. No automated reminder.
+- **Wrong-lane dispatch.** Specialist receives out-of-scope question. Mitigation: §4.2 refusal contract + §4.1.1 filesystem-access constraint. Cost of wrong dispatch is bounded — one wasted call, with §4.3 step 6 capping the redispatch chain at 2.
+- **Integration scout earns no keep.** §5 #6 probation review governs the kill/retain decision.
+- **Cross-skill churn.** Bringing tribune, edicts, and the verification protocol into scope (§4.7) means changes to four skill files instead of one. Mitigation: each change is line-level (dispatch reference replacement or table extension), not structural.
