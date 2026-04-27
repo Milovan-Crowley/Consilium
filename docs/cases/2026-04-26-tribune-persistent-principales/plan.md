@@ -985,7 +985,7 @@ tasks:
 
 - **Read the plan with fresh context.** Tribunus-design does NOT inherit the Consul's deliberation context. The plan and the doctrine are the inputs.
 - **Subset selection.** Not every task fires every lane. A task that touches no domain doctrine surface skips `task-domain-correctness`. A task that does not interface with prior tasks skips `task-integration-prior`. Default subset for any task: `[task-plan-match, task-no-stubs]`. Tribunus-design adds the adversarial lanes per evidence.
-- **Evidence preload paths.** When `task-domain-correctness` is selected, name the doctrine file path explicitly (e.g., `$CONSILIUM_DOCS/doctrine/medusa-workflow.md`) so Tribunus-executor has a concrete preload target.
+- **Evidence preload paths.** When `task-domain-correctness` is selected, name the doctrine file path explicitly. **Path discipline (load-bearing):** doctrine paths MUST start with the literal token `$CONSILIUM_DOCS/doctrine/` followed by a filename that exists on disk at protocol-write time. Tribunus-design MUST verify path existence (e.g., via `Read` tool against the absolute resolved path) before committing the path to the protocol. A path that fails to resolve is a Tribunus-design BLOCKER, not a runtime fall-through. Common failures to avoid: relative paths (`medusa-workflow.md`), `~/projects/...` paths (doctrine does not live in the repo root; it lives at `$CONSILIUM_DOCS`), made-up filenames (verify the file exists). Plan task 1 of any window has no prior interface evidence; if `task-integration-prior` is selected for plan-task-1, document this as the empty-log case in `evidence_sources_per_lane` so the executor knows to expect zero entries and route the lane finding to `unverified_claims`.
 - **Profile match.** Profile assignment in the protocol MUST match the registry default unless the spec explicitly authorized deviation.
 
 ## Consumption Discipline (Tribunus-executor)
@@ -1194,10 +1194,10 @@ If the file is standalone (typical), proceed to Task 11 and commit jointly.
 
 ## Task 11: Update Stance Selection in `consilium-tribunus.md` body
 
-> **Confidence: High** — verified Stance Selection section is at `consilium-tribunus.md:336-358`. Codex content occupies lines 109-323 (drift-checked block); Stance Selection is below the Codex. Body edits do NOT modify the Codex block, so the drift check in Task 13 will not be triggered by Task 11 edits to Stance Selection alone.
+> **Confidence: Medium** — verified Stance Selection section starts at `consilium-tribunus.md:335` (`## Stance Selection`) and ends at line 357 (last content line of the Diagnosis Stance block before the blank line at 358 and the `## Medusa MCP Usage` heading at line 359). Codex content occupies lines 109-323 (drift-checked block); Stance Selection is BELOW the Codex. Body edits do NOT modify the Codex block, so the drift check in Task 13 will not be triggered by Task 11 edits to Stance Selection alone. Confidence is Medium because Task 10's frontmatter edit shifts line numbers — soldier MUST use `grep -n` to relocate the section dynamically rather than relying on the cited line range.
 
 **Files:**
-- Modify: `~/.claude/agents/consilium-tribunus.md` (Stance Selection block — currently lines 336-358; line numbers may shift after Task 10's frontmatter edit)
+- Modify: `~/.claude/agents/consilium-tribunus.md` (Stance Selection block — section anchor `## Stance Selection`; line numbers will shift after Task 10's frontmatter edit, so the soldier must locate via `grep -n` per Step 1)
 
 - [ ] **Step 1: Locate the current Stance Selection block**
 
@@ -1248,9 +1248,14 @@ The Tribunus is dispatched in one of four stances. The dispatch prompt declares 
 
 **Role separation across all stances.** The Tribunus is the judge of deviation. The principales are claim-verifiers. The Tribunus reads dockets, applies the Codex's Deviation-as-Improvement Rule, and renders verdict. Principales return yes/no per claim and never judge.
 
-### Patrol Stance (Legion — fallback)
+### Patrol Stance (`/march` primary; `/legion` fallback)
 
-Dispatched by the Legatus per task as a fresh subagent. Used in two situations: (a) `/march` is the active execution skill (which never spawns a persistent Tribunus); (b) the persistent-executor pattern has degraded for any reason — principales transport failure, substrate session-budget breach, or operator-disabled persistence config. Verifies plan-step match, domain correctness, reality (no stubs, no TODO leftovers), and integration with earlier tasks. Read-only.
+Dispatched by the Legatus per task as a fresh subagent. Used in two situations:
+
+- **`/march` primary mode.** `/march` never spawns a persistent Tribunus — it is the deliberate ceremony-skip skill for trivial plans where the Imperator chooses solo-Legatus execution. Under `/march`, Patrol stance is the active per-task verification stance, not a fallback. The Imperator chose `/march` deliberately; the Tribunus serves that choice as the primary verification mode.
+- **`/legion` fallback mode.** When the persistent-executor pattern has degraded — principales transport failure, substrate session-budget breach, operator-disabled persistence config, or persistent-executor crash without recovery — the Legatus falls back to dispatching ephemeral Patrol-stance subagents per task.
+
+Verifies plan-step match, domain correctness, reality (no stubs, no TODO leftovers), and integration with earlier tasks. Read-only.
 
 ### Persistent-Executor Stance (Legion)
 
@@ -1330,27 +1335,31 @@ If `~/.claude/agents/` is not symlinked into a tracked repo path on this machine
 
 ## Task 12: Amend `docs/codex.md` — Persistent Orchestrator class + Per-Task Verification sub-amendment
 
-> **Confidence: High** — verified canonical Codex location at `docs/codex.md` (per `claude/scripts/check-codex-drift.py:26`); 6 user-scope agents copy this content (per AGENTS list at `check-codex-drift.py:28`); drift script extracts via header `# The Codex of the Consilium` and boundary `## Operational Notes`. The amendment text is from spec §8 lines 219-229.
+> **Confidence: Medium** — verified canonical Codex location at `docs/codex.md` (per `claude/scripts/check-codex-drift.py:26`); 6 user-scope agents copy this content (per AGENTS list at `check-codex-drift.py:28`); drift script extracts via header `# The Codex of the Consilium` and boundary `## Operational Notes`. Verified live section ordering by direct file read: `## The Confidence Map` (line 95) → `## The Deviation-as-Improvement Rule` (line 114) → `## The Auto-Feed Loop` (line 124) → `## The Independence Rule` (line 134) → `## The Interaction Protocols` (line 150). Auto-Feed Loop PRECEDES Independence Rule. The amendment text is from spec §8 lines 219-229. Placement: AFTER Independence Rule, BEFORE Interaction Protocols (Persistent Orchestrator is a narrow exception to Independence; adjacency reads as "Independence is the rule, this is the named exception"). Confidence is Medium because line numbers may have shifted since file-read; soldier MUST re-grep at execution time.
 
 **Files:**
 - Modify: `docs/codex.md`
 
-- [ ] **Step 1: Locate the existing Independence Rule and Auto-Feed Loop sections**
+- [ ] **Step 1: Locate the existing Independence Rule and Interaction Protocols sections**
 
 Run: `grep -n "^## The Independence Rule" docs/codex.md`
-Expected: one match. Note the line.
-
-Run: `grep -n "^## The Auto-Feed Loop" docs/codex.md`
-Expected: one match. Note the line.
+Expected: one match. Note the line (call it `INDEP_LINE`).
 
 Run: `grep -n "^## The Interaction Protocols" docs/codex.md`
-Expected: one match. Note the line.
+Expected: one match. Note the line (call it `INTER_LINE`). MUST be greater than `INDEP_LINE`.
 
-The amendment will add a new section AFTER `## The Independence Rule` and BEFORE `## The Interaction Protocols` (or before whichever section comes next per the file's ordering — preserve canonical ordering).
+Run: `grep -n "^## The Auto-Feed Loop" docs/codex.md`
+Expected: one match. Note the line (call it `AUTOFEED_LINE`). For sanity, MUST be less than `INDEP_LINE` (Auto-Feed Loop precedes Independence Rule per the canonical file ordering).
+
+If any of the three commands returns 0 matches or multiple matches, halt and surface to Imperator — the canonical file ordering has drifted from the plan's expectation and Step 2's insertion logic does not apply.
+
+The amendment will add a new section AFTER `## The Independence Rule` ends (its closing `---` separator) and BEFORE `## The Interaction Protocols` begins.
 
 - [ ] **Step 2: Insert the Persistent Orchestrator class section**
 
-Edit `docs/codex.md`. Find the line `## The Auto-Feed Loop` (or the section that immediately precedes `## The Interaction Protocols`). Insert this content as a new section AFTER `## The Independence Rule` ends and BEFORE `## The Auto-Feed Loop` begins (placement: it is conceptually the narrowing exception to Independence, so it sits adjacent):
+Edit `docs/codex.md`. Insert this content as a new section AFTER `## The Independence Rule` ends (immediately after its trailing `---` separator) and BEFORE `## The Interaction Protocols` heading begins. The Auto-Feed Loop is NOT the insertion anchor — it sits before Independence Rule in the file and is irrelevant to placement.
+
+Placement reasoning: the Persistent Orchestrator class is a narrow exception to Independence. Adjacency to Independence reads as "Independence is the rule; this is the one named exception."
 
 ```markdown
 ## The Persistent Orchestrator Class
@@ -1421,6 +1430,22 @@ Expected: file exists.
 
 Run: `ls -1 scripts/check-codex-drift.py 2>&1 | head -1`
 Expected: error or "No such file" — the script does NOT live at this path. Confirms the documentation path in `claude/CLAUDE.md` is stale.
+
+- [ ] **Step 1b: Boundary integrity precheck on all 6 user-scope agents (BEFORE the destructive `--sync`)**
+
+The drift script's `--sync` rewrites each user-scope agent file using `extract_codex` boundaries (`# The Codex of the Consilium` header → `## Operational Notes` footer). If any one agent file is MISSING the `## Operational Notes` boundary, `extract_codex` returns `end = len(lines)` (script line ~56), and `--sync` writes `prefix + canonical + ["", "---", ""] + suffix=[]` — silently destroying any persona body content sitting after the Codex block. Verify boundary integrity across all 6 agents BEFORE running `--sync`:
+
+Run this verification loop:
+```bash
+for agent in censor praetor provocator tribunus soldier custos; do
+  file="$HOME/.claude/agents/consilium-${agent}.md"
+  echo "=== ${agent} ==="
+  grep -c "^# The Codex of the Consilium" "${file}"
+  grep -c "^## Operational Notes" "${file}"
+done
+```
+
+Expected per agent: each `grep -c` returns exactly `1`. If any agent returns `0` for `## Operational Notes`, halt — `--sync` would destroy that agent's post-Codex body content. Surface the affected agent(s) to the Imperator and pause for guidance before continuing. Do NOT proceed to `--sync` until all 6 agents report `1 1`.
 
 - [ ] **Step 2: Run drift check (report mode) BEFORE syncing**
 
@@ -1501,6 +1526,8 @@ The Consul invokes this template inside `/edicts` after the Custos walk returns 
 All five conditions from the Custos dispatch contract must hold (no MISUNDERSTANDING in escalation, no unresolved GAPs, all CONCERNs explicitly handled, no silent plan modifications since plan verification, Imperator overrides recorded). The plan is committed.
 
 ## Dispatch Shape
+
+The `Agent({...})` notation below is illustrative shorthand for the actual subagent-dispatch tool available in the runtime (e.g., `Task` or whichever primitive Claude Code exposes for subagent spawning at execution time). The dispatching consul invokes the runtime's actual tool with the named parameters shown — particularly `subagent_type` for persona selection.
 
 ```
 Agent({
@@ -1589,6 +1616,8 @@ After verdict handling completes (or override is confirmed), proceed to "Dispatc
 
 ## Dispatching Tribunus-Design
 
+**This section is reached after EVERY Custos-cleared path** — first-walk `OK TO MARCH`, second-walk `OK TO MARCH` after a `PATCH BEFORE DISPATCH` re-walk, or `BLOCKER` override-and-proceed. The verdict-bullet lines elsewhere in this skill that read "proceed to The Legion Awaits" refer to the eventual final destination; the actual transition flows through this Tribunus-Design dispatch first.
+
 The plan is verified, Custos-blessed, and committed. One artifact remains before the Legion Awaits — the per-task verification protocol that the persistent Tribunus-executor will run during Legion execution.
 
 I dispatch Tribunus-design exactly once per plan, in the **design stance** of the `consilium-tribunus` user-scope agent. The dispatch produces `tribune-protocol.md` in the case directory alongside `plan.md`.
@@ -1600,7 +1629,16 @@ I follow the template exactly. Dispatch is one-shot — Tribunus-design returns 
 
 ### Re-dispatch on Structural Patch
 
-If Custos returned PATCH BEFORE DISPATCH and the patches modified task structure (additions, removals, reordering), the prior `tribune-protocol.md` (if any) is invalidated. I re-dispatch Tribunus-design after the second Custos walk completes with OK TO MARCH. Re-dispatch on non-structural patches (typo fixes inside a task body, evidence-path corrections) is NOT required.
+If Custos returned `PATCH BEFORE DISPATCH` AND the patches modified task structure (additions, removals, reordering), the prior `tribune-protocol.md` (if any) is invalidated. I re-dispatch Tribunus-design after the second Custos walk completes with `OK TO MARCH`. Re-dispatch on non-structural patches (typo fixes inside a task body, evidence-path corrections) is NOT required — the prior protocol output is preserved.
+
+The structural-vs-non-structural distinction is made by inspecting the `## Re-walk Marker` diff hunks: any hunk that adds or removes a `### Task N` heading, changes a task's `**Files:**` block, or reorders tasks is structural. A hunk that touches only the body text of a single task without changing its structural metadata is non-structural.
+
+### Path coverage
+
+- **First-walk `OK TO MARCH`** → Tribunus-design dispatch (first run; no prior protocol).
+- **Second-walk `OK TO MARCH` after structural patch** → Tribunus-design dispatch (re-run; prior protocol invalidated).
+- **Second-walk `OK TO MARCH` after non-structural patch** → Tribunus-design dispatch only if no prior protocol exists; otherwise the prior protocol is preserved.
+- **BLOCKER override-and-proceed** → Tribunus-design dispatch (the override does not bypass protocol authoring; the Imperator chose to dispatch despite the finding, and the protocol still needs to be written).
 
 ### Failure Handling
 
@@ -1665,6 +1703,8 @@ The Legatus invokes this template inside `/legion` to (a) spawn the persistent T
 
 Spawn at Legion start, BEFORE the first soldier dispatch. Naming convention: `tribune-w1` for the first window, `tribune-w2` for the second, etc.
 
+The `Agent({...})` notation below is illustrative shorthand for the actual subagent-dispatch tool available in the runtime (e.g., `Task` or whichever primitive Claude Code exposes). The Legatus invokes the runtime's actual tool with the named parameters shown — particularly `name:` for `SendMessage` addressability. If the runtime's primitive uses different parameter names (e.g., `agent_name` instead of `name`), substitute accordingly; the load-bearing requirement is that the agent is named such that subsequent `SendMessage({to: <name>})` calls reach the same persistent process.
+
 ```
 Agent({
   description: "Tribunus persistent-executor — window 1",
@@ -1675,6 +1715,8 @@ Agent({
 ```
 
 The `name` parameter is the harness primitive that makes the agent addressable while running. Documented in the Agent tool's `name` parameter. Confirmed via Imperator-demonstrated transcript: persistent named-agent dispatch, full context across turns, addressable by name or ID, occasional messages keep the agent warm.
+
+**Pre-spawn smoke check.** Before the spawn, the Legatus performs a minimal smoke test: dispatch one ephemeral subagent with `name: "tribune-smoke"` and immediately `SendMessage({to: "tribune-smoke"})`. If the SendMessage succeeds and returns a reply within 30 seconds, persistence is confirmed at the harness level. If it fails (parameter rejected, agent not addressable, no reply within timeout), halt and surface the failure mode to the Imperator before proceeding — fall back to ephemeral Patrol per `templates/mini-checkit.md` for the entire legion. This protects against the load-bearing-primitive failure that B-1 specifically risks.
 
 ## Spawn Prompt Body
 
@@ -1849,9 +1891,21 @@ With:
 Find the digraph block at lines 87-134.
 
 Run: `grep -n "Dispatch Tribunus mini-checkit" claude/skills/legion/SKILL.md`
-Expected: 2 matches in the digraph (one node label, one transition).
+Expected: 2 matches in the digraph — one node DECLARATION (line ~99: `"Dispatch Tribunus mini-checkit" [shape=box];`) and one TRANSITION (line ~119: `"Soldier implements,\ntests, commits, self-reviews" -> "Dispatch Tribunus mini-checkit";`).
 
-Replace `"Dispatch Tribunus mini-checkit"` (both occurrences in the digraph block) with `"Signal persistent Tribunus\n(SendMessage)"`. Use `replace_all` if available; otherwise apply both edits manually.
+Use the Edit tool with `replace_all=true` to replace `"Dispatch Tribunus mini-checkit"` with `"Signal persistent Tribunus\n(SendMessage)"`. The literal string matches both occurrences identically; `replace_all` updates both in one operation.
+
+If `replace_all` is unavailable, apply two edits with surrounding context to disambiguate:
+- First occurrence (declaration): `old_string: "\"Dispatch Tribunus mini-checkit\" [shape=box];"`, `new_string: "\"Signal persistent Tribunus\\n(SendMessage)\" [shape=box];"`.
+- Second occurrence (transition): `old_string: "-> \"Dispatch Tribunus mini-checkit\";"`, `new_string: "-> \"Signal persistent Tribunus\\n(SendMessage)\";"`.
+
+After the edit, immediately verify both occurrences were updated:
+
+Run: `grep -c "Dispatch Tribunus mini-checkit" claude/skills/legion/SKILL.md`
+Expected: `0` (both occurrences replaced; if `1` remains, the digraph is in inconsistent state — re-apply the missing edit).
+
+Run: `grep -c "Signal persistent Tribunus" claude/skills/legion/SKILL.md`
+Expected: at least `2` (both digraph occurrences plus any prose mentions added in Steps 2-3).
 
 - [ ] **Step 5: Verify the modifications**
 
@@ -1888,10 +1942,36 @@ git commit -m "feat(legion): spawn persistent Tribunus-executor at Legion start;
 Run: `python3 claude/scripts/check-codex-drift.py`
 Expected: no drift across all 6 user-scope agents. If drift is reported, return to Task 13 and re-run `--sync`.
 
-- [ ] **Step 2: Run the Tribune staleness check (post-Tasks 10+11)**
+- [ ] **Step 2a: Validate Tasks 10-11 persona-file edits survived to disk**
+
+The staleness script (Step 2b) scans `claude/skills/tribune/` (the Medicus skill), NOT `~/.claude/agents/consilium-tribunus.md` (the persona). Tasks 10-11 edited the persona; staleness is silent on those edits. Validate persona edits directly:
+
+Run: `head -9 ~/.claude/agents/consilium-tribunus.md`
+Expected: matches the new frontmatter from Task 10 — `description:` includes "design stance" and "persistent-executor stance"; `tools:` includes `Write` and `mcp__consilium-principales__verify_lane`; `mcpServers:` includes `principales`.
+
+Run: `grep -c "^### Patrol Stance" ~/.claude/agents/consilium-tribunus.md`
+Expected: `1` (renamed by Task 11 to "Patrol Stance (`/march` primary; `/legion` fallback)").
+
+Run: `grep -c "^### Persistent-Executor Stance" ~/.claude/agents/consilium-tribunus.md`
+Expected: `1` (added by Task 11).
+
+Run: `grep -c "^### Design Stance" ~/.claude/agents/consilium-tribunus.md`
+Expected: `1` (added by Task 11).
+
+Run: `grep -c "^### Diagnosis Stance" ~/.claude/agents/consilium-tribunus.md`
+Expected: `1` (preserved by Task 11).
+
+Run: `grep -c "^### Tool-Use Discipline Across Stances" ~/.claude/agents/consilium-tribunus.md`
+Expected: `1` (added by Task 11 per spec §7.1's tool-discipline mandate).
+
+If any expectation fails, return to Tasks 10/11 and re-apply the missing edit.
+
+- [ ] **Step 2b: Run the Tribune staleness check (regression guard against Medicus-skill drift)**
+
+This step does NOT validate Tasks 10-11 directly. The staleness script scans `claude/skills/tribune/` (the Medicus invocation skill) — a different "tribune" than the persona file. Run as a regression guard against accidental drift in the Medicus skill caused by adjacent work in this campaign:
 
 Run: `python3 claude/scripts/check-tribune-staleness.py --verbose`
-Expected: no stale references, no broken reference targets, no test-writing discipline leaks. If issues are reported, fix them inline (the script's `--verbose` flag identifies the file:line of each issue).
+Expected: no stale references, no broken reference targets, no test-writing discipline leaks. If issues are reported, fix them inline (the script's `--verbose` flag identifies the file:line of each issue). If issues report against files this campaign did not touch, halt and surface — drift came from a different campaign's commits and needs investigation outside B-1's scope.
 
 - [ ] **Step 3: Run the principales build + test suite (post-Tasks 1-7)**
 
@@ -1923,13 +2003,24 @@ Expected: at least 1.
 Run: `grep -c "## Persistent Orchestrator Class" docs/codex.md`
 Expected: 1.
 
-- [ ] **Step 6: Verify `/march` was NOT modified (scope guard)**
+- [ ] **Step 6: Verify `/march` was NOT modified by THIS plan (scope guard)**
 
-Run: `git log --oneline claude/skills/march/SKILL.md | head -3`
-Expected: no commits from this plan touched the file (compare against the branch's pre-plan baseline).
+The branch may carry commits unrelated to B-1 that touched `/march/SKILL.md` before this plan started (e.g., the prior `kimi-principales-v1` substrate commits). A naive `git diff main -- claude/skills/march/SKILL.md` would conflate those with B-1's scope. Compare against the branch's pre-B-1 baseline instead.
 
-Run: `git diff main -- claude/skills/march/SKILL.md`
-Expected: empty output (no diff between this branch's `/march` and main).
+The pre-B-1 baseline SHA is the parent of the FIRST commit produced by this plan (Task 1's commit). Identify it:
+
+Run: `git log --oneline --reverse claude/skills/references/verification/lanes.md | head -3`
+This shows commits touching `lanes.md` in chronological order. The first commit on this branch from this plan is Task 1's "feat(principales): register execution-family lanes..." commit. The parent SHA of that commit is the pre-B-1 baseline.
+
+Run: `git log --pretty=format:"%H %s" claude/skills/references/verification/lanes.md | grep "register execution-family lanes" | head -1 | cut -d' ' -f1` and call its parent `BASELINE_SHA`. Then:
+
+Run: `git diff "${BASELINE_SHA}" -- claude/skills/march/SKILL.md`
+Expected: empty output (no diff between baseline and HEAD on `/march`). If non-empty, this plan modified `/march` — halt and surface the diff to the Imperator.
+
+Alternative (simpler if no commits on `/march/SKILL.md` exist on this branch at all):
+
+Run: `git log --oneline HEAD -- claude/skills/march/SKILL.md`
+Expected: no commits from this plan's session appear in the log. If any commit since the plan started shows up, halt.
 
 - [ ] **Step 7: Document the operator-side restart in the legion's post-completion report**
 
