@@ -6,7 +6,7 @@ Per-lane routing metadata. The wrapper consults this file (or rather, the per-la
 
 ## Metadata Keys
 
-- `family` — broad lane category (`artifact-text`, `grounding`, `adversarial`, `business_critical`, `diagnosis`, `campaign`).
+- `family` — broad lane category (`artifact-text`, `grounding`, `adversarial`, `business_critical`, `diagnosis`, `campaign`, `execution`).
 - `default_profile` — `principalis_light` / `principalis_grounded` / `principalis_adversarial` / `principalis_batch`.
 - `evidence_required` — what evidence the dispatcher must supply (`artifact`, `repo`, `diff`, `doctrine`, `command`, or combinations like `artifact_and_doctrine`).
 - `tools` — host tools the lane needs (empty in v1; reserved for Spec B).
@@ -140,6 +140,58 @@ migration-risk:
   family: adversarial
   default_profile: principalis_adversarial
   evidence_required: artifact
+  tools: []
+  kimi_sound_final: false
+  max_claims_per_bundle: 6
+  max_completion_tokens: 2500
+  thinking_allowed: false
+  batch_allowed: false
+  enabled: true
+```
+
+### Execution Lanes (execution)
+
+```yaml
+task-plan-match:
+  family: execution
+  default_profile: principalis_light
+  evidence_required: artifact_and_diff
+  tools: []
+  kimi_sound_final: false
+  max_claims_per_bundle: 8
+  max_completion_tokens: 1500
+  thinking_allowed: false
+  batch_allowed: false
+  enabled: true
+
+task-no-stubs:
+  family: execution
+  default_profile: principalis_light
+  evidence_required: diff
+  tools: []
+  kimi_sound_final: false
+  max_claims_per_bundle: 8
+  max_completion_tokens: 1500
+  thinking_allowed: false
+  batch_allowed: false
+  enabled: true
+
+task-domain-correctness:
+  family: execution
+  default_profile: principalis_adversarial
+  evidence_required: diff_and_doctrine
+  tools: []
+  kimi_sound_final: false
+  max_claims_per_bundle: 6
+  max_completion_tokens: 2500
+  thinking_allowed: false
+  batch_allowed: false
+  enabled: true
+
+task-integration-prior:
+  family: execution
+  default_profile: principalis_adversarial
+  evidence_required: diff_and_artifact
   tools: []
   kimi_sound_final: false
   max_claims_per_bundle: 6
