@@ -58,7 +58,7 @@ For all tasks (sampled or not):
 
   **Per-task scope: empty `lanes_triggered: []`.** When the protocol authorizes `lanes_triggered: []` for the current task (per the per-task scope clause in `templates/tribune-design.md`), skip steps 3-4 (evidence preload + Kimi dispatch) for this task and proceed directly to step 5 (Claude-side patrol). Patrol-mode is the verification stance for that single task; subsequent tasks may still have non-empty `lanes_triggered` and use full Kimi dispatch. Do NOT confuse this per-task fall-back with the protocol-level fall-back (`/legion` pre-spawn routes absent/empty/unparseable/malformed protocols to mini-checkit for the entire campaign — distinct decision point, distinct scope).
   3. Preload the evidence bundle per lane:
-     - Diff slices from `git diff` over the change_set.
+     - Diff slices over `change_set`, bounded by the commit range from `task_start_sha` (exclusive) through current HEAD (inclusive). Pseudo-command: `git diff <task_start_sha>..HEAD -- <change_set>`. The base ref is supplied per-task by `/legion` in the SendMessage body. Bare `git diff` (working-tree-vs-HEAD) is **not permitted** — it returns empty after a Soldier commit and produces silent verification on stale state. If `change_set: []` (empty list), skip diff extraction entirely — the executor emits `verdict: SOUND` with `verdict_summary: "no-op task"` and proceeds to the next step.
      - File-content slices for full-file context where the protocol names them.
      - Doctrine excerpts from the paths in evidence_sources_per_lane (read directly).
      - Prior-task interface summaries from the appended tribune-log.md entries.
@@ -68,7 +68,7 @@ For all tasks (sampled or not):
      - Any deviations the Kimi lanes flagged that require Deviation-as-Improvement judgment.
   6. Apply the Codex's Deviation-as-Improvement Rule: when a lane flags a deviation, decide improvement (SOUND-with-note) or drift (GAP-with-note).
   7. Compute the integrated verdict using most-severe-wins: SOUND / CONCERN / GAP / MISUNDERSTANDING. If any single finding is MISUNDERSTANDING, the integrated verdict is MISUNDERSTANDING; else if any is GAP, the verdict is GAP; else if any is CONCERN, the verdict is CONCERN; else SOUND.
-  8. Append an entry to <CASE DIR>/tribune-log.md per the schema, including kimi_dockets, claude_side_findings, deviation_as_improvement_notes, final_chain_of_evidence, cost_usd_kimi (sum of fired-lane docket cost_usd), and interface_summary (added/modified/removed function signatures from the diff). On sampled tasks, also write the counterfactual block.
+  8. Append an entry to <CASE DIR>/tribune-log.md per the schema, including task_start_sha (received in the SendMessage body), kimi_dockets, claude_side_findings, deviation_as_improvement_notes, final_chain_of_evidence, cost_usd_kimi (sum of fired-lane docket cost_usd), and interface_summary (added/modified/removed function signatures from the diff range `(task_start_sha, HEAD]` over `change_set` — the same convention as verification, never bare `git diff`). On sampled tasks, also write the counterfactual block.
   9. Reply to the Legatus's SendMessage with: verdict (one of SOUND, CONCERN, GAP, MISUNDERSTANDING — Codex categories), verdict_summary (one-line synopsis tied to the verdict category), findings (Codex-tagged with chain of evidence per Codex rules).
 
 Substrate degradation handling:
@@ -103,12 +103,21 @@ SendMessage({
 
 ```
 Task complete: <task_id>
-Change set: <list of files touched>
+Task start SHA: <40-hex-commit-sha — `git rev-parse HEAD` at SendMessage emission>
+Change set: <list of files touched — empty list permitted; absent field is malformed>
 Implementation summary: <one paragraph from soldier's DONE report>
 Sampled: <true if (plan_index of this task) mod 3 == 0, else false>
 
 Verify and reply.
 ```
+
+**Required field discipline.** `task_id`, `task_start_sha`, `change_set`, `implementation_summary`, and `sampled` are all required. A SendMessage body received without `task_start_sha` or without `change_set` is malformed; the executor responds with `verdict: GAP` naming the missing-field error and does not proceed to verification. `change_set: []` (empty list) is well-formed and means the task produced no file changes — the executor emits `verdict: SOUND` with `verdict_summary: "no-op task"` and skips diff extraction.
+
+**Fix-soldier re-dispatch.** When the executor returned `verdict: GAP` on a primary task and `/legion` dispatches a fix-soldier, `/legion` captures a **fresh** `task_start_sha` at the fix-soldier's SendMessage emission. The fix-soldier verifier evaluates **the fix as a unit**, not the integrated (primary + fix) work — the diff range `(fix_task_start_sha, HEAD]` covers only what the fix-soldier produced after dispatch. Two consecutive log entries for the same `task_id` are appended (per the schema's "One entry per Soldier-dispatch" discipline): the original verification and the fix's re-verification, each carrying its own `task_start_sha`.
+
+**Fix-soldier failure modes.** Two specific cases the executor handles:
+- **Fix-soldier mid-dispatch crash.** `/legion` retries per the existing crash-recovery semantics; on retry, a fresh `task_start_sha` is captured at the retried fix dispatch. The crashed dispatch produces no log entry.
+- **Fix-soldier returns DONE with zero commits** (`change_set` non-empty but no commits landed since fix dispatch). The verifier emits `verdict: GAP` with `verdict_summary: "fix-soldier produced no commits — escalate per Codex auto-feed-cap"`. A zero-commit response to a GAP-driven fix dispatch is functionally a refusal-to-fix; the verdict surfaces it for the auto-feed handler to escalate.
 
 The Tribunus-executor responds with the integrated verdict. The Legatus handles findings per the Codex (SOUND → next task; CONCERN → note for Campaign review; GAP → fix-soldier dispatch + re-verify; MISUNDERSTANDING → halt + escalate).
 

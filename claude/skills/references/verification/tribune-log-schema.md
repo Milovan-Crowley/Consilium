@@ -11,6 +11,7 @@ window_id: w1, w2, ...  # which Tribunus-executor instance authored this slice
 entries:
   - task_id: <id>
     window_id: w1
+    task_start_sha: <40-hex-commit-sha>  # full commit SHA captured at SendMessage emission for this entry; diff range is (task_start_sha, HEAD]
     verdict: SOUND | CONCERN | GAP | MISUNDERSTANDING
     lanes_fired: [task-plan-match, ...]
     model_profile_per_lane: {...}
@@ -35,6 +36,7 @@ entries:
 - **`plan_id`** — copied from `tribune-protocol.md`; consistency check at append time.
 - **`window_id`** — `w1`, `w2`, ... per Tribunus-executor instance. Restart at the 15-task boundary increments.
 - **`entries[].task_id`** — plan task identifier; matches the protocol task_id.
+- **`entries[].task_start_sha`** — full commit SHA at the moment `/legion` emitted the SendMessage that triggered this entry. Captured by `/legion` via `git rev-parse HEAD` at SendMessage emission. **Required.** The verifier's diff range for this entry is bounded by `(task_start_sha, HEAD]` over the task's `change_set`. On fix-soldier re-dispatch, a fresh `task_start_sha` is captured at the fix-soldier's SendMessage emission and a second entry is appended against the same `task_id` (per the "One entry per Soldier-dispatch" discipline in this schema).
 - **`entries[].verdict`** — Tribunus-executor's integrated verdict, one of the four Codex categories: SOUND, CONCERN, GAP, MISUNDERSTANDING. SOUND advances; CONCERN is a soft finding for Campaign review; GAP routes to fix-soldier dispatch + re-verify; MISUNDERSTANDING halts the legion and escalates to the Imperator per the Codex.
 - **`entries[].lanes_fired`** — actual lanes dispatched (subset of protocol `lanes_triggered`; identical unless a transport failure dropped a lane).
 - **`entries[].model_profile_per_lane`** — actual profiles used per lane.
