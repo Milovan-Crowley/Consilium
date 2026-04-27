@@ -388,7 +388,50 @@ The contradiction is a Custos report bug, not a dispatcher decision.
 - **Re-walk inheritance**: the second walk after `PATCH BEFORE DISPATCH` inherits the same failure semantics — non-return on the second walk treats as `BLOCKER` + escalate. There is no re-re-walk.
 - **Session termination**: if the main session terminates during a Custos dispatch, the in-flight Agent call is orphaned. On session resumption, run `git rev-parse HEAD:<plan-path>` to get the current plan SHA, then scan `decisions.md` for the most recent `verdict` entry whose `**Plan SHA:**` field matches. If no matching entry is present, the dispatch did not complete (or did not log) — announce: *"Custos dispatch from prior session has no recorded verdict for plan SHA `<sha>`. Re-dispatch, or proceed without?"* The Imperator decides; either choice is logged in `decisions.md` (type `decision`, with the current plan SHA recorded).
 
-After verdict handling completes (or override is confirmed), proceed to "The Legion Awaits."
+After verdict handling completes (or override is confirmed), proceed to "Dispatching Tribunus-Design."
+
+---
+
+## Dispatching Tribunus-Design
+
+**This section is reached after EVERY Custos-cleared path** — first-walk `OK TO MARCH`, second-walk `OK TO MARCH` after a `PATCH BEFORE DISPATCH` re-walk, or `BLOCKER` override-and-proceed. The verdict-bullet lines elsewhere in this skill that read "proceed to The Legion Awaits" refer to the eventual final destination; the actual transition flows through this Tribunus-Design dispatch first.
+
+The plan is verified, Custos-blessed, and committed. One artifact remains before the Legion Awaits — the per-task verification protocol that the persistent Tribunus-executor will run during Legion execution.
+
+I dispatch Tribunus-design exactly once per plan, in the **design stance** of the `consilium-tribunus` user-scope agent. The dispatch produces `tribune-protocol.md` in the case directory alongside `plan.md`.
+
+I read the template before dispatch:
+- `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/tribune-design.md`
+
+I follow the template exactly. Dispatch is one-shot — Tribunus-design returns DESIGN_COMPLETE or DESIGN_BLOCKED.
+
+### Re-dispatch on Structural Patch
+
+If Custos returned `PATCH BEFORE DISPATCH` AND the patches modified task structure (additions, removals, reordering), the prior `tribune-protocol.md` (if any) is invalidated. I re-dispatch Tribunus-design after the second Custos walk completes with `OK TO MARCH`. Re-dispatch on non-structural patches (typo fixes inside a task body, evidence-path corrections) is NOT required — the prior protocol output is preserved.
+
+The structural-vs-non-structural distinction is made by inspecting the `## Re-walk Marker` diff hunks: any hunk that adds or removes a `### Task N` heading, changes a task's `**Files:**` block, or reorders tasks is structural. A hunk that touches only the body text of a single task without changing its structural metadata is non-structural.
+
+### Path coverage
+
+- **First-walk `OK TO MARCH`** → Tribunus-design dispatch (first run; no prior protocol).
+- **Second-walk `OK TO MARCH` after structural patch** → Tribunus-design dispatch (re-run; prior protocol invalidated).
+- **Second-walk `OK TO MARCH` after non-structural patch** → Tribunus-design dispatch only if no prior protocol exists; otherwise the prior protocol is preserved.
+- **BLOCKER override-and-proceed** → Tribunus-design dispatch (the override does not bypass protocol authoring; the Imperator chose to dispatch despite the finding, and the protocol still needs to be written).
+
+### Failure Handling
+
+- **DESIGN_BLOCKED:** the plan has a gap that prevents protocol authoring (e.g., a task body too vague to claim-extract). Surface the blocker to the Imperator with the Tribunus's gap report. The Imperator decides: revise the plan (route back to plan-writing), accept the gap and dispatch with a partial protocol (Tribunus-executor falls back to Claude-side patrol on uncovered tasks), or halt the campaign.
+- **Subagent crash / non-return:** announce failure. Re-dispatch once. If the second dispatch also fails, escalate to the Imperator. The Legion can still march on a partial-or-empty `tribune-protocol.md` because Tribunus-executor falls back to Claude-side patrol per the Patrol Stance fallback in `consilium-tribunus.md`.
+
+### Imperator Review of Plan + Protocol Bundle
+
+After DESIGN_COMPLETE, present the plan and the protocol to the Imperator together as one approval bundle:
+
+> "The orders are sealed and the verification protocol is authored, Imperator. Plan: `<plan path>`. Protocol: `<case>/tribune-protocol.md`. Review both. Tell me if you want changes before I yield to The Legion Awaits."
+
+The Imperator may request changes to the protocol without re-running plan authoring (the protocol is independently revisable). After approval, proceed to "The Legion Awaits."
+
+After approval, proceed to "The Legion Awaits."
 
 ---
 
