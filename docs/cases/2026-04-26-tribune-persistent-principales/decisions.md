@@ -167,3 +167,16 @@ Per-case decision and audit log. Append-only. Each entry is a decision, override
 **Rationale:** The BLOCKER is a single, surgical, zsh-specific shell-correctness fix Custos's own recommendation provides verbatim. Full Praetor+Provocator re-cycle would re-attack ground that was iteration-2-cleared and is unaffected by this rename (the Edits are pure variable-name changes; no contract or semantic shift). The Custos-only re-walk verifies the patch and any walk-6-document-coherence side effects without re-litigating magistrate-territory.
 
 **Plan SHA:** 76c7a69b811f163f5c4e9536590649cb95873576
+
+---
+
+## Entry: 2026-04-27 — Custos walk 2 OK TO MARCH — patched plan dispatch-ready
+
+**Type:** verdict
+**Actor:** Custos (Marcus Pernix)
+**Trigger:** Re-walk of plan iteration 2 + zsh-rename patch (commit `31a539b`, plan blob `3a2db174b42d55e5fba7f80c0947de09d5244f79`) per Imperator's "2" directive. Re-walk Marker carried only the unified diff hunks of the variable-rename patch; no prose, no attribution, no finding categories.
+**Verdict:** OK TO MARCH
+**Findings:** Seven SOUND across all six walks. Walk 1 confirmed live: patched loop runs clean in zsh, prints `OK: all 5 target files match plan-authoring blob SHAs` exit 0; `$PATH` intact post-loop (30+ entries including `/Users/milovan/projects/Consilium/claude/bin`). No other bash block in the plan exhibits the same zsh-tied-array hazard (single for-loop in entire document; parameter-expansion patterns localized to the patched loop). Walk 2 env classification unchanged (pure variable-rename + inline note, no env surface change). Walk 3 verification semantics intact (`${entry%:*}` / `${entry##*:}` partition byte-equivalent to prior `${path_sha%:*}` / `${path_sha##*:}`). Walk 4 baseline clean (zero `known-gaps.md` entries on Consilium infra). Walk 5 patch did not widen scope (`git show --stat 31a539b`: 1 file, +7/-5, plan only; full diff matches Re-walk Marker character-for-character). Walk 6 document re-read cold: no stale wording, no orphaned references to old variable names; inline note's prose structurally consistent with surrounding Pre-flight 5 narrative.
+**Do Not Widen:** Resisted re-litigating spec design (Censor lane), proposing better task ordering (Praetor lane), stress-testing change_set:[] / fix-soldier failure modes (Provocator lane), critiquing the cap or proposing global Bash-tool-convention extension (Imperator/doctrine lane), auditing decisions.md commit-message references (process-record territory), and re-running prior walk findings beyond the patch surface (would betray the Custos-only re-walk directive).
+
+**Plan SHA:** 3a2db174b42d55e5fba7f80c0947de09d5244f79
