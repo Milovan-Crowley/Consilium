@@ -6,7 +6,7 @@ The Legatus invokes this template inside `/legion` to (a) spawn the persistent T
 
 - Plan exists at `<case>/plan.md`.
 - `tribune-protocol.md` exists at `<case>/tribune-protocol.md` (written by `/edicts` Tribunus-design dispatch).
-- Operator-side restart of the principales MCP has occurred since the last prompt-file change (verifiable by attempting a sample `verify_lane` call; if it returns "lane not found" for an execution-family lane, the MCP needs restart and the Legatus should halt and surface this).
+- Operator-side restart of the principales MCP has occurred since the last prompt-file change. The substrate emits no human-readable lane-missing string — the missing-lane allowlist gate at `verify-lane.ts:87-90` returns a synthetic-failure docket via `mapFailureToDocket('refused', ...)` whose shape (`completion_status: "refused"`, `unverified_reason: "missing_context"`) is INDISTINGUISHABLE from the budget-breaker-open path at `verify-lane.ts:92-94` and the FS-error catch path at `verify-lane.ts:248-252`. Use a two-call discrimination strategy: dispatch a known pre-B-1 lane (e.g., `upstream-coverage`) FIRST. If it returns `completion_status: "refused"`, the substrate budget breaker is open or the MCP is otherwise degraded — different problem, halt and surface. If it succeeds, dispatch a second call against an execution-family lane (e.g., `task-plan-match`); if THAT one returns `completion_status: "refused"` with `unverified_reason: "missing_context"`, the MCP's `allowedLanes` set is stale (the new prompt files were not picked up at process spawn) — restart required, Legatus should halt and surface this.
 
 ## Spawn the Persistent Tribunus-Executor
 
