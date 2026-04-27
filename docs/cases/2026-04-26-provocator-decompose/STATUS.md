@@ -10,11 +10,11 @@ current_session: 1
 
 ## Current state
 
-Spec iteration 3 approved by Imperator. Custos case has landed (per Imperator). Plan written and committed at `e578b03` — 16 tasks covering protocol.md updates, canonical persona note, 5 lane agent files, drift script extension, two template restructures, consul + edicts SKILL updates, CLAUDE.md updates, smoke tests. Pre-flight 3 will verify Custos landmarks at execution time. Awaiting plan verification.
+Spec iteration 3 approved. Custos case landed. Plan iteration 1 committed at `e578b03` (16 tasks). Praetor + Provocator (pre-decomposition single-Provocator) verified iteration 1 in parallel: 0 MISUNDERSTANDING, 9 GAPs (after dedup), 9 CONCERNs, 14 SOUNDs. Imperator authorized iteration 2 with "fix how you think makes sense" + "Remove #1 entirely" (drop Pre-flight 8). Iteration 2 applied: 7 GAP fixes + 5 adopted CONCERNs + 3 explicitly-rejected CONCERNs. Major structural change: Task 5 restructured to mechanical Bash+heredoc pattern (matches Tasks 6-9). See `decisions.md` for full disposition log.
 
 ## What's next
 
-Self-review complete (placeholder scan + symbol-consistency check). Next: dispatch Praetor + Provocator on the plan (using the still-existing pre-decomposition single-Provocator template — the new five-lane template ships with this case but doesn't apply to verifying this plan itself). Then Custos field-check, then Imperator review gate, then Legion or March execution.
+Plan iteration 2 awaiting commit, then optional re-dispatch (auto-feed loop cap is 2 iterations; iteration 2 is the final auto-fix round; iteration 3 of plan verification, if needed, requires Imperator authorization). Then Custos field-check, then Imperator review gate, then Legion or March execution.
 
 ## Sequencing dependencies
 
