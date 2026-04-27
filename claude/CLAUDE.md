@@ -32,9 +32,9 @@ Read `docs/CONSILIUM-VISION.md` for full context on decisions, architecture, and
 **Codex drift check.** The Codex (`skills/references/personas/consilium-codex.md`) is copy-pasted into 6 user-scope agent files. After editing the canonical Codex, run:
 
 ```bash
-python3 scripts/check-codex-drift.py              # report drift
-python3 scripts/check-codex-drift.py --verbose    # report + unified diff
-python3 scripts/check-codex-drift.py --sync       # rewrite agent copies from canonical
+python3 claude/scripts/check-codex-drift.py              # report drift
+python3 claude/scripts/check-codex-drift.py --verbose    # report + unified diff
+python3 claude/scripts/check-codex-drift.py --sync       # rewrite agent copies from canonical
 ```
 
 **Plugin cache.** The plugin cache at `~/.claude/plugins/cache/consilium-local/consilium/1.0.0/` is symlinked to `/Users/milovan/projects/Consilium/claude/`. Edits to source under `claude/` are instantly live in the next session — no copy step needed.
@@ -42,8 +42,8 @@ python3 scripts/check-codex-drift.py --sync       # rewrite agent copies from ca
 **Tribune staleness check.** After editing any tribune file, run:
 
 ```bash
-python3 scripts/check-tribune-staleness.py              # report
-python3 scripts/check-tribune-staleness.py --verbose    # report + unified matches
+python3 claude/scripts/check-tribune-staleness.py              # report
+python3 claude/scripts/check-tribune-staleness.py --verbose    # report + unified matches
 ```
 
 Scans for stale references (banned regex, case-insensitive), broken reference targets (including medusa-dev skills resolved via `~/.claude/plugins/installed_plugins.json` + cache), and test-writing discipline leaks.
