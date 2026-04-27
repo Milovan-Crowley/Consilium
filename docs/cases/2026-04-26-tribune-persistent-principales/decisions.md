@@ -89,3 +89,26 @@ Per-case decision and audit log. Append-only. Each entry is a decision, override
 **Rationale:** The 4 deferred GAPs are real but cannot surface during B-1's own execution because B-1 used the OLD ephemeral Tribunus pattern. They surface only on the next campaign that uses the persistent pattern end-to-end. The persistent pattern gates itself behind `tribune-protocol.md` existence (per Task 14's `/edicts` Tribunus-design dispatch and Task 15's `/legion` pre-spawn check), so it cannot accidentally activate before B-1.1 lands. Imperator chose Option B over Option A — declining to declare B-1 complete with deferred GAPs as plain notes, instead opening a follow-up campaign B-1.1 with a tight spec covering the 4 deferred GAPs.
 **Next action:** Imperator to invoke `/consul` to brainstorm/spec B-1.1. The Consul should treat this `decisions.md` entry + the Provocator GAP-1/3/4/5 finding evidence as input. B-1.1's scope: address GAP-1, GAP-3, GAP-4, GAP-5 before the persistent pattern is exercised in earnest. The 11 CONCERNs from Campaign Review (advisory) may or may not be in scope for B-1.1 — Consul's call after deliberation.
 **Plan SHA:** 3c3329cfdcfdb263f4c3d4db14f4a20008d09801
+
+---
+
+## Entry: 2026-04-27 — B-1.1 spec verification iteration cap-override; iteration-3 fixes hand off to /edicts without re-verify
+
+**Type:** override
+**Actor:** Imperator
+**Trigger:** B-1.1 spec entered iteration 2 of Censor + 5-Provocator-lane verification per Codex protocol §14. Iteration 1 returned 1 MISUNDERSTANDING + 25 GAPs + 14 CONCERNs across six lanes; Consul applied 137 lines of revisions and re-dispatched. Iteration 2 returned 35 of 38 prior findings RESOLVED (a clean Overconfidence-lane sweep) plus a NEW MISUNDERSTANDING at §4.1 (vocabulary-mapping framing wrong: persistent template DOES carry MISUNDERSTANDING-tagged FAIL at `tribune-persistent.md:111`; the "extension not migration" framing was internally inconsistent with the migration footprint table) plus 12 new GAPs after dedup plus 7 new CONCERNs. Per Codex 2-iteration cap, this point escalates to Imperator.
+
+**Decision:** Imperator directed: *"Fix but I think we may just continue with the edict since this isn't a full rewrite right?"* Authorize iteration-3 inline fixes; skip the iteration-3 differential re-verify step; hand off directly to `/edicts` for plan-forging. Rationale (Imperator's): the iteration-2 findings are surgical (1-3 sentence additions per fix; not architectural); `/edicts` carries its own Praetor + Provocator on the plan, which will catch any remaining contract gaps the spec leaves at the boundary. Cap-override precedent exists at `2026-04-26-custos-edicts-wiring/decisions.md` (Custos cap-override for trivial spec-line fix) and at this case's prior decision (decisions.md:46-50 — Imperator-override of Custos 2-iteration cap on a one-line fix).
+
+**Iteration-3 fix list (applied at commit `39ad1e4`):**
+- §4.1: MISUNDERSTANDING reframed as "tag promotion to first-class category"; emission mechanism specified; migration discipline (5 surfaces in one atomic plan-task); log-schema "Atomic per task" rule relaxed for fix-soldier re-verification entries.
+- §4.2: Path-resolution failures generalized to cover unborn HEAD, corrupt git state, IO error (not just deletion).
+- §4.3: Capture surface reformulated as property-based contract; `change_set` made required; fix-soldier crash + zero-commit semantics specified; fix-soldier verification scope clarified (fix-as-unit, not integrated work).
+- §4.4: "Well-formed" tightened (case-insensitive SHA, schema_version v1 mandate, lanes_triggered must be a list, all-or-nothing partition); "atomic" → "single-snapshot" wording (achievable in shell-driven /legion); crash-recovery respawn semantics specified; smoke-check rationale rewritten in lifecycle terms.
+- §3, §5, §6, §8: alignment with iteration-3 changes; §6 row 8 revised; concurrent-/legion + cross-pipeline non-goals added.
+
+**Rationale:** The Codex 2-iteration cap exists to prevent endless verifier loops on architectural disagreement. The iteration-2 findings were surgical refinements, not architectural disagreement; the iteration-3 fixes are the verifiers' own recommendations applied. Skipping iteration-3 re-verify is a defensible exercise of Imperator authority, distinct from "ignore the verifiers' findings and march." The `/edicts` plan-verification (Praetor + Provocator) re-attacks all spec content as part of plan creation — any contract gap the spec still carries gets caught at plan-verification time, which is the cleaner point to surface late-stage spec issues.
+
+**Next action:** Consul to invoke `/edicts` with the iteration-3 spec at `session-02-b-1-1-spec.md` as input. The plan that emerges goes through Praetor + Provocator + Custos per the standard `/edicts` flow before any soldier marches.
+
+**Plan SHA:** 518eb41217c6069807de3c88c165910ac5d2fb58
