@@ -37,3 +37,22 @@ Audit trail of dispatch-readiness decisions per the Custos / edicts protocol. En
 - Do Not Widen section preserved (Custos resisted §4.1.1 enforcement re-litigation, T13 placement critique, plan reordering, lane-carve re-evaluation, and `set -euo pipefail` aesthetic).
 
 **Action:** verdict honored; proceed to Tribunus-Design dispatch per `/edicts` flow.
+
+---
+
+## 2026-04-27 — Decision: Tribunus-Design DESIGN_COMPLETE
+
+**Type:** decision
+**Plan SHA:** `97db3f0c2b9db80144844582914d3af9f8f67142`
+**Protocol blob SHA (working tree, pre-commit):** `8481760f745b71dd6bef916d63c9afb3b45fa903`
+
+After OK TO MARCH (walk 2), the Imperator authorized Tribunus-Design dispatch. The Tribunus subagent in design stance read the plan with fresh context and authored `tribune-protocol.md`.
+
+**Output:**
+- 13 task entries (T1–T13) with lane assignments per the four execution-family lanes.
+- T13 (MANUAL refusal-contract verification by Imperator/Legatus) authored as `lanes_triggered: []` per design-template authorization for tasks with no soldier diff to Kimi-verify.
+- All other tasks fire 3–4 lanes; counterfactual sampling on T3, T6, T9, T12 (every-3rd-task-by-plan-index).
+- `plan_id` written as `plan.md 97db3f0c…` (case-relative path + space-separated blob SHA per schema).
+- Doctrine paths under `$CONSILIUM_DOCS/doctrine/` cited only by T9 (`lane-classification.md`); other domain-correctness lanes cite this case's `spec.md` as meta-doctrine, per dispatch authorization recognizing the meta-Consilium nature of the plan (the spec itself encodes the architecture contracts the plan modifies).
+
+**Action:** Imperator authorized `/consilium:legion`. Committing protocol + this entry; re-invoking legion (branch 4 — well-formed + SHA match → persistent executor + smoke check).
