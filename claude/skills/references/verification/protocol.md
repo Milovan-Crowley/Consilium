@@ -44,7 +44,12 @@ During execution, the Legatus replaces "Dispatching..." with immediate dispatch.
 |-|-|
 | Spec verification | `consilium-censor` |
 | Plan verification | `consilium-praetor` |
-| Adversarial stress-test (spec, plan, or campaign) | `consilium-provocator` |
+| Adversarial stress-test (spec/plan) — Overconfidence Audit lane | `consilium-provocator-overconfidence` |
+| Adversarial stress-test (spec/plan) — Assumption Extraction lane | `consilium-provocator-assumption` |
+| Adversarial stress-test (spec/plan) — Failure Mode Analysis lane | `consilium-provocator-failure-mode` |
+| Adversarial stress-test (spec/plan) — Edge Case Hunting lane | `consilium-provocator-edge-case` |
+| Adversarial stress-test (spec/plan) — Negative Claim Attack lane | `consilium-provocator-negative-claim` |
+| Adversarial stress-test (Campaign review) | `consilium-provocator` |
 | Dispatch-readiness verification | `consilium-custos` |
 | Per-task mini-checkit | `consilium-tribunus` |
 | Implementation and GAP fix | `consilium-soldier` |
