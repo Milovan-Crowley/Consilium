@@ -112,3 +112,32 @@ Per-case decision and audit log. Append-only. Each entry is a decision, override
 **Next action:** Consul to invoke `/edicts` with the iteration-3 spec at `session-02-b-1-1-spec.md` as input. The plan that emerges goes through Praetor + Provocator + Custos per the standard `/edicts` flow before any soldier marches.
 
 **Plan SHA:** 518eb41217c6069807de3c88c165910ac5d2fb58
+
+---
+
+## Entry: 2026-04-27 — B-1.1 plan verification iteration cap-override; iteration-2 fixes hand off to Custos without differential re-verify
+
+**Type:** override
+**Actor:** Imperator
+**Trigger:** B-1.1 plan iteration 1 (commit `bcc8feb`) verification dispatched Praetor + 5 Provocator lanes per protocol §14. Returned: 0 MISUNDERSTANDING, 4 GAPs, ~12 CONCERNs. Consul applied iteration-2 fixes inline (commit `f30fc9a`) closing all 4 GAPs + 6 CONCERNs; 6 CONCERNs deferred with documented rationale. Per protocol §12, iteration 2 normally triggers differential re-verify (Praetor full re-run + lanes whose surface intersected the diff). Consul presented A/B decision to Imperator: A = differential re-verify; B = cap-override + proceed to Custos.
+**Decision:** Imperator directed: *"b"*. Skip the iteration-2 differential re-verify; hand off directly to Custos dispatch. Rationale (Imperator-accepted from Consul recommendation): the iteration-2 fixes are mechanical (`|| true` suppression on 5 grep steps, count correction on Task 5 Step 4, Note insertions on Task 1 Step 11 + Task 4 Step 2, blob-SHA pinning Pre-flight 5, prose tightening on Pre-flight 2/4 + Notes for the Legatus, boundary trim on Task 4 Step 6) — not architectural revisions that warrant re-attack. Custos's dispatch-readiness walk attacks operational layer (shell quoting, env classification, baseline regression gates, blast radius, document coherence) which the magistrates do not — the next genuine attack surface.
+
+**Iteration-2 fix list (applied at commit `f30fc9a`):**
+- GAP-1: Task 5 Step 4 expected `task_start_sha` match count corrected from ≥5 to ≥4 (fix-soldier prose primary-capture and diff-range mention live in same paragraph; `grep -n` counts lines).
+- GAP-2: Five inverted-success grep verification steps now append `|| true` to suppress grep's exit-1-on-no-match (Task 1 Step 13, Task 2 Step 6, Task 4 Step 8, Task 6 Step 4, Final-2). Bash-tool grep convention documented in plan header.
+- GAP-3: Task 4 Step 2 cross-task dependency Note added (mirrors Task 5 Step 2's Note — symmetric discipline on Task 1 coupling).
+- GAP-4: Pre-flight 5 added pinning all 5 target files' blob SHAs to plan-authoring HEAD `bcc8feb`. Drift now gates pre-Task-1.
+- C7: Confidence calibration note in plan header (Edit-mechanics-High vs spec-design-Medium disambiguation).
+- C8: Pre-flight 4 strengthened to explicit "Hard gate" with HALT language.
+- C9: Pre-flight 2 wrapped with `2>/dev/null || echo RESOLUTION_FAILED` for HEAD-unborn / corrupt-state surfaces.
+- C10: Notes for the Legatus rewritten to enumerate both cross-task couplings + clarify ordering enforced by manual discipline + no-self-dispatch rule (since `/legion` is itself the file being modified).
+- C11: Task 1 Step 11 Note acknowledging deliberate bounded transient `task_start_sha` forward-reference (heals at Task 4 commit).
+- C12: Task 4 Step 6 boundary fragility eliminated — `old_string` and `new_string` trimmed to terminate at YAML closing fence.
+
+**CONCERNs deferred with reasoning (recorded in Consul summary, not re-verified):** C1 (case-folder churn — strict pre-flight defensible), C2 (path canonical form — spec doesn't pin), C3 (schema_version=v2 forward-look — v1 only ships), C4 (Task 5 Step 2 long `old_string` — whole-paragraph audit preferred + C7 covers calibration), C5 (Task 4 Step 8 regex brittleness — functionally correct), C6 (Task 1 Step 14 permissive grep — Step 13 is load-bearing).
+
+**Rationale:** The Codex 2-iteration cap exists to prevent endless verifier loops on architectural disagreement. The iteration-1 findings were operational refinements (count off-by-one, exit-code semantics, missing Note, missing pre-flight), not architectural disagreement; the iteration-2 fixes are the verifiers' own implicit recommendations applied. Skipping iteration-2 differential re-verify is a defensible exercise of Imperator authority, distinct from "ignore the verifiers' findings and march." Precedent: this case's prior cap-override at `decisions.md:91-114` (iteration-3 spec fixes), and `2026-04-26-custos-edicts-wiring/decisions.md:48` (Custos 2-iteration cap override on trivial spec fix). Custos's dispatch-readiness walk re-attacks the operational surface from a different angle and provides the next gate.
+
+**Next action:** Consul dispatches `consilium-custos` per the `Dispatching the Custos` phase of the `/edicts` skill. Pre-Custos five conditions verified: (1) no MISUNDERSTANDING in escalation; (2) no unresolved GAPs after the cap (all 4 fixed in iteration 2); (3) all CONCERNs explicitly handled (6 fixed inline, 6 deferred with documented rationale in this entry); (4) no silent plan modifications (working tree clean per `git status --porcelain` empty after `f30fc9a` commit); (5) Imperator override recorded (this entry).
+
+**Plan SHA:** 76c7a69b811f163f5c4e9536590649cb95873576
