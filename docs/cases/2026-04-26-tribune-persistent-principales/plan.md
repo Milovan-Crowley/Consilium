@@ -1160,7 +1160,7 @@ tools: Read, Write, Grep, Glob, Skill, mcp__serena__find_symbol, mcp__serena__fi
 mcpServers:
   - serena
   - medusa
-  - principales
+  - consilium-principales
 model: opus
 ---
 ```
@@ -1173,8 +1173,8 @@ Expected: matches the new frontmatter exactly.
 Run: `grep "mcp__consilium-principales__verify_lane" ~/.claude/agents/consilium-tribunus.md`
 Expected: at least one match (in the tools line).
 
-Run: `grep "  - principales" ~/.claude/agents/consilium-tribunus.md`
-Expected: at least one match (in mcpServers).
+Run: `grep "  - consilium-principales" ~/.claude/agents/consilium-tribunus.md`
+Expected: at least one match (in mcpServers). The MCP server is registered in `~/.claude.json` under the key `consilium-principales` (verified via `python3 -c "import json,sys; print(list(json.load(sys.stdin).get('mcpServers',{}).keys()))" < ~/.claude.json`); the bare token `principales` does NOT match any registered server.
 
 - [ ] **Step 4: Commit (if user-scope agents are tracked under the repo's `claude/scripts` or via `~/.claude/agents/` symlink)**
 
@@ -1886,26 +1886,33 @@ With:
 **DONE** — The task is complete as specified. I signal the persistent Tribunus-executor via `SendMessage({to: "tribune-w<N>", ...})` per `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md`. The Tribunus replies with the integrated verdict (PASS/CONCERN/FAIL). If the persistent pattern is unavailable, I fall back to ephemeral Patrol via `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/mini-checkit.md` per the fallback procedure in the persistent template. No task passes without verification — not one, not ever.
 ```
 
-- [ ] **Step 4: Update the digraph nodes**
+- [ ] **Step 4: Update the digraph nodes AND Example March annotations**
 
-Find the digraph block at lines 87-134.
+Find all occurrences of the legacy phrase across the file (digraph block at lines 87-134 AND the `## Example March` section).
 
 Run: `grep -n "Dispatch Tribunus mini-checkit" claude/skills/legion/SKILL.md`
-Expected: 2 matches in the digraph — one node DECLARATION (line ~99: `"Dispatch Tribunus mini-checkit" [shape=box];`) and one TRANSITION (line ~119: `"Soldier implements,\ntests, commits, self-reviews" -> "Dispatch Tribunus mini-checkit";`).
+Expected: 5 matches total — 3 in the digraph, 2 in the Example March annotations:
+- Line ~99 (digraph node DECLARATION): `"Dispatch Tribunus mini-checkit" [shape=box];`
+- Line ~119 (digraph TRANSITION, target side): `"Soldier implements,\ntests, commits, self-reviews" -> "Dispatch Tribunus mini-checkit";`
+- Line ~120 (digraph TRANSITION, source side): `"Dispatch Tribunus mini-checkit" -> "Tribunus finding?";`
+- Line ~212 (Example March annotation): `[Dispatch Tribunus mini-checkit]`
+- Line ~229 (Example March annotation): `[Dispatch Tribunus mini-checkit]`
 
-Use the Edit tool with `replace_all=true` to replace `"Dispatch Tribunus mini-checkit"` with `"Signal persistent Tribunus\n(SendMessage)"`. The literal string matches both occurrences identically; `replace_all` updates both in one operation.
+**Primary path (preferred):** Use the Edit tool with `replace_all=true` to replace `"Dispatch Tribunus mini-checkit"` with `"Signal persistent Tribunus\n(SendMessage)"`. The literal string matches all 5 occurrences identically (the trailing-context characters — `[shape=box];`, `;`, `]` — vary, but the match string itself is identical). The `replace_all=true` pass handles all 5 in one operation. **Note for Example March annotations:** the bracketed `[...]` form will become `[Signal persistent Tribunus\n(SendMessage)]` — accept the linebreak escape inside the brackets; this is a flow annotation, not rendered output.
 
-If `replace_all` is unavailable, apply two edits with surrounding context to disambiguate:
-- First occurrence (declaration): `old_string: "\"Dispatch Tribunus mini-checkit\" [shape=box];"`, `new_string: "\"Signal persistent Tribunus\\n(SendMessage)\" [shape=box];"`.
-- Second occurrence (transition): `old_string: "-> \"Dispatch Tribunus mini-checkit\";"`, `new_string: "-> \"Signal persistent Tribunus\\n(SendMessage)\";"`.
+**Fallback path (if `replace_all` is unavailable):** Apply five edits with surrounding context to disambiguate each occurrence:
+1. Digraph declaration: `old_string: "\"Dispatch Tribunus mini-checkit\" [shape=box];"`, `new_string: "\"Signal persistent Tribunus\\n(SendMessage)\" [shape=box];"`.
+2. Digraph transition target side: `old_string: "-> \"Dispatch Tribunus mini-checkit\";"`, `new_string: "-> \"Signal persistent Tribunus\\n(SendMessage)\";"`.
+3. Digraph transition source side: `old_string: "\"Dispatch Tribunus mini-checkit\" -> \"Tribunus finding?\";"`, `new_string: "\"Signal persistent Tribunus\\n(SendMessage)\" -> \"Tribunus finding?\";"`.
+4 + 5. Example March annotations (both lines have identical content `[Dispatch Tribunus mini-checkit]` so `replace_all=true` is required for the bracketed form; if the soldier truly has only single-edit Edit, disambiguate by including the immediately-following soldier dialogue line as context for each, OR fall back to a Write-tool full-file rewrite).
 
-After the edit, immediately verify both occurrences were updated:
+After the edit, immediately verify all occurrences were updated:
 
 Run: `grep -c "Dispatch Tribunus mini-checkit" claude/skills/legion/SKILL.md`
-Expected: `0` (both occurrences replaced; if `1` remains, the digraph is in inconsistent state — re-apply the missing edit).
+Expected: `0` (all five occurrences replaced; if any remain, the file is in inconsistent state — re-apply the missing edit).
 
 Run: `grep -c "Signal persistent Tribunus" claude/skills/legion/SKILL.md`
-Expected: at least `2` (both digraph occurrences plus any prose mentions added in Steps 2-3).
+Expected: at least `5` (three digraph + two Example March + any prose mentions added in Steps 2-3).
 
 - [ ] **Step 5: Verify the modifications**
 
@@ -1947,7 +1954,7 @@ Expected: no drift across all 6 user-scope agents. If drift is reported, return 
 The staleness script (Step 2b) scans `claude/skills/tribune/` (the Medicus skill), NOT `~/.claude/agents/consilium-tribunus.md` (the persona). Tasks 10-11 edited the persona; staleness is silent on those edits. Validate persona edits directly:
 
 Run: `head -9 ~/.claude/agents/consilium-tribunus.md`
-Expected: matches the new frontmatter from Task 10 — `description:` includes "design stance" and "persistent-executor stance"; `tools:` includes `Write` and `mcp__consilium-principales__verify_lane`; `mcpServers:` includes `principales`.
+Expected: matches the new frontmatter from Task 10 — `description:` includes "design stance" and "persistent-executor stance"; `tools:` includes `Write` and `mcp__consilium-principales__verify_lane`; `mcpServers:` includes `consilium-principales` (the registered MCP server name in `~/.claude.json`).
 
 Run: `grep -c "^### Patrol Stance" ~/.claude/agents/consilium-tribunus.md`
 Expected: `1` (renamed by Task 11 to "Patrol Stance (`/march` primary; `/legion` fallback)").
