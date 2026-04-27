@@ -56,7 +56,7 @@ Your task:
 
 5. Add executor_notes per task when the task has a domain-surface flag (e.g., "task touches money path; additional scrutiny on idempotency").
 
-6. Write the protocol to <CASE DIR>/tribune-protocol.md per the schema.
+6. Write the protocol to <CASE DIR>/tribune-protocol.md per the schema. The `plan_id` field MUST be authored as `<case-relative-path-to-plan.md> <40-hex-blob-sha>` (space-separated). Compute the blob SHA via `git rev-parse HEAD:<plan-path>` at the moment of authoring. Blob SHA, not commit SHA — blob SHA is stable across unrelated commits and detects only meaningful plan changes (precedent: `2026-04-26-custos-edicts-wiring/decisions.md:111`). The path must be case-relative (e.g., `plan.md` if authoring inside the case folder, or `<case-slug>/plan.md` if authored from the repo root context — match how `/legion` will resolve the path against the case folder at pre-spawn).
 
 7. Report back to the Consul one of:
    - DESIGN_COMPLETE — protocol written; brief summary of lane assignments.

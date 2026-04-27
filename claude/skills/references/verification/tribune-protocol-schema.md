@@ -8,7 +8,7 @@ The protocol is structured markdown, parseable by Tribunus-executor. Per task, t
 
 ```yaml
 schema_version: 1
-plan_id: <case>/plan.md commit-or-hash
+plan_id: <case>/plan.md <40-hex-blob-sha>  # space-separated path + blob SHA from `git rev-parse HEAD:<plan-path>`
 sampling_mode: every-3rd-task-by-plan-index  # determines counterfactual cadence
 tasks:
   - task_id: <plan task identifier>
@@ -35,7 +35,7 @@ tasks:
 ## Field Definitions
 
 - **`schema_version`** — currently `1`. Bumps on incompatible changes.
-- **`plan_id`** — case-relative path to `plan.md` plus the git SHA at which the protocol was authored. Detects post-protocol plan drift.
+- **`plan_id`** — case-relative path to `plan.md` plus the **blob SHA** at which the protocol was authored, computed via `git rev-parse HEAD:<plan-path>` at the moment Tribunus-design wrote the protocol. Format: `<path> <40-hex-blob-sha>` (space-separated, single line). The SHA is case-insensitive on read; lowercase preferred per git's output convention. Blob SHA (not commit SHA) is the canonical form: it is stable across unrelated commits and detects only meaningful plan changes. Precedent: `2026-04-26-custos-edicts-wiring/decisions.md:111`. Detects post-protocol plan drift.
 - **`sampling_mode`** — counterfactual cadence. v1 supports `every-3rd-task-by-plan-index`; future modes may expand. Sampling computed against plan position, not window position. Boundary continuity: a 15-task window restart does not shift the sampling sequence.
 - **`tasks[].task_id`** — plan task identifier (e.g., `task-3`).
 - **`tasks[].lanes_triggered`** — subset of `[task-plan-match, task-no-stubs, task-domain-correctness, task-integration-prior]`. Tribunus-design selects per-task; the empty list means no Kimi dispatch (Tribunus-executor falls back to Claude-side patrol only).
@@ -63,4 +63,4 @@ tasks:
 
 `tribune-protocol.md` is invalidated when:
 - Custos returns `PATCH BEFORE DISPATCH` and the patches modify task structure (additions, removals, reordering). `/edicts` re-dispatches Tribunus-design after the second Custos walk.
-- The Imperator edits the plan after Tribunus-design ran but before Legion start. The `plan_id` SHA mismatch is detected at Legion start; Tribunus-executor halts and signals re-design.
+- The Imperator edits the plan after Tribunus-design ran but before Legion start. The `plan_id` SHA mismatch is detected at `/legion` pre-spawn (BEFORE any executor exists); `/legion` refuses to spawn the persistent executor, surfaces the diff inline + as a `decisions.md` `verdict` entry, and routes the case back to `/edicts` for re-design at the Imperator's gate. The executor itself is not spawned and therefore does not halt — the response is `/legion` refusing to spawn, not the executor halting.
