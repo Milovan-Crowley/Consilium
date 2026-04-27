@@ -49,7 +49,7 @@ Per task, the Legatus will SendMessage you with:
   - sampled: true | false  (every 3rd task by plan-index)
 
 When sampled=true:
-  1. Run Claude-side patrol on Kimi-covered surfaces FIRST — before dispatching lanes. Capture the counterfactual verdict (PASS/CONCERN/FAIL) and findings. This counterfactual is uncontaminated by docket exposure.
+  1. Run Claude-side patrol on Kimi-covered surfaces FIRST — before dispatching lanes. Capture the counterfactual verdict (SOUND/CONCERN/GAP/MISUNDERSTANDING — Codex categories) and findings. This counterfactual is uncontaminated by docket exposure.
 
 When sampled=false (skip the counterfactual step):
 
@@ -64,10 +64,10 @@ For all tasks (sampled or not):
   5. Run Claude-side patrol on surfaces NOT covered by Kimi:
      - `{} as Type` cast laundering and `any`-types-hiding-behind-correct-interfaces via Serena symbol tools (every task — non-negotiable per spec §7.2).
      - Any deviations the Kimi lanes flagged that require Deviation-as-Improvement judgment.
-  6. Apply the Codex's Deviation-as-Improvement Rule: when a lane flags a deviation, decide improvement (SOUND-with-note) or drift (FAIL-with-note).
-  7. Compute the integrated verdict: PASS / CONCERN / FAIL.
+  6. Apply the Codex's Deviation-as-Improvement Rule: when a lane flags a deviation, decide improvement (SOUND-with-note) or drift (GAP-with-note).
+  7. Compute the integrated verdict using most-severe-wins: SOUND / CONCERN / GAP / MISUNDERSTANDING. If any single finding is MISUNDERSTANDING, the integrated verdict is MISUNDERSTANDING; else if any is GAP, the verdict is GAP; else if any is CONCERN, the verdict is CONCERN; else SOUND.
   8. Append an entry to <CASE DIR>/tribune-log.md per the schema, including kimi_dockets, claude_side_findings, deviation_as_improvement_notes, final_chain_of_evidence, cost_usd_kimi (sum of fired-lane docket cost_usd), and interface_summary (added/modified/removed function signatures from the diff). On sampled tasks, also write the counterfactual block.
-  9. Reply to the Legatus's SendMessage with: verdict (PASS/CONCERN/FAIL), brief findings summary, and one-line chain of evidence per major finding.
+  9. Reply to the Legatus's SendMessage with: verdict (one of SOUND, CONCERN, GAP, MISUNDERSTANDING — Codex categories), verdict_summary (one-line synopsis tied to the verdict category), findings (Codex-tagged with chain of evidence per Codex rules).
 
 Substrate degradation handling:
   - If `verify_lane` returns `refused` (substrate session-budget breach), `transport_failure`, or any synthetic-failure docket: log the failure in claude_side_findings, fall back to Claude-side patrol on the affected lane's surface, and continue. Do not retry within this task.
@@ -108,7 +108,7 @@ Sampled: <true if (plan_index of this task) mod 3 == 0, else false>
 Verify and reply.
 ```
 
-The Tribunus-executor responds with the integrated verdict. The Legatus handles findings per the Codex (PASS → next task; CONCERN → note for Campaign review; FAIL → fix-soldier dispatch + re-verify; MISUNDERSTANDING-tagged FAIL → halt + escalate).
+The Tribunus-executor responds with the integrated verdict. The Legatus handles findings per the Codex (SOUND → next task; CONCERN → note for Campaign review; GAP → fix-soldier dispatch + re-verify; MISUNDERSTANDING → halt + escalate).
 
 ## 15-Task Boundary Restart
 
