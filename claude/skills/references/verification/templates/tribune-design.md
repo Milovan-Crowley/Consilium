@@ -46,6 +46,8 @@ Your task:
 
    Default subset for any task: [task-plan-match, task-no-stubs]. Add task-domain-correctness when the task touches a domain-doctrine surface (Medusa workflow boundary, link.create, money path, frontend hard rule). Add task-integration-prior when the task interfaces with prior-task interfaces.
 
+   **Empty `lanes_triggered: []` is explicitly authorized** for tasks that genuinely have no per-task verification surface — for example, a documentation-only task with no code changes, or a configuration toggle whose effects are not Kimi-verifiable. Do NOT default to empty; reach for it deliberately when no lane has anything to verify. When `lanes_triggered: []`, the persistent executor handles that task in patrol-mode (Claude-side mini-checkit only, no Kimi dispatch) — see the per-task scope documentation in `templates/tribune-persistent.md`. This per-task authorization is distinct from the protocol-level routing in `/legion` pre-spawn (which routes empty/malformed protocols to mini-checkit fallback, not just empty `lanes_triggered`).
+
 3. For each lane fired on a task:
    - Write 2-6 specific claims (under the lane's `max_claims_per_bundle`).
    - List evidence sources by type and path (e.g., `{type: "plan-task-body", path: "<plan.md>#task-N"}`, `{type: "doctrine", path: "$CONSILIUM_DOCS/doctrine/medusa-workflow.md"}`).

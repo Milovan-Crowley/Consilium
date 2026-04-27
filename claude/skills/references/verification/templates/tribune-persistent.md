@@ -55,6 +55,8 @@ When sampled=false (skip the counterfactual step):
 
 For all tasks (sampled or not):
   2. Read the protocol's `tasks[].lanes_triggered`, `claims_per_lane`, `evidence_sources_per_lane`, and `model_profile_per_lane` for this task_id.
+
+  **Per-task scope: empty `lanes_triggered: []`.** When the protocol authorizes `lanes_triggered: []` for the current task (per the per-task scope clause in `templates/tribune-design.md`), skip steps 3-4 (evidence preload + Kimi dispatch) for this task and proceed directly to step 5 (Claude-side patrol). Patrol-mode is the verification stance for that single task; subsequent tasks may still have non-empty `lanes_triggered` and use full Kimi dispatch. Do NOT confuse this per-task fall-back with the protocol-level fall-back (`/legion` pre-spawn routes absent/empty/unparseable/malformed protocols to mini-checkit for the entire campaign — distinct decision point, distinct scope).
   3. Preload the evidence bundle per lane:
      - Diff slices from `git diff` over the change_set.
      - File-content slices for full-file context where the protocol names them.
