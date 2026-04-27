@@ -25,7 +25,36 @@ from pathlib import Path
 
 CANONICAL = Path.home() / "projects" / "Consilium" / "docs" / "codex.md"
 AGENTS_DIR = Path.home() / ".claude" / "agents"
-AGENTS = ["censor", "praetor", "provocator", "tribunus", "soldier", "custos"]
+AGENTS = [
+    "censor",
+    "praetor",
+    "provocator",
+    "tribunus",
+    "soldier",
+    "custos",
+    "provocator-overconfidence",
+    "provocator-assumption",
+    "provocator-failure-mode",
+    "provocator-edge-case",
+    "provocator-negative-claim",
+]
+
+# Lane agents share a canonical persona file. Persona-body drift detection
+# is scoped to these agents only; the 6 original agents above keep Codex-only
+# coverage (their per-persona drift is a documented gap — see CLAUDE.md).
+LANE_AGENTS = [
+    "provocator-overconfidence",
+    "provocator-assumption",
+    "provocator-failure-mode",
+    "provocator-edge-case",
+    "provocator-negative-claim",
+]
+CANONICAL_PERSONA = (
+    Path.home() / "projects" / "Consilium" / "claude" / "skills"
+    / "references" / "personas" / "provocator.md"
+)
+PERSONA_START = "## Creed"
+PERSONA_END = "## Operational Doctrine"
 
 CODEX_HEADER = "# The Codex of the Consilium"
 OPS_NOTES_HEADER = "## Operational Notes"
@@ -97,6 +126,103 @@ def sync_agent(agent_file: Path, canonical: str) -> bool:
     return True
 
 
+def extract_persona_body(file: Path) -> str | None:
+    """Extract the shared persona body from a file.
+
+    The body lives between ``## Creed`` (inclusive) and ``## Operational Doctrine``
+    (exclusive). This is the section all 5 Provocator lane agents share verbatim
+    with the canonical persona at ``personas/provocator.md``.
+
+    **Anchor contract.** The end anchor matches via ``startswith(PERSONA_END)``
+    so that lane agents (whose section is ``## Operational Doctrine — <Lane>``)
+    terminate at the same boundary as the canonical (whose section is exactly
+    ``## Operational Doctrine``). The contract this rests on: **the canonical
+    persona body MUST NOT contain ``## Operational Doctrine`` as a heading
+    prefix anywhere except at the terminating boundary.** A future revision
+    that adds e.g. ``## Operational Doctrine for Campaign Notes`` inside the
+    persona body would silently truncate extraction. If such a structural
+    change is ever needed, this function must move to ``==`` matching against
+    an exact terminator string at the same time.
+
+    Returns the body block as a normalized string, or None if either anchor
+    is missing.
+    """
+    content = file.read_text()
+    lines = content.split("\n")
+
+    start: int | None = None
+    end: int | None = None
+    for i, line in enumerate(lines):
+        if line.strip() == PERSONA_START and start is None:
+            start = i
+        elif line.strip().startswith(PERSONA_END) and start is not None:
+            end = i
+            break
+
+    if start is None or end is None:
+        return None
+
+    section = lines[start:end]
+    while section and section[-1].strip() in ("", "---"):
+        section.pop()
+    return "\n".join(section).rstrip() + "\n"
+
+
+def check_lane_persona_drift(verbose: bool) -> int:
+    """Check persona-body drift across the 5 Provocator lane agents.
+
+    Returns the number of lane agents with persona-body drift detected.
+    Returns -1 if the canonical persona cannot be extracted at all.
+    Prints a per-agent status line for each lane agent. Does NOT support
+    ``--sync`` for the persona body in v1; report-only.
+    """
+    if not CANONICAL_PERSONA.exists():
+        print(f"ERROR: canonical persona not found at {CANONICAL_PERSONA}", file=sys.stderr)
+        return -1
+
+    canonical = extract_persona_body(CANONICAL_PERSONA)
+    if canonical is None:
+        print(
+            f"ERROR: could not extract persona body from {CANONICAL_PERSONA} "
+            f"(missing '{PERSONA_START}' or '{PERSONA_END}' anchor)",
+            file=sys.stderr,
+        )
+        return -1
+
+    drift_count = 0
+    for name in LANE_AGENTS:
+        agent_file = AGENTS_DIR / f"consilium-{name}.md"
+        if not agent_file.exists():
+            print(f"PERSONA MISSING: {agent_file}")
+            continue
+
+        extracted = extract_persona_body(agent_file)
+        if extracted is None:
+            print(f"PERSONA NO BODY: consilium-{name}")
+            continue
+
+        if normalize(extracted) == normalize(canonical):
+            print(f"PERSONA OK:    consilium-{name}")
+            continue
+
+        drift_count += 1
+        print(f"PERSONA DRIFT: consilium-{name}")
+        if verbose:
+            diff = difflib.unified_diff(
+                normalize(canonical).splitlines(keepends=True),
+                normalize(extracted).splitlines(keepends=True),
+                fromfile="canonical-persona",
+                tofile=f"consilium-{name}-persona",
+                lineterm="",
+            )
+            for line in diff:
+                sys.stdout.write(line)
+                if not line.endswith("\n"):
+                    sys.stdout.write("\n")
+
+    return drift_count
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check Consilium Codex drift across agent files.")
     parser.add_argument("--verbose", action="store_true", help="Show unified diff for drift cases")
@@ -151,17 +277,40 @@ def main() -> int:
                         sys.stdout.write("\n")
 
     print()
-    if missing_count:
-        print(f"Missing or malformed: {missing_count}", file=sys.stderr)
+
+    # Lane persona-body drift check (5 Provocator lane agents only)
+    print("--- Lane persona-body drift check ---")
+    persona_drift = check_lane_persona_drift(args.verbose)
+    print()
+
+    # Codex sync path: if --sync requested and there is Codex drift, sync first.
+    # Persona body is never auto-synced in v1; report persona drift (or check failure)
+    # separately and let the unified exit logic below decide the code.
     if args.sync and drift_count:
-        print(f"Synced {drift_count} agent(s) from canonical.")
-        return 0
-    if drift_count:
-        print(f"Drift detected in {drift_count} agent(s). Re-run with --verbose for diffs or --sync to fix.", file=sys.stderr)
-        return 1
+        print(f"Synced {drift_count} agent(s) from canonical Codex.")
+        drift_count = 0  # Sync resolved the Codex drift; treat as clean for exit code.
+        if persona_drift > 0:
+            print(f"NOTE: --sync only addresses Codex drift; persona-body drift in {persona_drift} lane agent(s) remains and requires manual re-construction (re-run the matching plan task's Step 3 Bash construction).", file=sys.stderr)
+
+    # Unified exit-code priority:
+    #   2 — any file missing/malformed (Codex side OR persona-body anchor failure)
+    #   1 — drift detected (Codex side OR persona-body) and not fully resolved
+    #   0 — clean (no drift, no missing files)
+
     if missing_count:
+        print(f"Codex missing or malformed: {missing_count}", file=sys.stderr)
+    if persona_drift > 0:
+        print(f"Persona-body drift detected in {persona_drift} lane agent(s). Re-run with --verbose for diffs.", file=sys.stderr)
+    if persona_drift < 0:
+        print("Persona-body check failed (canonical persona missing or anchors malformed).", file=sys.stderr)
+
+    if missing_count or persona_drift < 0:
         return 2
-    print(f"All {len(AGENTS)} agents in sync with canonical Codex.")
+    if drift_count or persona_drift > 0:
+        if drift_count:
+            print(f"Codex drift detected in {drift_count} agent(s). Re-run with --verbose for diffs or --sync to fix.", file=sys.stderr)
+        return 1
+    print(f"All {len(AGENTS)} agents in sync with canonical Codex; all {len(LANE_AGENTS)} lane agents in sync with canonical persona body.")
     return 0
 
 
