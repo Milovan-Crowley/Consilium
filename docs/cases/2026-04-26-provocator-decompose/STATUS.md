@@ -10,11 +10,11 @@ current_session: 1
 
 ## Current state
 
-Spec iteration 3 approved. Custos case landed. Plan iteration 1 committed at `e578b03` (16 tasks). Praetor + Provocator (pre-decomposition single-Provocator) verified iteration 1 in parallel: 0 MISUNDERSTANDING, 9 GAPs (after dedup), 9 CONCERNs, 14 SOUNDs. Imperator authorized iteration 2 with "fix how you think makes sense" + "Remove #1 entirely" (drop Pre-flight 8). Iteration 2 applied: 7 GAP fixes + 5 adopted CONCERNs + 3 explicitly-rejected CONCERNs. Major structural change: Task 5 restructured to mechanical Bash+heredoc pattern (matches Tasks 6-9). See `decisions.md` for full disposition log.
+Spec iteration 3 approved. Custos case landed. Plan iteration 1 committed at `e578b03`. Praetor + Provocator (pre-decomposition single) iter-1 verification: 0 MISUNDERSTANDING, 9 GAPs, 9 CONCERNs, 14 SOUNDs. Imperator authorized iteration 2 with "fix how you think makes sense" + "Remove #1 entirely" (drop Pre-flight 8). Plan iteration 2 committed at `fe560c6` with 7 GAP fixes + 5 adopted CONCERNs + 3 explicitly-rejected CONCERNs. **Custos field-check on iteration 2 returned `OK TO MARCH`** (6 walks; 7 SOUNDs; 1 CONCERN — stale Hard-Scope path reference, adopted inline). Halted at the legion-awaits gate per Imperator's "do not use legion yet" instruction.
 
 ## What's next
 
-Plan iteration 2 awaiting commit, then optional re-dispatch (auto-feed loop cap is 2 iterations; iteration 2 is the final auto-fix round; iteration 3 of plan verification, if needed, requires Imperator authorization). Then Custos field-check, then Imperator review gate, then Legion or March execution.
+Awaiting Imperator's call at the legion-awaits gate. Options on the table: (a) the Legatus marches alone via `consilium:march`; (b) the Legion via `consilium:legion`; (c) deferred dispatch for any reason the Imperator names. Imperator pre-emptively excluded option (b) ("do not use legion yet").
 
 ## Sequencing dependencies
 

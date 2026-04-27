@@ -3289,7 +3289,7 @@ The Soldier should commit after each task that touches the repo to keep history 
 
 The Soldier MUST NOT:
 
-- **Touch `claude/skills/references/personas/consilium-codex.md` or `docs/codex.md`** — the Codex itself is unchanged. Only its copy-targets gain new agent files.
+- **Touch `docs/codex.md` (the canonical Codex)** — the Codex itself is unchanged. Only its copy-targets gain new agent files. (Note: a stale `claude/skills/references/personas/consilium-codex.md` reference appears in the existing CLAUDE.md and is being repaired by Task 15 Step 3 — that path does not exist on disk; treat the canonical at `docs/codex.md` as the only Codex source.)
 - **Touch the existing `~/.claude/agents/consilium-provocator.md`** — the legacy agent is preserved unchanged for Campaign review use.
 - **Extend the five-lane shape into Campaign-review verification** — out of scope. Campaign review continues to use single-Provocator dispatch in v1, regardless of which file or skill currently owns Campaign-review wiring (the existing `protocol.md` §8 enumerates the role count; no `templates/campaign-verification.md` file exists in v1 — Campaign review is dispatched directly by the Legatus per protocol §8). This constraint is behavioral: do not introduce lane decomposition into Campaign-review dispatch surfaces.
 - **Modify mini-checkit verification** — `templates/mini-checkit.md` does not dispatch Provocator at all; out of scope.
