@@ -10,11 +10,11 @@ current_session: 1
 
 ## Current state
 
-Spec iteration 3 drafted. Iteration 2 was re-reviewed by Censor and Provocator in parallel (0 MISUNDERSTANDING, ~10 GAP, ~6 CONCERN, 6 SOUND after dedup and synergy). Imperator authorized iteration 3 with no further re-dispatch. Eleven fixes applied. Awaiting Imperator review at the gate.
+Spec iteration 3 approved by Imperator. Custos case has landed (per Imperator). Plan written and committed at `e578b03` — 16 tasks covering protocol.md updates, canonical persona note, 5 lane agent files, drift script extension, two template restructures, consul + edicts SKILL updates, CLAUDE.md updates, smoke tests. Pre-flight 3 will verify Custos landmarks at execution time. Awaiting plan verification.
 
 ## What's next
 
-After Imperator approves the iteration-3 spec: issue edicts (the implementation plan), then Praetor + Provocator plan verification, then Custos field-check (once the in-flight `2026-04-26-custos-edicts-wiring` lands), then Legion or March execution.
+Self-review complete (placeholder scan + symbol-consistency check). Next: dispatch Praetor + Provocator on the plan (using the still-existing pre-decomposition single-Provocator template — the new five-lane template ships with this case but doesn't apply to verifying this plan itself). Then Custos field-check, then Imperator review gate, then Legion or March execution.
 
 ## Sequencing dependencies
 
