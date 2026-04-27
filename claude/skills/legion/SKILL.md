@@ -96,7 +96,7 @@ digraph process {
         "Soldier asks questions?" [shape=diamond];
         "Answer, provide context" [shape=box];
         "Soldier implements,\ntests, commits, self-reviews" [shape=box];
-        "Dispatch Tribunus mini-checkit" [shape=box];
+        "Signal persistent Tribunus\n(SendMessage)" [shape=box];
         "Tribunus finding?" [shape=diamond];
         "SOUND" [shape=box];
         "GAP: dispatch fix soldier,\nTribunus re-verifies" [shape=box];
@@ -116,8 +116,8 @@ digraph process {
     "Soldier asks questions?" -> "Answer, provide context" [label="yes"];
     "Answer, provide context" -> "Dispatch soldier\n(./implementer-prompt.md)";
     "Soldier asks questions?" -> "Soldier implements,\ntests, commits, self-reviews" [label="no"];
-    "Soldier implements,\ntests, commits, self-reviews" -> "Dispatch Tribunus mini-checkit";
-    "Dispatch Tribunus mini-checkit" -> "Tribunus finding?";
+    "Soldier implements,\ntests, commits, self-reviews" -> "Signal persistent Tribunus\n(SendMessage)";
+    "Signal persistent Tribunus\n(SendMessage)" -> "Tribunus finding?";
     "Tribunus finding?" -> "SOUND" [label="SOUND"];
     "Tribunus finding?" -> "GAP: dispatch fix soldier,\nTribunus re-verifies" [label="GAP"];
     "Tribunus finding?" -> "CONCERN: note for\nCampaign review" [label="CONCERN"];
@@ -134,6 +134,23 @@ digraph process {
 ```
 
 ---
+
+## Persistent Tribunus-Executor (B-1)
+
+At Legion start, BEFORE the first soldier dispatch, I spawn the persistent Tribunus-executor as a named addressable agent. This is the load-bearing change that B-1 introduced — per-task verification is no longer a fresh subagent dispatch but a `SendMessage` signal to a long-running Tribunus that holds plan-wide context across a 15-task window.
+
+I read the template before spawn:
+- `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md`
+
+The template specifies: spawn shape (name, subagent_type, prompt), per-task SendMessage body (task_id, change_set, summary, sampled flag), 15-task boundary restart pattern, crash recovery, and the persistence-disabled fallback to ephemeral Patrol via `templates/mini-checkit.md`.
+
+**Pre-spawn check.** I verify `<case>/tribune-protocol.md` exists at Legion start. If absent, halt — the protocol must come from `/edicts` Tribunus-design dispatch BEFORE the legion marches. Surface the missing-protocol condition to the Imperator and route back to `/edicts`.
+
+**Naming convention.** First window: `tribune-w1`. After 15-task boundary: `tribune-w2`. After crash mid-window: `tribune-w<N>-recover` (preserve the window number).
+
+**Independence Boundary.** The persistent-executor's `tribune-log.md` is for audit and intra-plan context only. The Campaign Review (Censor + Praetor + Provocator) at the end of the legion DOES NOT receive `tribune-log.md`. The Campaign verifiers are ephemeral and independent per the Codex Persistent Orchestrator class — the privilege belongs to Tribunus-on-Legion executor stance only and does NOT generalize to the Campaign triad.
+
+**`/march` is NOT changed.** The persistent pattern lives in `/legion`. `/march` retains the current solo-Legatus, no-Tribune-layer semantic for trivial plans. The Imperator chooses `/march` deliberately when ceremony is over-engineering for the task.
 
 ## Choosing the Soldier's Grade
 
@@ -155,7 +172,7 @@ Domain errors are expensive. When I am in doubt, I send the best soldier. The Im
 
 A soldier returns from his task with one of four words. Each demands a different response from me.
 
-**DONE** — The task is complete as specified. I dispatch the Tribunus for mini-checkit per `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/mini-checkit.md` and `/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md`. No task passes without verification — not one, not ever.
+**DONE** — The task is complete as specified. I signal the persistent Tribunus-executor via `SendMessage({to: "tribune-w<N>", ...})` per `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md`. The Tribunus replies with the integrated verdict (PASS/CONCERN/FAIL). If the persistent pattern is unavailable, I fall back to ephemeral Patrol via `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/mini-checkit.md` per the fallback procedure in the persistent template. No task passes without verification — not one, not ever.
 
 **DONE_WITH_CONCERNS** — The soldier completed the work but flagged doubts. I read the concerns before I do anything else. If they touch correctness or scope, I address them before the Tribunus arrives. If they are observations ("this file is getting large"), I note them and continue.
 
@@ -209,7 +226,7 @@ Soldier reports:
   - Committed
   Status: DONE
 
-[Dispatch Tribunus mini-checkit]
+[Signal persistent Tribunus\n(SendMessage)]
 Tribunus:
   SOUND — Hook correctly targets SavedProduct per the domain bible.
   Return type matches the plan step. No stubs detected.
@@ -226,7 +243,7 @@ Soldier reports:
   - Committed
   Status: DONE
 
-[Dispatch Tribunus mini-checkit]
+[Signal persistent Tribunus\n(SendMessage)]
 Tribunus:
   GAP — Plan step specifies fallback to product_title when display name
   is empty. Implementation renders empty string. Evidence: ProductCard.tsx
