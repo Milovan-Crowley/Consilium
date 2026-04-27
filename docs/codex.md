@@ -147,6 +147,18 @@ A verification agent that has seen the full conversation is no longer a verifier
 
 ---
 
+## The Persistent Orchestrator Class
+
+The Codex recognizes one narrowly scoped exception to per-dispatch independence: a **Persistent Orchestrator**. A verifier holding cross-task context within a single in-plan execution-time window. Per-task independence is explicitly traded for cross-task coherence detection. Lifetime is bounded (default 15 tasks, ±2 ergonomic) to prevent context degradation.
+
+The Persistent Orchestrator class has exactly one member: the Tribunus-on-Legion executor stance. **Any future role exhibiting the architectural property — cross-task context within an in-plan execution-time window — MUST be added to this enumeration through a new Codex amendment specifically. The privilege does NOT generalize from the property.** A future role with similar architecture but a different name is bound by the Independence Rule until the Codex names it as a Persistent Orchestrator.
+
+The Independence Rule remains absolute for all other verifier roles in all other contexts: Censor, Praetor, Provocator (in spec-time, plan-time, and Campaign-review contexts), Custos (field-readiness verification), and Tribunus-in-diagnosis-stance (Medicus track) all remain ephemeral and independent.
+
+**Term definition.** *In-plan execution-time* refers to verification of implemented tasks during Legion execution — after spec is verified, after plan is verified, after each task is implemented, before Campaign review.
+
+---
+
 ## The Interaction Protocols
 
 ### Spec Verification
@@ -157,6 +169,8 @@ After the Consul writes a plan, he dispatches the **Praetor and Provocator** in 
 
 ### Per-Task Verification (Mini-Checkit)
 After each soldier completes a task, the Legatus dispatches the **Tribunus**. The Tribunus receives the task output, the plan step, and the domain knowledge. Sequential — one task at a time, because the next task may depend on the current being verified clean.
+
+**Legion-executor amendment.** In the Legion executor stance, the Legatus does NOT dispatch the Tribunus per task. At Legion start, Legatus spawns Tribunus-executor with the verified protocol and signals task completions across its 15-task lifetime window via `SendMessage`. Restart-with-fresh-context occurs at the 15-task boundary (±2 ergonomic). Per-task independence is replaced by intra-window cross-task coherence; cross-window independence is preserved through `tribune-log.md`-driven restart. All other Per-Task Verification semantics are unchanged. The Medicus diagnosis stance retains the original per-dispatch shape.
 
 ### Campaign Review (Post-Execution)
 After all tasks complete, the Legatus dispatches the **Censor, Praetor, and Provocator** in parallel. All three receive: the implementation output, the spec, the plan, and the domain knowledge. The confidence map from the original Consul session is included if available.
