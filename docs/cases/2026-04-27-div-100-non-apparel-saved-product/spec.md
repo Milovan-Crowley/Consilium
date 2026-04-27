@@ -1,12 +1,21 @@
 # DIV-100 — Non-apparel saved product creation on approve-proof
 
-**Status:** ready for plan (iteration 5 — six adversarial blockers resolved after second-Consul review: multiplier-row narrowing, drop SKU/UPC/barcode/EAN copy, empty-prices throw, source-metadata sanity guard, company-lineage check on reorder gate, integration test scope acknowledgment)
+**Status:** ready for plan (iteration 6 — second-Consul second pass surfaced six more blockers: backend enforcement of locked multiplier choices brought into scope, lineage-check timing/path/iteration corrected, source-metadata cross-field consistency expanded, per-variant empty-price throw, status:"published" / link.create syntax / SKU-nullable text fixes, flyer example corrected against live multiplier coverage)
 **Linear:** [DIV-100](https://linear.app/divinipress/issue/DIV-100/fix-non-apparel-approve-proof-saved-product-creation-on-import-script)
 **Worktree branch:** `feature/div-100-non-apparel-saved-product`
 **Stacked above:** PR 29 (`feature/div-82-importer-hierarchy`) → merged PR 33 (`feature/div-99-non-apparel-cart-contract`)
 **Backend baseline (per Linear):** `origin/import-script-promo-print`
 
-**Iteration 5 changes against iteration 4.** Six blockers from second-Consul adversarial review, all resolved against live evidence:
+**Iteration 6 changes against iteration 5.** Second-Consul cold re-read of iter-5 surfaced six more blockers; all sustained against live evidence:
+
+- **C1 — Backend enforcement of locked multiplier choices (§3 promoted to in-scope; new §10b at cart-add; §11 case 11; §14.15).** The iter-5 "lock" was structural for base axes (variant retention) but advisory-only for multipliers (frontend rendering signal in `options_values`). Combined with §10's reorder shortcut, a customer reordering a saved product could submit different multiplier choices and still skip proofing — the lock semantic is broken. Now in scope: cart-add validation in the non-apparel branch of `line-items-custom/route.ts` enforces that submitted multiplier values match the saved product's locked configuration.
+- **C2 — Lineage check timing, traversal path, and full-iteration (§10).** Three corrections: (a) `custom_order` has no `company_id` field — verified against live model at `src/modules/custom-order/models/custom-order.ts`. The lineage path is `custom_order → order` (link `order-custom-order.ts`) → `company` (link `company-order.ts`). (b) The current gate reads `items[0]` only — fix to iterate ALL items in each `groupedOrderLineItems` group. (c) The lineage check ran AFTER `completeCartWorkflow` at `route.ts:172` — order is already created when rejection fires. Fix: hoist the lineage validation to a pre-flight section before line 172 so failed validation does not produce a partially-created order.
+- **C3 — Source-metadata cross-field consistency (§5 pre-condition 3 expanded; §11 case 8 expanded).** The iter-5 guard checked "field exists, correct primitive type" only. Cross-field invariants the importer establishes structurally — but a non-importer-created product can violate — are now explicit: `options_order` codes ⊆ `options_labels` keys ∩ `options_values` keys; `base_option_keys ⊆ options_order`; `multiplier_keys ⊆ options_order`; `"quantity" ∈ base_option_keys`; `multipliers[k]` exists and is an object for every `k ∈ multiplier_keys`.
+- **C4 — Per-variant empty-prices throw (§8, §11 case 9, §14.14).** The iter-5 throw fired only when `flat()` returned `[]` (every retained variant has empty prices). If qty=100 has prices but qty=500 doesn't, flat() is non-empty and the throw doesn't fire — saved product is created, customer reorders at qty=500, pricing throws. Fix: throw when ANY retained variant has empty `prices[]`.
+- **C5 — Three text precision fixes (§7c).** (a) Apparel reference at `order-flow.ts:357` sets `status: "published"`; iter-5 spec omitted this from the saved-product create input. Without it, Medusa creates draft products that storefront `custom-products/route.ts` filters out. Now explicit. (b) `link.create` syntax in §8 used `[COMPANY_MODULE.linkable.companyProduct]` — wrong; live apparel/importer code (`order-flow.ts:420`, `importer.ts:439`) uses `[COMPANY_MODULE]` directly. (c) "Medusa auto-generates SKU" is wrong — the schema declares `sku: text().nullable()`, omission leaves NULL. Storefront inventory lookups read `variant.metadata.original_sku` per `custom-products/route.ts:197-204`.
+- **C6 — Flyer example correction (§5).** The iter-5 example used `hole_punching: "No"` and `rounded_corners: "No"`. Live flyer multiplier CSV (`products/print/flyers/flyers_multiplier.csv`) defines rows ONLY for "Yes" — the example is unreachable today (cart-add throws on missing multiplier row before reaching approve-proof). Fix: example now uses values that have row coverage. The semantic is unchanged; the documentation is now accurate.
+
+**Iteration 5 changes against iteration 4.** Six blockers from first second-Consul review, all resolved against live evidence:
 
 - **B1 — Multiplier-row narrowing (§7a stage 2, §11 case 10, §14.3).** Retained-variant quantity tiers narrowed to those with multiplier rows for ALL locked multiplier values. Live evidence: `flyers_multiplier.csv` carries only "Yes" rows; `calculate-promo-print-price.ts:88-94` throws hard on missing rows; the existing unit test at `__tests__/.../calculate-promo-print-price.unit.spec.ts:88-97` already exercises this fail mode. The §14.3 implicit assumption ("cart-add validation guarantees row exists") was wrong — cart-add validates only the proof-time tuple, not every retained-variant quantity tier.
 - **B2 — Drop SKU/UPC/barcode/EAN copy (§7c).** Medusa schema (`@medusajs/product/dist/models/product-variant.js:65-87`) declares unique indexes on these fields with `WHERE deleted_at IS NULL`. Source variants are not deleted, so copies collide. Apparel reference at `order-flow.ts:368-396` does NOT copy them — saved variants get auto-generated SKUs; originals preserved only via `metadata.original_sku`/`original_upc`. Spec now matches the apparel pattern.
@@ -27,7 +36,7 @@
 
 Branch `[EVENT.approveProof]` in `src/api/custom-order/order-flow.ts` so non-apparel proofs (Print & Promo per DIV-82's importer hierarchy, DIV-99's non-apparel cart contract) create saved products from the approved option configuration on the order line item, instead of the existing apparel-only `Size` / `Color` / `selectedColor` path. The saved non-apparel product locks the customer's approved choices to the configuration on the proof — except for `quantity`, which remains user-selectable on reorder so customers can re-order the same design at any quantity tier the source product supports. The saved product preserves the source product's metadata contract (notably `multipliers`, `multiplier_keys`, `base_option_keys`, `options_*` family, and `product_type`) so it remains readable by the storefront standard adapter and pricable by the promo-print pricing route.
 
-In addition, this change widens the cart→order reorder gate at `src/api/store/carts/[id]/custom-complete/route.ts:248-252` so non-apparel saved products take the APPROVED + PROOF_DONE shortcut on reorder (no re-proofing of an already-approved design), matching apparel's existing reorder behavior. This is a one-line gate widening; the post-gate persist/link/upload pipeline is product-type-agnostic.
+In addition, this change updates the cart→order reorder gate at `src/api/store/carts/[id]/custom-complete/route.ts` so non-apparel saved products take the APPROVED + PROOF_DONE shortcut on reorder (no re-proofing of an already-approved design), matching apparel's existing reorder behavior. The gate change has three coordinated parts: drop the `product_type === "apparel"` clause; add a pre-flight company-lineage validation that runs before `completeCartWorkflow` so rejection happens before order creation; iterate every line-item per group rather than reading `items[0]` only. The post-gate persist/link/upload pipeline is product-type-agnostic; details in §10. Plus a separate validation at the cart-add path enforces the saved-product multiplier-lock semantic (see §10b).
 
 > **Confidence: High** — Imperator-confirmed scope and design after iteration-1 verification cycle.
 
@@ -47,7 +56,7 @@ DIV-99 closed the cart contract for non-apparel. DIV-100 closes the correspondin
 
 - **Frontend `useSavedProduct` hook** (`divinipress-store/src/app/(authenticated)/catalog/[category]/[productHandle]/_hooks/useSavedProduct.ts:23`) hard-filters `data?.type === "apparel"`. Even after this backend change, `/products/[handle]` will not render non-apparel saved products until that hook learns the standard-product shape. Frontend retrofit is its own ticket.
 - **Confirmation email subscriber** (`src/subscribers/custom-order-created.ts:83-108`) builds line-item descriptions by reading `variant.options` for `Color` and `Size`. For non-apparel reorders this degrades to cosmetically empty fields (`"Color: , Quantity ( - 100)"`) — non-throwing but ugly. Cosmetic-only; tracked as a follow-up ticket separate from DIV-100.
-- **Backend enforcement of locked multiplier choices.** §7 narrows `metadata.options_values` for locked codes to single-value arrays — that's a frontend-rendering signal, not server-side validation. A buggy or malicious cart payload that submits a different value for a locked multiplier would be priced and produced as the submitted value, not the approved one. Server-side enforcement at `line-items-custom` (validate cart payload against saved-product `options_values`) is its own hardening ticket.
+- **(Promoted to in-scope per iter-6 C1; see §10b.)** Backend enforcement of locked multiplier choices is now part of DIV-100. The structural lock for base axes (variant retention) is honored — but multipliers aren't variant axes, so without a server-side check, a customer could reorder a saved product with different multiplier choices and still take the auto-approval shortcut. That breaks the saved-product semantic. The new §10b adds the validation at the non-apparel cart-add path.
 - **Workflow refactor of `[EVENT.approveProof]`.** The existing apparel side-effect calls `companyModuleService.createCompanyProducts` directly and runs two `link.create` calls outside any workflow boundary. That pre-existing pattern is preserved here for symmetry; lifting saved-product creation into a workflow with compensation steps is a separate ticket.
 - **Idempotency hardening of `[EVENT.approveProof]`.** §11 documents the existing state-machine guard and its known race window. Closing the race is its own ticket and applies to both apparel and non-apparel.
 - **`production_option_type` enum extension** at `src/_custom/config/product_options.ts`. Keep the enum apparel-only. The discriminator at the cut point is "is the source product apparel?" — non-apparel products do not need a positive enum value at this layer.
@@ -89,11 +98,13 @@ A canonical flyer payload, drawn from `integration-tests/http/non-apparel-cart.s
 {
   paper_type: "matte",        // base option (variant axis)
   quantity:   "250",          // base option AND multiplier-table second-index axis
-  stapling:   "Yes",          // multiplier choice (NOT a variant axis)
-  hole_punching: "No",        // multiplier choice
-  rounded_corners: "No"       // multiplier choice
+  stapling:   "Yes",          // multiplier choice (NOT a variant axis) — surcharge applies
+  hole_punching: "No",        // multiplier choice — no surcharge (factor 1.0 by default)
+  rounded_corners: "No"       // multiplier choice — no surcharge (factor 1.0 by default)
 }
 ```
+
+The multiplier-table semantic: the table declares ONLY surcharge-bearing rows. Any `(code, quantity, value)` tuple not in the table is factor 1.0 by definition. The flyer fixture declares rows for "Yes" only because "No" never adds a surcharge — declaring "No" rows would be redundant. See §10c for the pricing-route alignment this requires.
 
 The non-apparel arm MUST NOT read `selectionsMetadata.selections`, MUST NOT resolve a `selectedColor`, and MUST NOT consult source-product `Size` / `Color` Medusa options. Those are apparel-domain concepts with no non-apparel equivalent.
 
@@ -103,7 +114,20 @@ The non-apparel arm MUST NOT read `selectionsMetadata.selections`, MUST NOT reso
 
 2. **Line-item options-map completeness.** The line-item `metadata.options` map MUST carry a value for every code in `sourceProduct.metadata.base_option_keys` and every code in `sourceProduct.metadata.multiplier_keys`. The DIV-99 cart pricing flow (`calculate-promo-print-price.ts:36-43`) enforces this at the storefront cart-add entry point only (`POST /api/store/carts/[id]/line-items-custom` → `addPromoPrintPriceToCartWorkflow`). Other entry paths — admin order creation, draft conversion, future B2B import, hand-crafted `updateOrderLineItems` writes — bypass this validation. The non-apparel arm enforces it again at approval time as the load-bearing protection — see §11 case 7. Without the approval-time guard, a missing key would silently produce a `[undefined]` entry in the saved product's `options_values` (corrupt saved product, no diagnostic).
 
-3. **Source-product metadata sanity.** A non-apparel-shaped product (per §4 discriminator) created outside the promo-print importer (e.g., via Medusa Admin UI, a future importer variant, or partial migration) might lack one or more required metadata fields. The non-apparel arm enforces, at the top of the side-effect, that the source product carries all of: `base_option_keys` (array), `multiplier_keys` (array, possibly empty), `options_order` (array), `options_labels` (object), `options_values` (object), and — when `multiplier_keys.length > 0` — `multipliers` (object). Each must be present and the correct type. See §11 case 8. The comprehensive guard is necessary because (a) the standard adapter at `getProductByHandle.ts:33-37` returns `null` when `options_order` is missing — the saved product would be invisible in the storefront PDP with no diagnostic; (b) the pricing route reads `multiplier_keys` and `multipliers` with `?? []` / `?? {}` fallbacks that mask missing-data bugs as silent no-multiplier surcharges; (c) downstream `[lockedKey]: [approvedValue]` writes assume `options_values` is an object — `undefined` spreads to noop and silently strips other codes' value lists.
+3. **Source-product metadata sanity (presence + cross-field consistency).** A non-apparel-shaped product (per §4 discriminator) created outside the promo-print importer (e.g., via Medusa Admin UI, a future importer variant, or partial migration) might lack one or more required metadata fields OR carry a self-inconsistent set. The non-apparel arm enforces both at the top of the side-effect.
+
+   **3a — Presence and primitive types.** The source product carries all of: `base_option_keys` (array), `multiplier_keys` (array, possibly empty), `options_order` (array), `options_labels` (object), `options_values` (object), and — when `multiplier_keys.length > 0` — `multipliers` (object). Each must be present and the correct type. The comprehensive guard is necessary because (a) the standard adapter at `getProductByHandle.ts:33-37` returns `null` when `options_order` is missing — the saved product would be invisible in the storefront PDP with no diagnostic; (b) the pricing route reads `multiplier_keys` and `multipliers` with `?? []` / `?? {}` fallbacks that mask missing-data bugs as silent no-multiplier surcharges; (c) downstream `[lockedKey]: [approvedValue]` writes assume `options_values` is an object — `undefined` spreads to noop and silently strips other codes' value lists.
+
+   **3b — Cross-field consistency.** Beyond presence, the metadata fields must agree with each other. The importer establishes these invariants structurally; a non-importer-created product must satisfy them too.
+
+   - `options_order` codes are a subset of `Object.keys(options_labels)` — every code in the order list has a human label.
+   - `options_order` codes are a subset of `Object.keys(options_values)` — every code in the order list has a value list.
+   - `base_option_keys` is a subset of `options_order` — every base axis is part of the declared order.
+   - `multiplier_keys` is a subset of `options_order` — every multiplier code is part of the declared order.
+   - `"quantity"` ∈ `base_option_keys` — quantity must be a base axis (per §6 lowercase-quantity invariant).
+   - When `multiplier_keys.length > 0`: for every `k ∈ multiplier_keys`, `multipliers[k]` exists and is an object.
+
+   See §11 case 8 for throw semantics. Each violation throws with a diagnostic naming the source product handle and the specific invariant violated.
 
 > **Confidence: High** — `NonApparelMetadataSchema` + DIV-99 cart contract + `flyers_multiplier.csv` shipped catalog + `calculate-promo-print-price.ts:36-43` cart-time enforcement.
 
@@ -137,33 +161,19 @@ This means the customer's approved quantity choice (250) determines BOTH which v
 
 The saved non-apparel product locks the **base-locked** axes and the **multiplier-locked** choices to the approved configuration; quantity remains free. Concretely:
 
-### 7a. Variant retention rule (two-stage narrowing)
+### 7a. Variant retention rule
 
-Two sequential filters narrow the source product's variants down to the saved product's retained set. Both must succeed; either failing throws.
+Define `lockedBaseKeys = sourceProduct.metadata.base_option_keys.filter(k => k !== "quantity")`.
 
-**Stage 1 — base-axis filter.** Define `lockedBaseKeys = sourceProduct.metadata.base_option_keys.filter(k => k !== "quantity")`.
+Retain the source-product variants whose `options` match the approved values for **every** `lockedBaseKey`. Quantity and multiplier choices are NOT consulted in the retention filter — multipliers aren't variant axes; quantity is allowed to vary. Call the result `retainedVariants`.
 
-Take all source-product variants whose `options` match the approved values for **every** `lockedBaseKey`. Quantity and multiplier choices are NOT consulted at this stage (multipliers aren't variant axes; quantity is allowed to vary). Call the result `candidateVariants`.
+For the canonical flyer example: `lockedBaseKeys = ["paper_type"]`, approved `paper_type = "matte"`. The source product has, say, 24 variants (2 papers × 12 quantity tiers); the saved product retains 12 (every quantity tier of paper=matte).
 
-If `lockedBaseKeys` is empty (a source product with zero non-quantity base axes — a hypothetical "everything is multiplier" shape), `candidateVariants` is the source product's full variant list (vacuous-truth match). If the source product has a single variant in this case, retain it. If multiple, throw with diagnostic — this shape is not yet supported and indicates either a corrupted import or a product class outside the catalog as it stands today.
+If `lockedBaseKeys` is empty (a source product with zero non-quantity base axes — a hypothetical "everything is multiplier" shape), `retainedVariants` is the source product's full variant list (vacuous-truth match). If the source product has a single variant in this case, retain it. If multiple, throw with diagnostic — this shape is not yet supported and indicates either a corrupted import or a product class outside the catalog as it stands today.
 
-If `candidateVariants` is empty (zero variants match the lockedBaseKeys filter), throw with a diagnostic message identifying the product handle, the approved configuration, and the locked-base-key/value pairs that failed to resolve.
+If `retainedVariants` is empty (zero variants match the lockedBaseKeys filter), throw with a diagnostic message identifying the product handle, the approved configuration, and the locked-base-key/value pairs that failed to resolve.
 
-**Stage 2 — multiplier-row coverage filter.** For each variant in `candidateVariants`, extract its quantity value (the variant's option whose option title equals `optionsLabels.quantity`). Keep only the variants whose quantity tier `q` satisfies, for every code `k` in `multiplier_keys`:
-
-```
-multipliers[k]?.[q]?.[approvedMultiplierValues[k]] !== undefined
-```
-
-Where `approvedMultiplierValues[k]` is the customer's approved choice from line-item `metadata.options[k]`. Call the result `retainedVariants`.
-
-If `multiplier_keys` is empty, the stage-2 filter is vacuous and `retainedVariants = candidateVariants`.
-
-**Why stage 2 is necessary.** The pricing route at `calculate-promo-print-price.ts:88-94` ("Q-B FIX-LOUD") throws `INVALID_DATA` whenever a multiplier row is absent for the requested `(code, quantity, value)` tuple. Cart-add validates only the proof-time tuple — it does not iterate the source product's full quantity-tier list. Without stage 2, the saved product would expose quantity tiers in its `options_values.quantity` for which a locked multiplier choice has no row, and the customer's reorder at that tier would 400 with no recourse. Live evidence: `flyers_multiplier.csv` declares only "Yes" rows for `stapling`/`hole_punching`/`rounded_corners` — a future product class with sparse "No" coverage at some quantity tiers would fail this exact way; the existing unit test at `__tests__/.../calculate-promo-print-price.unit.spec.ts:88-97` (`var_999_matte` with no row at qty=999) is the canonical demonstration.
-
-Stage-2 narrowing produces a saved product where every quantity tier in `options_values.quantity` is guaranteed to price for the locked multiplier configuration. The proof-time quantity tier is always in the result (cart-add validated its multiplier rows), so `retainedVariants` is non-empty under non-corrupted state.
-
-If stage 2 produces an empty set despite cart-add having validated the proof-time tuple — possible under between-cart-and-approval mutation of the multiplier table or hand-crafted line-items that bypass cart-add — throw with a diagnostic naming the product handle, the locked multiplier values, and the proof-time quantity tier whose row evaporated.
+**Why no multiplier-row coverage filter is needed.** The multiplier table semantic is "missing row = factor 1.0" — not "missing row = config gap to throw on." A flyer's `multipliers.stapling = { "100": { "Yes": 1.51 } }` means stapling=Yes at qty 100 multiplies the base price by 1.51; stapling=No at qty 100 (no row) multiplies by 1.0 (no surcharge). The whole point of multipliers is to compress the SKU grid: instead of `paper_type × quantity × stapling × hole_punching × rounded_corners` (thousands of variants), the flyer has `paper_type × quantity` (24 variants) and applies multipliers only for the surcharge-bearing values. Declaring "No" rows would be redundant — they all map to factor 1.0 by definition. See §10c for the pricing-route correction this implies.
 
 ### 7b. Variant-identity matching (option title resolution)
 
@@ -173,12 +183,12 @@ For each `lockedBaseKey`, the source-variant's `options[].option.title` must equ
 
 Created via `createProductsWorkflow` (the same workflow apparel uses). Fields:
 
-**Product-level fields copied from source:** `title` (overridden by `customOrder.product_name` if set, mirroring apparel), handle (must be unique across Medusa products — match apparel's existing uniqueness strategy), `description`, `subtitle`, `thumbnail`, `images`, `external_id`, `type_id`, `tag_ids`, `category_ids`.
+**Product-level fields copied from source:** `title` (overridden by `customOrder.product_name` if set, mirroring apparel), handle (must be unique across Medusa products — match apparel's existing uniqueness strategy), `description`, `subtitle`, `thumbnail`, `images`, `external_id`, `type_id`, `tag_ids`, `category_ids`. Plus `status: "published"` — apparel sets this explicitly at `order-flow.ts:357`; without it, Medusa creates a draft product and `custom-products/route.ts` (the storefront list endpoint) filters it out, so the customer cannot see their own saved product. The importer at `importer.ts:149` follows the same convention.
 
 **Product `options`** (the Medusa entity, not the metadata bag): one entry per code in `sourceProduct.metadata.base_option_keys`, in `metadata.options_order` order, each entry's `title` from `metadata.options_labels[code]`. `values` arrays:
 
 - For each lockedBaseKey: single-element array `[approvedValue]`.
-- For `quantity`: the value list derived from the **retainedVariants set's** quantity values (deduplicated, preserving source order). NOT the source product's full `options_values.quantity` list. Rationale: the retainedVariants set is the output of §7a's two-stage narrowing — every quantity tier in this set is guaranteed to (a) have a variant matching the locked base axes, and (b) have multiplier rows for every locked multiplier choice. Advertising any quantity outside this set would let the customer pick a tier for which either no variant matches (pricing throws on variant-match) or no multiplier row exists (pricing throws on Q-B fix-loud). Narrowing to retained-variant tiers ensures every tier the customer can pick is reorderable.
+- For `quantity`: the value list derived from the **retainedVariants set's** quantity values (deduplicated, preserving source order). NOT the source product's full `options_values.quantity` list. Rationale: the retainedVariants set is the output of §7a's filter on lockedBaseKeys — every quantity tier in this set has a variant matching the locked base axes. Advertising any quantity outside this set would let the customer pick a tier for which no variant matches (pricing throws on variant-match). Narrowing to retained-variant tiers ensures every tier the customer can pick is reorderable. (Multiplier-row coverage is handled by the §10c default-1.0 semantic — every (code, qty, value) tuple prices, with absence treated as factor 1.0.)
 
 The acceptance of mixed-arity `values` arrays (single-element for locked codes, multi-element for quantity) by `createProductsWorkflow` is established by the importer at `src/_custom/utils/promo-print-product/importer.ts:46-49` and `:52-77`, which calls the same workflow (or its underlying step) with multi-element-per-option arrays at initial import. The shape is not novel for this code path.
 
@@ -202,14 +212,19 @@ saved.metadata = {
 
 All other source-metadata keys (`product_type`, `options_order`, `options_labels`, `options_styles`, `base_option_keys`, `multiplier_keys`, `multipliers`, `tabs`, `production_time`, `short_description`, `shipping_profiles`, `notes`, plus any future keys) round-trip via the spread. Note that `options_styles` is preserved verbatim — the saved product carries the source product's intent for how each option renders (including locked codes which become single-value styled pickers, e.g., a single-item dropdown for a locked base code). The frontend retrofit (out of scope per §3) decides whether to render single-value codes as plain labels regardless of style; preserving the source's `options_styles` keeps that information available for the retrofit's UX choices. Success criterion §14.7 enforces no source-metadata key is dropped (with the `options_values` narrowings as the documented exception).
 
-**The lock semantics.** The narrowed `options_values` is anticipatory metadata: it encodes the customer's approved configuration as structural data the future frontend retrofit will honor when rendering the saved-product PDP. Today, no backend code path treats `options_values: ["Yes"]` as a runtime lock — the pricing route reads what the cart sends, not what the saved product's `options_values` permits. The lock is a frontend rendering signal (storefront standard adapter at `getProductByHandle.ts:39-66` reads `options_values[code]` and uses it for picker rendering) plus future-frontend convention. Backend enforcement of the lock is explicitly out of scope per §3.
+**The lock semantics.** Two layers protect the lock:
+
+- **Structural (base axes):** the variant retention in §7a means the retained-variant set's `options` only spans the locked base configuration. The customer literally cannot pick a different paper_type at reorder because the variant for `paper_type=glossy` is not on the saved product. This is enforced by Medusa — cart-add requires `variant_id`, the variant's options are fixed.
+- **Server-side validated (multiplier choices):** §10b adds the cart-add-time enforcement. When a customer's cart-add hits a saved product (line-item's `product.metadata.custom_order_id` is set), the non-apparel cart-add path validates that submitted `metadata.options[k]` matches the saved product's `options_values[k][0]` for every `k ∈ multiplier_keys`. Mismatch returns 400. This makes the multiplier portion of the lock load-bearing rather than advisory.
+
+The narrowed `options_values` on the saved product remains the structural source of truth. The standard adapter at `getProductByHandle.ts:39-66` reads it for picker rendering (single-element arrays render as locked); the cart-add enforcement reads it for validation. The two enforcement points share one source of truth.
 
 **Saved-product immutability post-approval.** Once the saved product is created, its retained variants and the spread of source metadata (including `multipliers`, `multiplier_keys`, `base_option_keys`, `options_*`) are frozen on the saved product. Subsequent source-product mutations (re-import via `importer.ts:333-369` `--force`, manual variant deletion via Medusa Admin, multiplier-table edits) do NOT propagate to the saved product. Repricing always reads the saved product's frozen metadata and its retained variants' `prices[].amount`. This decoupling is a strength of the design — it guarantees the customer's reorder pricing matches what they approved — and is enforced structurally by the create-time copy, with no runtime read of the source product.
 
-**Variants:** the `retainedVariants` set from §7a stage 2. For each retained variant:
+**Variants:** the `retainedVariants` set from §7a. For each retained variant:
 
 - `title` — same as source variant.
-- **No `sku` / `upc` / `barcode` / `ean` field on the create input.** Medusa's `product_variant` schema (`@medusajs/product/dist/models/product-variant.js:65-87`) declares unique indexes on each of these with `WHERE deleted_at IS NULL`; the source variants are not deleted, so copying the values would collide and the create would fail. Match the apparel reference at `order-flow.ts:368-396`, which OMITS these fields entirely and lets Medusa auto-generate. Original values are preserved only via `metadata.original_sku` and `metadata.original_upc` below — the rendering surfaces that need them (storefront inventory lookup at `custom-products/route.ts:197-204` already reads `variant.metadata?.original_sku`) work off metadata, not the `sku` column.
+- **No `sku` / `upc` / `barcode` / `ean` field on the create input.** Medusa's `product_variant` schema (`@medusajs/product/dist/models/product-variant.js:65-87`) declares unique indexes on each of these with `WHERE deleted_at IS NULL`; the source variants are not deleted, so copying the values would collide and the create would fail. The schema also declares each field as `text().nullable()` — omission leaves the column NULL on the saved variant; Medusa does NOT auto-generate a value. Match the apparel reference at `order-flow.ts:368-396`, which OMITS these fields entirely. Storefront inventory lookups read `variant.metadata.original_sku` per `custom-products/route.ts:197-204` (with `variant.sku` as fallback and `"unknown"` as last-resort), so the NULL `sku` column is fine — the metadata copy below carries the meaningful identifier.
 - `options` — same `{title: value}` map as source variant (variants in the retained set differ only in their quantity axis, all sharing the locked base values).
 - `prices` — same as source variant (preserves the variant's `calculated_price` shape so the pricing route can read `calculated_amount`).
 - `metadata` — spread of source variant `metadata` plus:
@@ -231,16 +246,16 @@ Same shape as apparel. After `createProductsWorkflow` returns the saved Medusa p
 
 1. **CompanyProduct row.** Call `companyModuleService.createCompanyProducts({ id: savedProduct.id, company_id: companyId, price: <number> })`. The `id` argument is set to the Medusa product id; this forces the CompanyProduct primary key to match the saved-product id (apparel and importer convention). Subsequent `link.create` calls (steps 2–3) use the same id as both `product_id` and `company_product_id`. Implementers must NOT allocate a separate CompanyProduct id.
 
-2. **Product ↔ CompanyProduct link.** `link.create({ [Modules.PRODUCT]: { product_id }, [COMPANY_MODULE.linkable.companyProduct]: { company_product_id } })` — both ids equal to `savedProduct.id`.
+2. **Product ↔ CompanyProduct link.** `link.create({ [Modules.PRODUCT]: { product_id }, [COMPANY_MODULE]: { company_product_id } })` — both ids equal to `savedProduct.id`. Note `[COMPANY_MODULE]` (the module name string) NOT `[COMPANY_MODULE.linkable.companyProduct]`. Live evidence: `order-flow.ts:420` (apparel) and `importer.ts:439` (importer) both use `[COMPANY_MODULE]` directly.
 
 3. **Product ↔ Webshop sales channel link.** Resolve the sales channel by name (`salesChannelService.listSalesChannels({ name: "Webshop" })`), then `link.create({ [Modules.PRODUCT]: { product_id }, [Modules.SALES_CHANNEL]: { sales_channel_id } })`.
 
 **`price` value.** The `price` column is NOT NULL float (`src/modules/company/migrations/Migration20260104075004.ts:25`) and is currently a write-only display/sort cache. Recon confirmed: zero money-path consumers across both repos. The three storefront readers (`lib/catalog/types.ts:105`, `components/catalog/catalog-product-grid.tsx:79`, `components/catalog/catalog-product-card.tsx:89`) are all DISPLAY paths — `formatPrice(...)` for catalog cards. The write contract:
 
-- Compute `lowestPrice = min(amount across retainedVariants.flatMap(v => v.prices))`. This mirrors apparel's reduce at `order-flow.ts:334-345` and the importer's `Math.min(...sku.cost)` at `importer.ts:419-422`.
-- If `flat()` returns `[]` (every retained variant has empty `prices`), **throw at approval time** with a diagnostic naming the product handle. See §11 case 9. Two reasons the approval-time throw is correct rather than a `0` (or `?? undefined`) fallback: (a) the saved product would be non-functional regardless of CompanyProduct.price — the pricing route at `calculate-promo-print-price.ts:73-78` throws `INVALID_DATA` whenever a retained variant's `calculated_amount` is null/missing, so neither cart-add nor reorder would succeed; (b) the saved product would still appear in the customer's catalog (`custom-products/route.ts:47-53` does not filter saved products from the company catalog list), polluting display with a $0.00 row for a product that cannot be reordered. Treating empty retained-variant prices as a critical config gap surfaces the issue at approval time rather than deferring it to first-reorder failure or visible $0.00 catalog rot.
+- **First, per-variant validation.** For every retained variant `v`, `v.prices` MUST be a non-empty array. If ANY retained variant has empty `prices`, **throw at approval time** with a diagnostic naming the product handle and the offending variant. See §11 case 9. The check is per-variant, not aggregate (`flat()` non-empty), because each retained variant corresponds to a specific quantity tier the customer can pick at reorder. If qty=100 has prices but qty=500 doesn't, an aggregate `flat()` is non-empty — the saved product gets created — and then the customer who reorders at qty=500 hits a 400 with no recourse. The pricing route at `calculate-promo-print-price.ts:73-78` throws `INVALID_DATA` whenever a variant's `calculated_amount` is null/missing, so any retained variant with empty `prices` produces a non-functional reorder tier. Reject at approval, surface the gap to the admin.
+- After per-variant validation passes, compute `lowestPrice = min(amount across retainedVariants.flatMap(v => v.prices))`. This mirrors apparel's reduce at `order-flow.ts:334-345` and the importer's `Math.min(...sku.cost)` at `importer.ts:419-422`. Per-variant validation guarantees `flat()` is non-empty, so `lowestPrice` is a finite number. Write it directly to CompanyProduct.price.
 
-  Apparel's existing `lowestPrice ?? undefined` writer pattern is a latent bug masked in production by apparel always carrying region prices. The non-apparel arm does NOT inherit it.
+Apparel's existing `lowestPrice ?? undefined` writer pattern is a latent bug masked in production by apparel always carrying region prices. The non-apparel arm does NOT inherit it; per-variant validation upstream removes the pathological case.
 
 **`Webshop` sales-channel resolution failure** preserves apparel's existing fail-mode: if the lookup returns an empty array, destructuring yields `undefined` and the subsequent property access throws `TypeError`. This is an inherited weakness, not introduced here. Documented but not addressed.
 
@@ -260,31 +275,30 @@ Same shape as apparel. After `createProductsWorkflow` returns the saved Medusa p
 
 The cart `custom-complete` route decides "is this a saved-product reorder?" via the gate at `src/api/store/carts/[id]/custom-complete/route.ts:248-252`. The gate currently requires `items[0]?.metadata?.product_type === "apparel"` — DIV-99 hardening that explicitly bookmarked DIV-100 ("*Re-evaluate when DIV-100 introduces non-apparel saved-product creation.*"). After DIV-100 ships, non-apparel saved products will exist with `product.metadata.custom_order_id` set, but their cart line items carry `product_type: "promo"` or `"print"` — the gate fails, the reorder triggers a fresh proofing flow instead of the APPROVED + PROOF_DONE shortcut.
 
-**The widening.** Drop the apparel-only clause and add a company-lineage check on the resolved custom_order. The new gate is two parts:
+**The widening — three coordinated changes.** The current gate at `route.ts:248-252` runs after `completeCartWorkflow` (line 172) — an order is created before the gate evaluates. Three coordinated changes:
 
-```
-// Identity gate — same as widened version
-isSavedProduct =
-  proofType === ProofType.ORDER &&
-  items[0]?.product?.metadata?.custom_order_id != null
+1. **Drop the apparel-only clause.** Identity gate becomes:
+   ```
+   isSavedProduct =
+     proofType === ProofType.ORDER &&
+     item?.product?.metadata?.custom_order_id != null
+   ```
+   Evaluated per-item, not just `items[0]`.
 
-// Lineage check — runs only when isSavedProduct is true
-if (isSavedProduct) {
-  // Resolve the referenced custom_order; fetch its owning company.
-  // The exact lookup path is a plan-level decision — the natural shape
-  // is to fetch the custom_order with enough fields/links to reach its
-  // company_id, then compare to `companyId` (the buying company resolved
-  // earlier in the route at line 91).
-  if (resolvedCustomOrder is missing) → throw 400 with diagnostic
-  if (resolvedCustomOrder.company_id !== companyId) → throw 403 with diagnostic
-}
-```
+2. **Pre-flight lineage validation, before `completeCartWorkflow`.** Before line 172 in the route, iterate every line-item across every group. For each line-item with `product.metadata.custom_order_id` set, resolve the referenced `custom_order` and validate its owning company matches the buying company.
 
-**Why the lineage check is necessary.** With the apparel-only clause removed, a non-apparel product carrying `metadata.custom_order_id` that points to a different company's custom_order would auto-approve (jobStatus=APPROVED, orderStatus=PROOF_DONE) and bypass proofing. The current code at `route.ts:248-264` reads `custom_order_id` blindly and fetches `customOrder.product_name` without a company-ownership check. The same seam exists for apparel today (it's an inherited weakness, not introduced by DIV-100), but the gate widening expands its surface. The lineage check closes the cross-company hijack vector for both arms going forward.
+   The traversal path: `custom_order` does not carry a `company_id` field directly (verified against `src/modules/custom-order/models/custom-order.ts` — only `proof_type`, `job_status`, `order_status`, `metadata`, `selections`, `product_name`, `timeline`, `version`). The lineage path is `custom_order → order` (link defined in `src/links/order-custom-order.ts`) → `company` (link defined in `src/links/company-order.ts`). The plan picks the cleanest implementation — `query.graph` traversal of `custom_order.order.company.id` is the natural shape, but the plan may resolve via the link service if that's simpler.
 
-The check also gracefully handles the missing-custom_order case (current behavior crashes with `Cannot read property 'product_name' of undefined`).
+   Behaviors:
+   - If any `custom_order_id` does not resolve to an existing `custom_order`, throw 400 with diagnostic.
+   - If any resolved `custom_order` has an owning company different from the buying company (`companyId` resolved at `route.ts:91`), throw 403 with diagnostic.
+   - Both run BEFORE `completeCartWorkflow`, so failed validation does NOT produce a partially-created order.
 
-The bookmark comment at `route.ts:248` MUST be updated to reflect post-DIV-100 status (no longer "apparel-only saved-product gate" — now the gate plus the lineage check).
+3. **Iterate all items per group at the gate.** The existing per-group loop at `route.ts:247-282` reads `items[0]` for both `isSavedProduct` evaluation and `productName` resolution. After widening: a group with mixed line-items (some saved-product, some not) is rejected at pre-flight (group homogeneity), OR the saved-product gate evaluates per-item. Plan picks the cleaner path; the spec mandates that group homogeneity is enforced — partial saved-product groups are rejected. (This rejection-on-mixed-groups is consistent with the DIV-99 "mixed apparel/non-apparel cart" rejection at `line-items-custom/route.ts:42-47`.)
+
+**Why the changes are necessary.** With the apparel-only clause removed, a non-apparel product carrying `metadata.custom_order_id` that points to a different company's custom_order would auto-approve (jobStatus=APPROVED, orderStatus=PROOF_DONE) and bypass proofing. The current code at `route.ts:248-264` reads `custom_order_id` blindly and fetches `customOrder.product_name` without a company-ownership check. The same seam exists for apparel today (it's an inherited weakness, not introduced by DIV-100); the lineage check closes the cross-company hijack vector for both arms going forward. Pre-flight timing ensures rejection happens before order creation; iterating all items closes the items[0]-only hole; group homogeneity prevents mixed groups from sneaking past via items[0]-passes-but-items[1]-fails.
+
+The bookmark comment at `route.ts:248` MUST be updated to reflect post-DIV-100 status (no longer "apparel-only saved-product gate" — now the gate plus pre-flight lineage validation).
 
 **Post-gate apparel-shaped surfaces — enumerated.** Recon confirmed the post-gate persist/link pipeline (the saved-product branch at `route.ts:268-281` writing `proof_type`, `product_name`, `job_status: APPROVED`, `order_status: PROOF_DONE`, and `metadata.original_custom_order_id`; the downstream `createCustomOrders` insert; the link.create calls at 295-316) is structurally product-type-agnostic. There are three apparel-shaped READS in the same route file post-gate, each enumerated explicitly so an implementer or future verifier can audit them:
 
@@ -298,7 +312,61 @@ None of these three surfaces blocks the widening or causes correctness breaks fo
 
 **Inherited deleted-source-product silent fallthrough.** If an admin deletes a saved product between cart-add and `custom-complete`, the gate's `items[0]?.product?.metadata?.custom_order_id` resolves to undefined; `undefined != null` is false; the gate evaluates false; the cart silently downgrades to fresh-proof flow. The customer paid for a fast-turn reorder but receives a job in PROOFING state. This is **inherited apparel behavior** — apparel reorders exhibit the same fallthrough on saved-product deletion. DIV-100 does not introduce or fix this; it is documented here so a future ticket can address it across both arms.
 
-> **Confidence: High** — recon confirmed end-to-end product-type-agnosticity of the post-gate path; one-line widening verified safe.
+> **Confidence: High** — recon confirmed end-to-end product-type-agnosticity of the post-gate path; gate change (drop apparel clause + pre-flight lineage + iterate all items) verified against route flow at `route.ts:172-282`; lineage traversal path verified against custom_order model and link definitions.
+
+---
+
+## 10b. Cart-add enforcement of locked multiplier choices (boundary contract)
+
+The saved-product lock is structural for base axes (variant retention — customer can't pick `paper_type=glossy` because the variant doesn't exist on the saved product). Multipliers aren't variant axes; they're metadata read from `line-item.metadata.options[k]`. Without a server-side check, a customer reordering a saved product can submit a different multiplier value than the locked one and have the cart accept it. Combined with §10's reorder shortcut, that means the order auto-approves (jobStatus=APPROVED, orderStatus=PROOF_DONE) under a multiplier configuration the customer never approved. The lock semantic is broken.
+
+**The validation.** The non-apparel branch of `src/api/store/carts/[id]/line-items-custom/route.ts:50-65` (the `nonApparelCount > 0` block that dispatches `addPromoPrintPriceToCartWorkflow`) gains a saved-product check. For each non-apparel cart-add line-item:
+
+1. Resolve the variant's product (`product_id` lookup, then product fetch with metadata).
+2. If `product.metadata.custom_order_id` is set (i.e., this is a saved-product reorder cart-add):
+   - For each `k ∈ product.metadata.multiplier_keys`:
+     - Compare `lineItem.metadata.options[k]` to `product.metadata.options_values[k][0]`.
+     - If mismatch, throw 400 with diagnostic naming the locked code, expected value, submitted value, and saved-product handle.
+3. If `product.metadata.custom_order_id` is NOT set, no enforcement — the source-product (catalog) cart-add path is unaffected.
+
+The check is non-apparel-arm-only. Apparel saved products do not have a multiplier-table semantic; their lock is structural-only (variant retention covers the full configuration). No equivalent enforcement is needed on the apparel branch.
+
+**Why this lives at cart-add and not at custom-complete.** The custom-complete gate already auto-approves saved-product reorders. Catching the mismatch at custom-complete would happen AFTER the customer paid (Stripe session created in §0 setup). Catching at cart-add prevents adding the line-item in the first place, before any payment. The customer sees the error at the same step where they tried to override the locked value.
+
+> **Confidence: High** — design grounded against existing line-items-custom branching pattern + saved-product `options_values` narrowing structure from §7c; no architectural novelty (single new validation in an existing branch).
+
+---
+
+## 10c. Pricing-route correction — multiplier missing rows default to factor 1.0 (boundary contract)
+
+The DIV-99 design at `calculate-promo-print-price.ts:88-94` ("Q-B FIX-LOUD") throws `INVALID_DATA` whenever `multipliers[code]?.[quantity]?.[value]` is undefined for a submitted multiplier. This contradicts the multiplier table's design intent: rows declare surcharges; absence means no surcharge (factor 1.0). The Q-B FIX-LOUD over-corrected against silent misprice when the design was "no row = factor 1.0 by definition."
+
+**The change.** Lines 88-94 invert from throw to default:
+
+```
+// Before (DIV-99 Q-B FIX-LOUD):
+if (factor == null) {
+  throw new MedusaError(
+    MedusaError.Types.INVALID_DATA,
+    `No multiplier row for ${code} at quantity tier ${quantityValue}; product configuration is incomplete`,
+  );
+}
+finalPrice *= factor;
+
+// After (DIV-100 alignment to design intent):
+finalPrice *= factor ?? 1.0;
+```
+
+Plus the comment at line 88 (`Q-B FIX-LOUD: missing row is a 400, never a silent 1.0`) is replaced with one that reflects the actual design: `Missing row = factor 1.0 (no surcharge). The multiplier table declares only surcharge-bearing rows; absence is by design, not config gap.`
+
+**Why this is in DIV-100 scope.** Without this fix, the saved-product reorder path is broken in two distinct ways:
+
+- The Imperator-confirmed design intent (multipliers compress the SKU grid by encoding surcharges only) is unenforceable end-to-end. Customers approving saved products with `stapling: "No"` cannot price their saved product on reorder, defeating the entire saved-product reorder flow.
+- The current DIV-99 behavior also breaks catalog-flow non-apparel cart-add for any customer who picks "No" for any multiplier on the shipped flyer. The flyer option CSV declares `No;Yes` (No first), so storefront pickers defaulting to first-value send `stapling: "No"` to cart-add, which throws under Q-B FIX-LOUD. This is a live production bug that DIV-100 fixes incidentally — the fix is pivotal to DIV-100's saved-product semantic and corrects the catalog regression at the same time.
+
+**Test impact.** The existing unit test at `src/__tests__/workflows/pricing/utils/calculate-promo-print-price.unit.spec.ts:88-97` ("throws INVALID_DATA when the multiplier row for a code/quantity is missing (Q-B fix-loud)") asserts the wrong behavior. It must be replaced with a test that asserts default-1.0 — the same fixture (`var_999_matte` with no row at qty=999) reverses its expected outcome from throw to factor 1.0 (price = 100 × 1.0 = 100).
+
+> **Confidence: High** — Imperator-confirmed design intent ("the whole point of the multiplier was to reduce SKU count by deleting yes/no to a factor"); change scope is one ternary inversion at lines 88-94 plus comment update; existing unit test maps cleanly to the new behavior.
 
 ---
 
@@ -313,13 +381,13 @@ The non-apparel arm throws — does NOT silently fall back to the apparel arm �
 5. **Multi-variant retention with empty `lockedBaseKeys` and multiple source variants.** See §7a — unsupported shape. Hard-throw.
 6. **Missing Webshop sales channel.** Same fail-mode as apparel (TypeError on undefined access). Inherited; not introduced here.
 7. **Line-item options-map missing a required code** (per the §5 pre-condition 2). For each code in `sourceProduct.metadata.base_option_keys` AND each code in `sourceProduct.metadata.multiplier_keys`: the line-item `metadata.options[code]` MUST be a non-empty string. If absent or empty, hard-throw with a diagnostic naming the missing code, the source product handle, and the line-item id. This catches admin/fixture/hand-edited orders where the cart-time enforcement at `calculate-promo-print-price.ts:36-43` was bypassed. Without this guard, a missing key would silently produce `[undefined]` in the saved product's `options_values` (corrupt saved product, no diagnostic).
-8. **Source-product metadata sanity (§5 pre-condition 3).** The non-apparel arm asserts at the top of the side-effect that the source product carries every required metadata field with the correct shape: `base_option_keys` (array), `multiplier_keys` (array, possibly empty), `options_order` (array), `options_labels` (object), `options_values` (object), and — when `multiplier_keys.length > 0` — `multipliers` (object). For each missing or wrong-typed field, hard-throw with a diagnostic naming the product handle and the offending field. The discriminator at §4 routes any non-apparel-shaped product into this arm; a non-apparel product created outside the promo-print importer (e.g., via Medusa Admin UI, a future importer variant, or partial migration) might lack one or more of these fields. Without the comprehensive guard: `undefined.filter(...)` on `base_option_keys` would TypeError; missing `options_order` would silently produce a saved product the standard adapter renders as `null` (invisible in PDP); `?? []` / `?? {}` fallbacks on `multiplier_keys` / `multipliers` / `options_labels` would silently produce miscompiled saved-product shapes.
+8. **Source-product metadata sanity — presence + cross-field consistency (§5 pre-condition 3).** Two-part guard at the top of the non-apparel arm. **Presence (3a):** every required field present and correctly typed — `base_option_keys` (array), `multiplier_keys` (array, possibly empty), `options_order` (array), `options_labels` (object), `options_values` (object), and (when `multiplier_keys.length > 0`) `multipliers` (object). **Cross-field consistency (3b):** `options_order ⊆ Object.keys(options_labels)`; `options_order ⊆ Object.keys(options_values)`; `base_option_keys ⊆ options_order`; `multiplier_keys ⊆ options_order`; `"quantity" ∈ base_option_keys`; for every `k ∈ multiplier_keys`, `multipliers[k]` is an object. Each violation throws with a diagnostic naming the product handle and the specific invariant. Without this guard, downstream code would silently produce broken saved products: `undefined.filter(...)` on `base_option_keys` TypeErrors; missing `options_order` makes the standard adapter return null (invisible PDP); `?? []` / `?? {}` fallbacks on `multiplier_keys` / `multipliers` / `options_labels` mask shape bugs; `options_order` codes that lack labels render as bare codes; `multiplier_keys` codes outside `options_order` are unreachable from the picker.
 
-9. **Empty retained-variant prices.** After §7a's two-stage narrowing produces `retainedVariants`, if `retainedVariants.flatMap(v => v.prices)` is empty (every retained variant has zero region/currency price entries), hard-throw with a diagnostic naming the product handle and approved configuration. Per §8, allowing the saved-product creation to proceed in this state would produce a product that pricing throws on (`calculate-promo-print-price.ts:73-78` rejects null `calculated_amount`) and that pollutes the catalog with $0.00 display rot. Surface the gap at approval time.
+9. **Empty retained-variant prices (per-variant check).** For every variant in `retainedVariants`, `v.prices` MUST be a non-empty array. If ANY retained variant has empty `prices`, hard-throw with a diagnostic naming the product handle, the offending variant id, and the approved configuration. Per-variant rather than aggregate: pricing throws when an individual variant's `calculated_amount` is null/missing (`calculate-promo-print-price.ts:73-78`), so any single retained variant with empty prices produces a non-functional reorder tier. Surface the gap at approval time rather than at first-reorder failure.
 
-10. **Multiplier-row coverage failure (stage 2 of §7a).** If §7a's stage-2 filter produces an empty set of retained variants — possible only under between-cart-and-approval mutation of the multiplier table or hand-crafted line-items that bypassed cart-add validation — hard-throw with a diagnostic naming the product handle, the locked multiplier values, and the proof-time quantity tier whose row evaporated.
+10. **Saved-product reorder gate — company-lineage mismatch (`custom-complete`).** Per §10 widening, the gate's lineage check throws 403 when the `custom_order_id` on any line-item's product metadata resolves to a custom_order owned by a company other than the buying company. The same path throws 400 when the `custom_order_id` does not resolve at all (replacing the current implicit `undefined.product_name` crash with a clear diagnostic). Lineage validation runs in pre-flight before `completeCartWorkflow` so failed validation does not produce a partially-created order.
 
-11. **Saved-product reorder gate — company-lineage mismatch (`custom-complete`).** Per §10 widening, the gate's lineage check throws 403 when the `custom_order_id` on the line-item's product metadata resolves to a custom_order owned by a company other than the buying company. The same path throws 400 when the `custom_order_id` does not resolve at all (replacing the current implicit `undefined.product_name` crash with a clear diagnostic).
+11. **Saved-product reorder cart-add — locked multiplier mismatch (`line-items-custom`).** Per §10b, when a non-apparel cart-add line-item resolves to a saved-product source (the variant's product carries `metadata.custom_order_id`), the cart-add path validates `metadata.options[k] === product.metadata.options_values[k][0]` for every `k ∈ multiplier_keys`. Mismatch throws 400 with a diagnostic naming the locked code, the expected value, and the submitted value. This makes the multiplier portion of the saved-product lock load-bearing, not advisory.
 
 **Recovery posture.** Per the route handler at `src/api/custom-order/[id]/route.ts:297-353`, the order-status DB commit at lines 349-353 runs AFTER `sideEffects` at lines 322-329. A throw inside `sideEffects` skips the commit; the order remains in its prior state (PENDING/PROOF_READY) and the catch at lines 354-360 returns a 400 with the diagnostic message. The proof can be retried after the underlying issue is corrected. The committed-APPROVED-but-no-saved-product state cannot occur via this code path. (See the partial-failure orphan caveat below for a different failure mode that does NOT involve status commit.)
 
@@ -331,17 +399,27 @@ The non-apparel arm throws — does NOT silently fall back to the apparel arm �
 
 ## 12. Order-flow scope, integration tests, and event idempotency (boundary contract)
 
-**Source-file scope.** Two files: `src/api/custom-order/order-flow.ts` (new non-apparel arm in the `[EVENT.approveProof]` side-effect) and `src/api/store/carts/[id]/custom-complete/route.ts` (gate widening + company-lineage check around line 252). No other order-flow events change.
+**Source-file scope.** Three files:
+- `src/api/custom-order/order-flow.ts` — new non-apparel arm in the `[EVENT.approveProof]` side-effect.
+- `src/api/store/carts/[id]/custom-complete/route.ts` — gate widening, pre-flight lineage validation, all-items iteration (§10).
+- `src/api/store/carts/[id]/line-items-custom/route.ts` — saved-product cart-add lock enforcement on the non-apparel branch (§10b).
+- `src/workflows/pricing/utils/calculate-promo-print-price.ts` — invert Q-B FIX-LOUD lines 88-94 to factor-default-1.0 (§10c).
 
-**Integration test scope.** Three changes to `integration-tests/http/non-apparel-cart.spec.ts` (current Test 15b at lines 595-663):
+**Unit test scope.** One change:
 
-1. **Replace Test 15b's apparel-only assertion.** The existing test injects `custom_order_id` on a non-apparel product's metadata and asserts the resulting custom_order is NOT auto-approved (relying on the apparel-only gate). After widening, that assertion will FAIL — the gate widens precisely so non-apparel saved products auto-approve. The test's safety property must shift: the new negative test asserts a non-apparel ORDER **without** `custom_order_id` (or without a real backing custom_order) does NOT auto-approve. The test author anticipated this rewrite — see lines 599-602 ("DIV-100 will eventually create non-apparel saved-products deliberately; until then, the apparel-only gate keeps the seam closed").
+- `src/__tests__/workflows/pricing/utils/calculate-promo-print-price.unit.spec.ts:88-97` — the existing "throws INVALID_DATA when the multiplier row for a code/quantity is missing" test flips. Same fixture (`var_999_matte`, no multiplier row at qty=999), reversed expected outcome: result is `unit_price === 100` (base × factor 1.0), not a throw. The test description and message change accordingly. This locks in the §10c design.
 
-2. **Add a cross-company hijack negative test.** Inject `custom_order_id` on a non-apparel product's metadata pointing to a custom_order owned by **a different company**. Drive the cart-completion flow as the buying company. Assert the request is rejected (per §10 / §11 case 11 — 403 on lineage mismatch). This locks in the B3 lineage check.
+**Integration test scope.** Four changes to `integration-tests/http/non-apparel-cart.spec.ts`:
 
-3. **Add a positive saved-product reorder-shortcut test.** Drive the full DIV-100 path: approve a non-apparel proof, verify the saved product was created and CompanyProduct row exists, then add the saved variant to a fresh cart and complete the cart. Assert the resulting custom_order has `jobStatus = APPROVED` and `orderStatus = PROOF_DONE` (the shortcut fired) AND `metadata.original_custom_order_id` is set to the original custom_order id. This is the load-bearing positive coverage for both the saved-product creation half and the reorder-gate widening half. Today no UI path drives non-apparel reorder (the storefront `useSavedProduct` hook still filters apparel-only per §3 non-goals); the test must construct the saved-product cart line item directly.
+1. **Replace Test 15b's apparel-only assertion** (current lines 595-663). The existing test injects `custom_order_id` on a non-apparel product's metadata and asserts the resulting custom_order is NOT auto-approved (relying on the apparel-only gate). After widening, that assertion will FAIL — the gate widens precisely so non-apparel saved products auto-approve. The test's safety property must shift: the new negative test asserts a non-apparel ORDER **without** `custom_order_id` (or without a real backing custom_order) does NOT auto-approve. The test author anticipated this rewrite — see current lines 599-602.
 
-Test additions are in scope for DIV-100. The unit test at `__tests__/.../calculate-promo-print-price.unit.spec.ts` is unaffected — its multiplier-row coverage assertion remains correct under the new approval-time narrowing in §7a stage 2.
+2. **Add a cross-company hijack negative test.** Inject `custom_order_id` on a non-apparel product's metadata pointing to a custom_order owned by **a different company**. Drive the cart-completion flow as the buying company. Assert the request is rejected with 403 BEFORE order creation (no order should exist after the failed call). This locks in §10's lineage check + pre-flight timing.
+
+3. **Add a positive saved-product reorder-shortcut test.** Drive the full DIV-100 path: approve a non-apparel proof, verify the saved product was created with `status: "published"` and a CompanyProduct row exists, then add the saved variant to a fresh cart and complete the cart. Assert the resulting custom_order has `jobStatus = APPROVED` and `orderStatus = PROOF_DONE` AND `metadata.original_custom_order_id` is set. This is the load-bearing positive coverage for both the saved-product creation half and the reorder-gate widening half. Today no UI path drives non-apparel reorder (per §3 non-goals); the test must construct the saved-product cart line item directly.
+
+4. **Add a saved-product locked-multiplier-mismatch test.** Approve a non-apparel proof with `stapling: "Yes"` (locked). Attempt cart-add of the saved variant with `stapling: "No"` in `metadata.options`. Assert 400 from `line-items-custom` per §10b / §11 case 11. This locks in the cart-add lock enforcement.
+
+Test additions are in scope for DIV-100. Plus a fifth implicit change: any existing test that depends on Q-B FIX-LOUD throwing on missing rows (whether unit or integration) must be audited and updated to the default-1.0 behavior.
 
 **Idempotency posture.** The state-machine guard is `validateEventTransition` in `order-flow.ts` (called by `transitionOrderStatus` at `src/api/custom-order/[id]/route.ts:298`), which enforces `from: PENDING → to: APPROVED` for `approveProof`. NOTE: `order-flow.ts:218` is the per-event permission check (`canAcceptRejectProof`), NOT the state guard — earlier iterations of this spec conflated the two. The actual state guard runs against `currentCustomOrder` (an in-memory snapshot fetched at the top of the route handler), so the practical idempotency picture is:
 
@@ -359,7 +437,7 @@ This non-apparel arm preserves apparel's posture exactly. Idempotency hardening 
 - **`production_option_type` is not stamped on imported promo-print products today.** The discriminator works because apparel-presence is positive and non-apparel-absence is the implicit case. If a future ticket needs a positive non-apparel signal at the source-product level, that's a separate change in the importer.
 - **Frontend `useSavedProduct.ts:23` apparel filter.** After this backend change, a non-apparel saved product exists, is pricable, and is owned by the company — but `/products/[handle]` will not render it. Tracked as the Phase-18 "saved mode for non-apparel deferred" line.
 - **Confirmation-email subscriber cosmetic degradation** for non-apparel reorders. See §3.
-- **Backend enforcement of locked multiplier choices.** See §3.
+- **(Promoted to in-scope per iter-6 C1 — see §10b.)** Backend enforcement of locked multiplier choices is now part of DIV-100 at the cart-add path.
 - **Workflow refactor of `[EVENT.approveProof]`** (apparel + non-apparel) with proper compensation steps. Addresses the existing orphan-on-partial-failure risk. Out of scope here; tracked separately.
 - **Idempotency hardening** for both apparel and non-apparel arms. Out of scope here.
 - **Inherited deleted-source-product silent fallthrough at `custom-complete`** (see §10). Affects both apparel and non-apparel reorders; documented but not addressed here.
@@ -374,18 +452,20 @@ This non-apparel arm preserves apparel's posture exactly. Idempotency hardening 
 
 1. Approving a non-apparel proof (any product imported by the promo-print importer, including products with non-quantity multipliers like flyers) succeeds end-to-end: a saved Medusa product is created and linked to the company.
 2. The saved product is read by the storefront standard adapter (`adaptToStandardProduct`) without falling back to apparel and without returning null.
-3. `POST /api/pricing/promo-print` against the saved product's handle, using the locked base values + the locked multiplier choices + the customer's chosen quantity, returns a successful price computed against the saved product's preserved `multipliers` table. Repricing at **every** quantity tier in the saved product's `options_values.quantity` works — this list is the output of §7a's two-stage narrowing, which guarantees each tier has both a matching variant and a multiplier row for every locked multiplier choice. The criterion is observable, not assumed: it follows from the structural property of the narrowing, not from a cart-add-time invariant.
-4. The saved product's retained variant set is a snapshot of the source product's variants matching the locked base axes AND having multiplier rows for every locked multiplier choice at approval time, frozen on the saved product. Customers reordering can pick any quantity tier in the retained set; every tier prices cleanly. Subsequent source-product mutations (re-import, manual variant deletion, multiplier-table edits) do NOT change the saved product's variant set or pricing data.
+3. `POST /api/pricing/promo-print` against the saved product's handle, using the locked base values + the locked multiplier choices + the customer's chosen quantity, returns a successful price. Repricing at **every** quantity tier in the saved product's `options_values.quantity` works — pricing reads `multipliers[k]?.[qty]?.[lockedValue] ?? 1.0` per §10c, so every tier prices cleanly regardless of the source multiplier table's row coverage. Surcharge values that are NOT in the source table contribute factor 1.0 (no surcharge), matching the multiplier table's design intent.
+4. The saved product's retained variant set is a snapshot of the source product's variants matching the locked base axes at approval time, frozen on the saved product. Customers reordering can pick any quantity tier in the retained set; every tier prices cleanly under §10c default-1.0 semantics. Subsequent source-product mutations (re-import, manual variant deletion, multiplier-table edits) do NOT change the saved product's variant set or pricing data.
 5. Approving an apparel proof produces functionally-identical product/variant/metadata output as before this change. The apparel arm's existing code body is unchanged; only a top-level discriminator is added before it. Plan-level constraint: no refactor of the apparel arm body.
 6. Approving a non-apparel proof whose line-item `options` map references a value not present on any source variant for the locked base axes throws with a diagnostic message naming the offending option (does NOT silently produce a corrupt saved product).
 7. The saved product's `metadata` round-trips every key present on `sourceProduct.metadata` and adds `custom_order_id`. `options_values` is narrowed: locked codes (lockedBaseKeys + multiplier_keys) become single-element `[approvedValue]` arrays; `quantity` becomes the deduplicated source-ordered list of quantity values appearing in the retained variant set (NOT the source's full options_values.quantity list). No other source-metadata keys are dropped or mutated; `options_styles`, `options_order`, `options_labels`, `multipliers`, `multiplier_keys`, `base_option_keys`, `tabs`, `production_time`, `short_description`, `shipping_profiles`, `notes`, and `product_type` round-trip verbatim.
-8. Each retained variant carries `original_variant_id`, `original_sku`, `original_upc`, `original_title`, and (if present) `design_notes` in its metadata. No variant carries `selections`. The variant input passed to `createProductsWorkflow` does NOT carry `sku` / `upc` / `barcode` / `ean` columns — Medusa auto-generates them. (Medusa's product_variant schema declares unique indexes on these fields; copying source values would collide.)
+8. Each retained variant carries `original_variant_id`, `original_sku`, `original_upc`, `original_title`, and (if present) `design_notes` in its metadata. No variant carries `selections`. The variant input passed to `createProductsWorkflow` does NOT carry `sku` / `upc` / `barcode` / `ean` columns — those columns end up NULL on the saved variant (Medusa's `product_variant` schema declares each field as `nullable()`; omission leaves NULL, no auto-generation). Storefront inventory lookups read `variant.metadata.original_sku` per `custom-products/route.ts:197-204`. The product itself is created with `status: "published"` (matching apparel at `order-flow.ts:357` and the importer at `importer.ts:149`); without it, `custom-products/route.ts` filters the saved product out of the storefront list.
 9. The saved product appears in the company's catalog (CompanyProduct row exists with `id === savedProduct.id`; product linked to the Webshop sales channel).
 10. Reordering a non-apparel saved product belonging to the buying company takes the APPROVED + PROOF_DONE shortcut at `custom-complete` (the widened gate); no fresh proofing flow is triggered.
 11. The widened gate does not change apparel reorder behavior.
 12. The lineage check applies product-type-agnostically. Any saved-product reorder (apparel or non-apparel) whose `product.metadata.custom_order_id` resolves to a custom_order owned by a **different company** is rejected with a 403 at `custom-complete`. A `custom_order_id` that does not resolve at all returns a 400 with a clear diagnostic. Both replace the prior implicit `undefined.product_name` crash. Legitimate apparel reorders (lineage matches) take the same shortcut as before — the lineage check is a strengthening, not a regression.
-13. Approving a non-apparel proof whose source product is missing any of `base_option_keys` / `multiplier_keys` / `options_order` / `options_labels` / `options_values` / `multipliers` (the last only when `multiplier_keys.length > 0`) throws with a diagnostic at approval time, naming the product handle and the offending field. The saved product is NOT created.
-14. Approving a non-apparel proof whose retained variants have empty `prices[]` arrays throws with a diagnostic at approval time. The saved product is NOT created. (Prevents publishing a saved product the pricing route cannot operate on, and prevents $0.00 catalog-display rot.)
+13. Approving a non-apparel proof whose source product violates either presence (any of `base_option_keys` / `multiplier_keys` / `options_order` / `options_labels` / `options_values` / `multipliers`) OR cross-field consistency (`options_order` codes must be subset of `options_labels` keys ∩ `options_values` keys; `base_option_keys` ⊆ `options_order`; `multiplier_keys` ⊆ `options_order`; `"quantity"` ∈ `base_option_keys`; `multipliers[k]` is an object for every `k ∈ multiplier_keys`) throws with a diagnostic at approval time naming the product handle and the specific invariant. The saved product is NOT created.
+14. Approving a non-apparel proof where ANY retained variant has an empty `prices[]` array throws with a diagnostic at approval time (per-variant check, not aggregate). The saved product is NOT created. Prevents publishing a saved product whose pricing path throws at first reorder, and prevents $0.00 catalog-display rot.
+15. Cart-adding a non-apparel saved product (line-item's `product.metadata.custom_order_id` set) with a `metadata.options[k]` value different from the saved product's `options_values[k][0]` for any `k ∈ multiplier_keys` returns 400 from `line-items-custom`. This makes the multiplier-portion of the saved-product lock load-bearing: customers cannot swap locked multiplier values at reorder.
+16. Pricing a configuration whose multiplier table has no row for `(code, quantity, value)` returns the base price multiplied by 1.0 for that code (no surcharge), not a 400 error. This matches the multiplier table's design intent: rows declare surcharges; absence is no-surcharge. Applies uniformly to catalog non-apparel pricing, saved-product non-apparel pricing, and the existing `/pricing/promo-print` endpoint.
 
 ---
 
@@ -393,19 +473,21 @@ This non-apparel arm preserves apparel's posture exactly. Idempotency hardening 
 
 | Section | Confidence | Evidence anchor |
 |-|-|-|
-| 1. Summary | High | Imperator-confirmed iteration-3 design. |
+| 1. Summary | High | Imperator-confirmed iter-6 corrected design (multiplier semantic = "row declares surcharge; absence = 1.0"). |
 | 2. Motivation | High | KG-NON-APPAREL-OPTIONS + Linear cite + Phase-18 doc + recon. |
-| 3. Non-goals | High | Imperator-confirmed across three deliberation rounds. |
-| 4. Branch discriminator | High | `seed-apparel.ts:1107-1116` + `getProductByHandle.ts:112` parity + soft cross-check verified against legacy/admin/fixture/apparel scenarios; corrupted-apparel-stamp residual documented in §13. |
-| 5. Approved-config source + pre-conditions (line-item completeness + source-metadata sanity) | High | `NonApparelMetadataSchema` + DIV-99 cart-time enforcement at `calculate-promo-print-price.ts:36-43` + §11 case 7 (line-item) + §11 case 8 (source-metadata, B5) + standard-adapter null-on-missing-options_order verified at `getProductByHandle.ts:33-37`. |
+| 3. Non-goals | High | Imperator-confirmed across deliberation rounds; backend enforcement of multiplier locks promoted to in-scope (§10b). |
+| 4. Branch discriminator | High | `seed-apparel.ts:1107-1116` + `getProductByHandle.ts:112` parity verified; soft cross-check + corrupted-apparel-stamp residual documented in §13. |
+| 5. Approved-config source + pre-conditions (line-item completeness + source-metadata presence + cross-field consistency) | High | `NonApparelMetadataSchema` + DIV-99 cart-time enforcement + §11 case 7 (line-item) + §11 case 8 (source-metadata two-part guard, C3) + standard-adapter null-on-missing-options_order verified at `getProductByHandle.ts:33-37`. Cross-field invariants from importer structure. |
 | 6. Three-class taxonomy + lowercase-quantity invariant | High | Code-grounded at `importer.ts:41-43, 108-110`, `calculate-promo-print-price.ts:80-95`, shipped `flyers_multiplier.csv`; importer input-shape contract documented. |
-| 7. Variant retention (two-stage narrowing) + saved shape | High | Stage 1 (base-axis filter) Imperator-confirmed; stage 2 (multiplier-row coverage filter, B1) live-evidence-grounded at `flyers_multiplier.csv` + `calculate-promo-print-price.ts:88-94` + existing unit test at `__tests__/.../calculate-promo-print-price.unit.spec.ts:88-97`. SKU/UPC/barcode/EAN omission (B2) grounded at Medusa schema unique indexes (`@medusajs/product/.../product-variant.js:65-87`) + apparel reference at `order-flow.ts:368-396`. Quantity narrowing to retained-variant tiers; immutability post-approval explicit. |
-| 8. CompanyProduct + link | High | Reader audit confirms display/sort cache (zero money-path consumers); id-equality verified; empty-prices NOT NULL boundary now hard-throws (B4) — non-functional saved product rejected at approval time rather than papered over with `0`; storefront catalog read paths cited. |
+| 7. Variant retention + saved shape | High | Single-stage filter on `lockedBaseKeys` (Imperator-confirmed; stage 2 from iter-5 dropped — see §10c). Mixed-arity acceptance grounded at `importer.ts:46-49, 52-77`. SKU/UPC/barcode/EAN omission (B2) grounded at Medusa schema (`product-variant.js:65-87`) + apparel reference at `order-flow.ts:368-396`. `status: "published"` (C5a) grounded at `order-flow.ts:357` + `importer.ts:149`. Immutability post-approval explicit. |
+| 8. CompanyProduct + link | High | Reader audit confirms display/sort cache; id-equality verified; per-variant empty-prices throw (C4); link.create syntax `[COMPANY_MODULE]` corrected (C5c) against `order-flow.ts:420` + `importer.ts:439`. |
 | 9. Image handling | High | 4-lane recon convergence on hydrateImages fallback. |
-| 10. Reorder gate widening + company-lineage check | High | Widening verified one-line; three apparel-shaped post-gate reads enumerated explicitly (selections-loop, FREETSHIRT block, email subscriber); inherited deleted-source-product fallthrough acknowledged. Company-lineage check (B3) closes cross-company hijack vector and replaces implicit `undefined.product_name` crash with explicit 400/403. |
-| 11. Error semantics | High | Eleven throw cases enumerated with code citations (cases 1-7 unchanged from iter-3; case 8 expanded for B5; cases 9, 10 added for B4 + stage-2 narrowing failure; case 11 added for B3 lineage); recovery posture grounded against route ordering at `route.ts:297-353`; partial-failure orphan caveat documented. |
-| 12. Order-flow scope + integration tests + idempotency | High | Source-file scope unchanged (two files); test scope (B6) acknowledges Test 15b replacement, cross-company hijack negative test, positive saved-product reorder-shortcut test; idempotency state guard correctly cited at `validateEventTransition` via `transitionOrderStatus` at `route.ts:298`. |
-| 13. Adjacent out-of-scope | High | Imperator scope decisions; corrupted-apparel-stamp residual + immutability properties named. |
-| 14. Success criteria | High | Direct consequences of §4–§12; cart-add-validated-config implicit assumption removed (B1); criteria 12, 13, 14 added for B3, B5, B4. |
+| 10. Reorder gate widening + pre-flight lineage validation + all-items iteration | High | Three coordinated changes (drop apparel clause, pre-flight lineage before `completeCartWorkflow`, iterate all items across groups + group homogeneity). Custom_order ↔ company traversal path verified against `models/custom-order.ts` (no company_id field) + link defs `order-custom-order.ts` + `company-order.ts`. Three apparel-shaped post-gate reads enumerated. |
+| 10b. Cart-add lock enforcement | High | Design grounded against existing `line-items-custom/route.ts:50-65` non-apparel branch + saved-product `options_values` narrowing structure (§7c). Single new validation in existing branch — no architectural novelty. |
+| 10c. Pricing-route correction (Q-B FIX-LOUD inversion) | High | Imperator-confirmed multiplier semantic ("the whole point was to reduce SKU count by deleting yes/no to a factor"); change scope is one ternary inversion at `calculate-promo-print-price.ts:88-94` + comment update; existing unit test maps cleanly to flipped behavior. Side benefit: fixes likely live catalog regression (flyer first-value `No` triggers Q-B FIX-LOUD throw on default cart-add). |
+| 11. Error semantics | High | Eleven throw cases enumerated with code citations (cases 1-7 unchanged; case 8 expanded for C3 cross-field consistency; case 9 per-variant prices C4; case 10 lineage mismatch C2; case 11 cart-add lock mismatch C1). Recovery posture + partial-failure orphan caveat documented. |
+| 12. Order-flow scope + tests + idempotency | High | Source-file scope: four files (added `line-items-custom/route.ts` for §10b + `calculate-promo-print-price.ts` for §10c). Unit-test scope: Q-B test flip. Integration-test scope: 15b replacement, cross-company hijack, positive saved-product reorder-shortcut, locked-multiplier-mismatch (C1+C2+C5+C6). Idempotency state guard cited at `validateEventTransition` via `transitionOrderStatus` at `route.ts:298`. |
+| 13. Adjacent out-of-scope | High | Imperator scope decisions; corrupted-apparel-stamp residual + immutability properties named; backend multiplier lock enforcement promoted to in-scope. |
+| 14. Success criteria | High | Sixteen criteria covering: saved-product creation (1-9), reorder shortcut (10-12), source-metadata guard (13), per-variant prices (14), cart-add lock (15), pricing default-1.0 (16). |
 
-No Medium or Low confidence sections in iteration 5. All six adversarial blockers from second-Consul review (B1–B6) addressed against live evidence.
+No Medium or Low confidence sections in iteration 6. All six second-Consul second-pass blockers (C1–C6) addressed against live evidence.
