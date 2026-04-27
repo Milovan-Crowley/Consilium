@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 node_modules/
 .migration-in-progress
+.worktrees/
