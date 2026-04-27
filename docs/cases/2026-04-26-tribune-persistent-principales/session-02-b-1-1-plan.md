@@ -8,6 +8,10 @@
 
 **Tech Stack:** Markdown (skill bodies, templates, schema docs). Bash (pre-flight grep/SHA verification only). No new code. No tests in the unit-test sense — verification is grep-based post-conditions on the migrated surfaces, plus the eventual end-of-campaign Campaign Review.
 
+**Confidence calibration note (applies globally).** The per-task confidence annotations in this plan are uniformly **High**. Per the Codex's Confidence Map rule ("a confidence map that rates everything High is a lie"), High here is *scoped narrowly* to **Edit-mechanics certainty**: the `old_string` blocks have been verified verbatim against the live target files at plan-authoring time, the spec sections being implemented are sealed at iteration 3 (blob `518eb41...`), and the contract revisions are mechanical translations of settled spec decisions into named markdown edits. **High does NOT claim certainty about the underlying spec design choices** — the spec itself rates §4.1, §4.3, §4.4 as **Medium** confidence, and that uncertainty remains the spec author's responsibility (see iteration-3 cap-override entry in `decisions.md`). The plan inherits the spec's design-Medium and adds Edit-mechanics-High on top; the High annotation does not re-rate the spec's uncertainty away.
+
+**Bash-tool grep convention (applies globally to all `Expected: no matches` verification steps).** Several verification steps below run `grep -nE 'pattern' files` and expect *empty stdout* (the success state when the migration retired the pattern). Bash `grep` returns exit code 1 when no matches are found; the Bash tool may surface this as a command failure. Each affected step appends `|| true` to the grep invocation to force exit 0 — the soldier inspects stdout for content per the "Expected:" line, not the exit code. The pattern is documented inline at each affected step. Steps where matches ARE expected (`Expected: at least N matches`) do NOT append `|| true` — for those, exit 0 with non-empty stdout is the success state.
+
 ---
 
 ## Pre-flight: Verify the ground
@@ -32,12 +36,13 @@ Expected: `OK`.
 Run:
 
 ```bash
-git -C "$HOME/projects/Consilium" rev-parse HEAD:docs/cases/2026-04-26-tribune-persistent-principales/session-02-b-1-1-spec.md
+actual=$(git -C "$HOME/projects/Consilium" rev-parse HEAD:docs/cases/2026-04-26-tribune-persistent-principales/session-02-b-1-1-spec.md 2>/dev/null || echo "RESOLUTION_FAILED")
+echo "$actual"
 ```
 
 Expected: `518eb41217c6069807de3c88c165910ac5d2fb58`.
 
-If the SHA differs, the spec has drifted since iteration-3 sealing — halt and escalate.
+If the output is `518eb41217c6069807de3c88c165910ac5d2fb58`, proceed. If it's a different SHA, the spec has drifted since iteration-3 sealing — halt and escalate. If it's `RESOLUTION_FAILED`, the spec path could not be resolved against HEAD (HEAD-unborn, corrupt object database, or the spec file is missing) — halt and escalate with the failure class named in the diagnostic. Do NOT proceed on `RESOLUTION_FAILED`.
 
 - [ ] **Pre-flight 3: All five target files exist.**
 
@@ -61,7 +66,35 @@ Run:
 git -C "$HOME/projects/Consilium" status --porcelain
 ```
 
-Expected: empty output. If non-empty, halt and ask the Imperator how to handle pre-existing changes — Task 1's commit must be a clean atomic migration commit.
+Expected: empty output (zero lines, exit code 0).
+
+**Hard gate.** If the command returns ANY output (e.g., `M some-file.md`), HALT — do not proceed to Pre-flight 5 or Task 1. Task 1's commit is the spec-mandated atomic migration commit per spec §4.1; any pre-existing changes in the working tree would be silently mixed into the migration commit (corrupting atomicity) or left polluting the working tree across subsequent tasks. The Imperator must clean the tree (commit, stash, or `git restore`) or explicitly authorize merging the pending changes into Task 1's migration commit before the soldier proceeds.
+
+- [ ] **Pre-flight 5: Target files have not drifted since plan-authoring (blob SHA pinning).**
+
+Run:
+
+```bash
+for path_sha in \
+  "claude/skills/references/verification/templates/tribune-persistent.md:8b9d7a8d8c33d89ab911d0f7f0e31d04a8c798ae" \
+  "claude/skills/references/verification/templates/tribune-design.md:f30304ed3c47280cd81353d7ef30883b9761dd8d" \
+  "claude/skills/references/verification/tribune-log-schema.md:1632e5cf556508b159a2080d1e4f1e4a0a0ddb0e" \
+  "claude/skills/references/verification/tribune-protocol-schema.md:b2c5ef9b1f1ab2a30ecef57429a190b0d2637395" \
+  "claude/skills/legion/SKILL.md:b8004f1513ab33262c0f4adb035d0224d1f2e663"; do
+  path="${path_sha%:*}"
+  expected="${path_sha##*:}"
+  actual=$(git -C "$HOME/projects/Consilium" rev-parse "HEAD:$path" 2>/dev/null || echo "RESOLUTION_FAILED")
+  if [ "$actual" != "$expected" ]; then
+    echo "DRIFT: $path expected=$expected actual=$actual"
+    exit 1
+  fi
+done
+echo "OK: all 5 target files match plan-authoring blob SHAs"
+```
+
+Expected: `OK: all 5 target files match plan-authoring blob SHAs` (exit code 0).
+
+If the loop prints a `DRIFT:` line and exits 1, one or more target files have changed since plan-authoring (HEAD `bcc8feb`). The plan's `old_string` blocks were authored against the pinned SHAs above; drift means the soldier may hit "old_string not found" mid-task. Halt and escalate — the Imperator must reconcile (rebase, merge, or revise the plan against drifted state). Note: this gate fires AFTER Pre-flight 4 confirms the working tree is clean — the SHA check is against HEAD, so any uncommitted local changes must be committed or stashed before this gate is meaningful.
 
 If any pre-flight fails, halt and escalate to the Imperator.
 
@@ -247,6 +280,8 @@ new_string:
 
 - [ ] **Step 11: Edit `tribune-log-schema.md` line 53 — relax "Atomic per task" discipline.**
 
+Note on forward reference: this Edit's `new_string` references `task_start_sha` — a field that is added to the schema's YAML body and field-definitions section by Task 4 Steps 2-3. After Task 1 commits but before Task 4 commits, `tribune-log-schema.md` carries a discipline reference to a not-yet-defined field. This is a deliberate, transient documentation inconsistency authorized by spec §4.1 row 4 (which couples the discipline relaxation to §4.3). The inconsistency self-heals at Task 4 commit. The plan's "Notes for the Legatus" forbids `/legion` dispatch against this case folder mid-implementation, bounding the inconsistency window to readers who wouldn't act on it.
+
 Tool: Edit
 File: `/Users/milovan/projects/Consilium/claude/skills/references/verification/tribune-log-schema.md`
 
@@ -287,10 +322,11 @@ Run:
 grep -nE '\bPASS\b|\bFAIL\b' \
   "$HOME/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md" \
   "$HOME/projects/Consilium/claude/skills/references/verification/tribune-log-schema.md" \
-  "$HOME/projects/Consilium/claude/skills/legion/SKILL.md"
+  "$HOME/projects/Consilium/claude/skills/legion/SKILL.md" \
+  || true
 ```
 
-Expected: **no matches** (exit code 1; grep returns empty). If any match returns, the migration is incomplete — locate the line, add another Edit step, and re-run before committing.
+Expected: **empty stdout** (the success state when the migration retired all `PASS`/`FAIL` tokens). The trailing `|| true` forces exit 0 regardless of whether grep matches; the soldier inspects stdout for content. If stdout shows any matching line (`file:line:matched-text`), the migration is incomplete — locate the line, add another Edit step, and re-run before committing.
 
 Note on word-boundary discipline: `\bPASS\b` and `\bFAIL\b` will not match `passing`, `failure`, `bypass`, `failover`, etc. — only the standalone tokens this migration retires.
 
@@ -422,10 +458,11 @@ Run:
 
 ```bash
 grep -nE 'commit-or-hash|Tribunus-executor halts and signals re-design' \
-  "$HOME/projects/Consilium/claude/skills/references/verification/tribune-protocol-schema.md"
+  "$HOME/projects/Consilium/claude/skills/references/verification/tribune-protocol-schema.md" \
+  || true
 ```
 
-Expected: **no matches**.
+Expected: **empty stdout** (`|| true` suppresses grep's exit-1 on no-match; soldier inspects stdout for content).
 
 - [ ] **Step 7: Verify the design template now mentions blob SHA in `plan_id` authoring.**
 
@@ -565,6 +602,8 @@ Confirm anchor content. If drifted, halt.
 
 - [ ] **Step 2: Edit `tribune-log-schema.md` schema YAML — add `task_start_sha` field after `window_id`.**
 
+Note: this Edit's `old_string` includes the iteration produced by Task 1 Step 7 (Codex vocabulary in the `verdict:` line — `SOUND | CONCERN | GAP | MISUNDERSTANDING`). Sequencing matters — Task 1 must commit before Task 4 runs. Same coupling discipline as Task 5 Step 2's coupling to Task 1 Step 12.
+
 Tool: Edit
 File: `/Users/milovan/projects/Consilium/claude/skills/references/verification/tribune-log-schema.md`
 
@@ -649,6 +688,8 @@ new_string:
 
 - [ ] **Step 6: Edit `tribune-persistent.md` — SendMessage Body adds `task_start_sha` and required-field discipline.**
 
+Note on anchor design: the `old_string` and `new_string` below both terminate at the YAML closing fence (` ``` `) of the SendMessage Body block. The "The Tribunus-executor responds with the integrated verdict. The Legatus handles findings…" prose paragraph that follows in the file (line 111 region, which Task 1 Step 6 already rewrote in Codex vocabulary) is intentionally NOT part of either block — it remains untouched as the natural follow-on paragraph after the discipline blocks the new_string inserts.
+
 Tool: Edit
 File: `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md`
 
@@ -665,8 +706,6 @@ Sampled: <true if (plan_index of this task) mod 3 == 0, else false>
 
 Verify and reply.
 ```
-
-The Tribunus-executor responds with the integrated verdict.
 ```
 
 new_string:
@@ -691,8 +730,6 @@ Verify and reply.
 **Fix-soldier failure modes.** Two specific cases the executor handles:
 - **Fix-soldier mid-dispatch crash.** `/legion` retries per the existing crash-recovery semantics; on retry, a fresh `task_start_sha` is captured at the retried fix dispatch. The crashed dispatch produces no log entry.
 - **Fix-soldier returns DONE with zero commits** (`change_set` non-empty but no commits landed since fix dispatch). The verifier emits `verdict: GAP` with `verdict_summary: "fix-soldier produced no commits — escalate per Codex auto-feed-cap"`. A zero-commit response to a GAP-driven fix dispatch is functionally a refusal-to-fix; the verdict surfaces it for the auto-feed handler to escalate.
-
-The Tribunus-executor responds with the integrated verdict.
 ```
 
 - [ ] **Step 7: Verify `tribune-log-schema.md` now declares `task_start_sha` as a required entry field.**
@@ -712,10 +749,11 @@ Run:
 
 ```bash
 grep -nE 'from `git diff` over the change_set|signatures from the diff\)' \
-  "$HOME/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md"
+  "$HOME/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md" \
+  || true
 ```
 
-Expected: **no matches** — the bare-diff instructions have been replaced.
+Expected: **empty stdout** (`|| true` suppresses grep's exit-1 on no-match; soldier inspects stdout for content). The bare-diff instructions have been replaced if stdout is empty.
 
 - [ ] **Step 9: Commit.**
 
@@ -794,7 +832,7 @@ grep -nE 'task_start_sha' \
   "$HOME/projects/Consilium/claude/skills/legion/SKILL.md"
 ```
 
-Expected: at least 5 matches (DONE handler primary capture, capture-at-emission property block, fix-soldier prose primary capture, fix-soldier prose diff-range mention, crash-retry mention).
+Expected: at least 4 matching lines. `grep -n` reports each *line* that contains a match once, not each individual occurrence. After Steps 2-3 commit, `task_start_sha` appears in 4 distinct paragraphs/lines: (a) the expanded DONE handler paragraph (Step 2 paragraph 1 — contains multiple mentions on one line), (b) the "Capture-at-emission property" paragraph (Step 2 paragraph 2), (c) the fix-soldier dispatch paragraph (Step 3 paragraph 1 — contains both the primary-capture mention and the `(fix_task_start_sha, HEAD]` diff-range mention on the same line), (d) the "Fix-soldier crash and zero-commit failure modes" paragraph (Step 3 paragraph 2). If stdout shows fewer than 4 matching lines, one of the inserts dropped its `task_start_sha` reference — locate and re-edit before committing.
 
 - [ ] **Step 5: Commit.**
 
@@ -871,10 +909,11 @@ Run:
 
 ```bash
 grep -nE 'If absent, halt — the protocol must come from' \
-  "$HOME/projects/Consilium/claude/skills/legion/SKILL.md"
+  "$HOME/projects/Consilium/claude/skills/legion/SKILL.md" \
+  || true
 ```
 
-Expected: **no matches**.
+Expected: **empty stdout** (`|| true` suppresses grep's exit-1 on no-match; soldier inspects stdout for content). If stdout is empty, the prior halt-on-absent prose has been replaced by the 4-branch routing.
 
 - [ ] **Step 5: Verify SHA comparison via `git rev-parse HEAD:` is referenced in the routing.**
 
@@ -946,10 +985,11 @@ Run:
 grep -nE '\bPASS\b|\bFAIL\b' \
   "$HOME/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md" \
   "$HOME/projects/Consilium/claude/skills/references/verification/tribune-log-schema.md" \
-  "$HOME/projects/Consilium/claude/skills/legion/SKILL.md"
+  "$HOME/projects/Consilium/claude/skills/legion/SKILL.md" \
+  || true
 ```
 
-Expected: **no matches**.
+Expected: **empty stdout** (`|| true` suppresses grep's exit-1 on no-match; soldier inspects stdout for content).
 
 - [ ] **Final-3: `task_start_sha` is referenced across the wire.**
 
@@ -993,7 +1033,13 @@ If any check fails, surface to the Imperator before the Campaign Review — this
 
 ## Notes for the Legatus
 
-**Implementation order matters.** Tasks must run in numeric order (1 → 6). Task 5's `old_string` in Step 2 includes the iteration produced by Task 1 Step 12 (Codex vocabulary in the parenthetical) — running Task 5 before Task 1 commits will fail to match. Same coupling holds across other tasks where one Edit's `old_string` depends on a prior Edit having landed. Sequential execution within `/legion` (one Soldier per task, Tribunus verification before next dispatch) naturally enforces this. If running via `/march`, the Legatus must execute tasks strictly in order.
+**Implementation order matters.** Tasks must run in numeric order (1 → 6). Two cross-task `old_string` dependencies are flagged inline (and listed here for completeness):
+- **Task 4 Step 2** (`tribune-log-schema.md` YAML insert): `old_string` includes Task 1 Step 7's Codex-vocabulary `verdict:` line. Task 1 must commit before Task 4 runs.
+- **Task 5 Step 2** (`legion/SKILL.md` DONE handler): `old_string` includes Task 1 Step 12's Codex-vocabulary parenthetical. Task 1 must commit before Task 5 runs.
+
+Both Edits will fail with "old_string not found" if executed before Task 1 commits — fail-loud, not silent corruption.
+
+The order-enforcement mechanism is **manual discipline plus the no-self-dispatch rule** (next paragraph). Sequential execution within `/legion` (one Soldier per task, Tribunus verification before next dispatch) provides the natural cadence — but `/legion` is itself the file being modified by Tasks 1, 5, and 6, so the in-place /legion semantics shift mid-implementation. The plan does NOT rely on `/legion`-against-this-case-folder enforcing the sequencing; it relies on the soldier reading and honoring the numeric task ordering plus the no-self-dispatch rule. If running via `/march`, the Legatus must execute tasks strictly in order. Task 1's Step 1, Task 4's Step 1, Task 5's Step 1, and Task 6's Step 1 all instruct the soldier to read the target file and confirm anchor content before editing — these per-task pre-Edit Read steps are the runtime discovery mechanism for any sequencing violation.
 
 **Atomic-migration discipline (Task 1).** Per spec §4.1, Task 1's vocabulary migration must land as a single commit covering all five surfaces. Do NOT split Task 1's edits across multiple commits, and do NOT dispatch a `/legion` test campaign between Task 1's start and end. This task is non-decomposable.
 
