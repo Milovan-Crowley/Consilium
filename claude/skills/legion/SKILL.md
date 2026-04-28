@@ -96,7 +96,7 @@ digraph process {
         "Soldier asks questions?" [shape=diamond];
         "Answer, provide context" [shape=box];
         "Soldier implements,\ntests, commits, self-reviews" [shape=box];
-        "Signal persistent Tribunus\n(SendMessage)" [shape=box];
+        "Dispatch ephemeral Tribunus\n(mini-checkit)" [shape=box];
         "Tribunus finding?" [shape=diamond];
         "SOUND" [shape=box];
         "GAP: dispatch fix soldier,\nTribunus re-verifies" [shape=box];
@@ -116,8 +116,8 @@ digraph process {
     "Soldier asks questions?" -> "Answer, provide context" [label="yes"];
     "Answer, provide context" -> "Dispatch soldier\n(./implementer-prompt.md)";
     "Soldier asks questions?" -> "Soldier implements,\ntests, commits, self-reviews" [label="no"];
-    "Soldier implements,\ntests, commits, self-reviews" -> "Signal persistent Tribunus\n(SendMessage)";
-    "Signal persistent Tribunus\n(SendMessage)" -> "Tribunus finding?";
+    "Soldier implements,\ntests, commits, self-reviews" -> "Dispatch ephemeral Tribunus\n(mini-checkit)";
+    "Dispatch ephemeral Tribunus\n(mini-checkit)" -> "Tribunus finding?";
     "Tribunus finding?" -> "SOUND" [label="SOUND"];
     "Tribunus finding?" -> "GAP: dispatch fix soldier,\nTribunus re-verifies" [label="GAP"];
     "Tribunus finding?" -> "CONCERN: note for\nCampaign review" [label="CONCERN"];
@@ -134,37 +134,6 @@ digraph process {
 ```
 
 ---
-
-## Persistent Tribunus-Executor (B-1)
-
-At Legion start, BEFORE the first soldier dispatch, I spawn the persistent Tribunus-executor as a named addressable agent. This is the load-bearing change that B-1 introduced — per-task verification is no longer a fresh subagent dispatch but a `SendMessage` signal to a long-running Tribunus that holds plan-wide context across a 15-task window.
-
-I read the template before spawn:
-- `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md`
-
-The template specifies: spawn shape (name, subagent_type, prompt), per-task SendMessage body (task_id, change_set, summary, sampled flag), 15-task boundary restart pattern, crash recovery, and the persistence-disabled fallback to ephemeral Patrol via `templates/mini-checkit.md`.
-
-**Pre-spawn ordered routing.** At Legion start, I read `<case>/tribune-protocol.md` **once into an in-memory snapshot** (read-into-buffer-once shell pattern: e.g., `proto=$(cat <case>/tribune-protocol.md 2>/dev/null || echo "")` for absence-tolerant capture, or `[ -s <case>/tribune-protocol.md ] && proto=$(cat <case>/tribune-protocol.md)` for explicit non-empty capture). All four branch evaluations below operate on the buffered snapshot — the file path is not re-read after the initial capture. This is the *single-snapshot-per-pre-spawn-evaluation* contract; it protects against the read-then-act race within one `/legion` invocation. Cross-invocation reconciliation (the executor's own re-read at spawn time, or two concurrent `/legion` invocations) is bounded out of scope per spec §3 Non-Goals.
-
-I evaluate the snapshot in this order; the first matching branch determines the route:
-
-**Branch 1 — File absent OR empty OR unparseable OR `tasks: []` (non-actionable).** If `<case>/tribune-protocol.md` is absent, zero-bytes / whitespace-only / has no YAML body, fails to parse as markdown+YAML, OR parses cleanly but has `tasks: []`: route the campaign to mini-checkit fallback per `templates/mini-checkit.md` for the entire legion. Skip the smoke check (no executor will spawn). Skip remaining branches. Note in the campaign report preamble: `Persistence routing: mini-checkit fallback (branch 1 — absent/empty/unparseable/non-actionable)`.
-
-**Branch 2 — Malformed.** If the snapshot parses but fails the well-formed definition (any of: missing top-level required field `schema_version`/`plan_id`/`sampling_mode`/`tasks`; unsupported `schema_version` (currently only `1`); empty-string path or empty-string SHA in `plan_id`; `plan_id` SHA not matching the 40-char hex pattern (case-insensitive; lowercase preferred per git's output convention, uppercase tolerated and normalized on read); any single `tasks` entry missing `task_id` or `lanes_triggered`; any `lanes_triggered` value that is not a list — YAML null, scalar, or non-list value — makes the entire protocol malformed per the all-or-nothing partition): route the campaign to mini-checkit fallback per `templates/mini-checkit.md` for the entire legion. Skip the smoke check. Skip remaining branches. Note in the campaign report preamble: `Persistence routing: mini-checkit fallback (branch 2 — malformed: <named failure>)`.
-
-**Branch 3 — Well-formed, `plan_id` SHA mismatch (or path-resolution failure).** Read the `plan_id` field from the snapshot (case-relative path + recorded blob SHA). Resolve the recorded path against the current HEAD: compute the current blob SHA via `git rev-parse HEAD:<recorded-path>`. If the resolution fails for any reason — path resolves to nothing (deletion, rename, moved out of the case folder); HEAD is unborn (fresh worktree before any commit); the resolution itself errors (corrupt object database, IO error, unreadable git state) — treat as SHA mismatch and proceed to refusal with the failure class named in the diagnostic so a corrupt-worktree case can be distinguished from a deletion case during recovery. If the resolution succeeds and the recorded SHA does not equal the current SHA: refuse to spawn the persistent executor; surface the diff (or pointer to it) and the path-resolution result inline in the `/legion` session output AND append a `decisions.md` entry of type `verdict` per CONVENTIONS schema (the `**Plan SHA:**` field of that entry carries the *current* HEAD blob SHA, not the recorded one). The Imperator decides whether to re-dispatch `/edicts` (regenerate protocol against the new plan) or override. Do **NOT** fall back to mini-checkit — a stale protocol is a problem to surface, not a missing capability to substitute. Skip the smoke check. Skip branch 4.
-
-**Branch 4 — Well-formed, SHA match.** The protocol is well-formed and `plan_id`'s recorded blob SHA equals the current `git rev-parse HEAD:<recorded-path>`. Run the **pre-spawn smoke check** per `templates/tribune-persistent.md` (`name: tribune-smoke` ephemeral dispatch + immediate SendMessage round-trip). If the smoke check passes, spawn the persistent executor `tribune-w1`. If the smoke check fails, fall back to ephemeral Patrol per `templates/mini-checkit.md` for the entire legion (the smoke check protects against substrate degradation; failure on branch 4 means the load-bearing primitive is not working and persistence cannot be trusted, regardless of protocol well-formedness). Note in the campaign report preamble: `Persistence routing: persistent executor (branch 4 — well-formed + SHA match + smoke OK)` or `Persistence routing: mini-checkit fallback (branch 4 — smoke failed)`.
-
-**Smoke-check sequencing.** The smoke check runs **only on branch 4** — the path that actually intends to spawn the persistent executor. On branches 1, 2, and 3 the smoke check is skipped: branches 1 and 2 route to mini-checkit fallback (no executor will spawn — smoke would dispatch an agent whose result is unused); branch 3 refuses spawn entirely. Bounding the smoke to branch 4 keeps its purpose tight (substrate-validation-immediately-before-spawn) and removes the lifecycle ambiguity CONCERN-Provocator-7 named in B-1's Campaign Review.
-
-**Crash-recovery respawn.** When the persistent executor crashes mid-window and I respawn it (per `tribune-persistent.md` Crash Recovery section), the respawn re-reads the protocol against the current snapshot but does **not** re-fire the §4.4 ordered routing above. The respawn presumes the protocol that was valid at the original branch-4 spawn is still valid — if `plan_id` SHA has drifted between original spawn and respawn, the discrepancy is detected at the executor's own protocol-load step (which reads `plan_id` and may halt with a verdict pointing at drift). Detection is the executor's responsibility post-spawn; pre-spawn routing belongs to me, the Legatus.
-
-**Naming convention.** First window: `tribune-w1`. After 15-task boundary: `tribune-w2`. After crash mid-window: `tribune-w<N>-recover` (preserve the window number).
-
-**Independence Boundary.** The persistent-executor's `tribune-log.md` is for audit and intra-plan context only. The Campaign Review (Censor + Praetor + Provocator) at the end of the legion DOES NOT receive `tribune-log.md`. The Campaign verifiers are ephemeral and independent per the Codex Persistent Orchestrator class — the privilege belongs to Tribunus-on-Legion executor stance only and does NOT generalize to the Campaign triad.
-
-**`/march` is NOT changed.** The persistent pattern lives in `/legion`. `/march` retains the current solo-Legatus, no-Tribune-layer semantic for trivial plans. The Imperator chooses `/march` deliberately when ceremony is over-engineering for the task.
 
 ## Choosing the Soldier's Grade
 
@@ -186,9 +155,7 @@ Domain errors are expensive. When I am in doubt, I send the best soldier. The Im
 
 A soldier returns from his task with one of four words. Each demands a different response from me.
 
-**DONE** — The task is complete as specified. Before signaling, I compute the Sampled flag for this task: `(plan_index of this task) mod 3 == 0` — true on tasks 3, 6, 9, 12, 15, 18, ... (deterministic across 15-task window restarts; plan-index is the canonical input, not window-position). I also capture `task_start_sha` — the full commit SHA at this exact moment, computed via `git rev-parse HEAD` — and `change_set` — the list of files the dispatched Soldier was directed to touch (which may be the empty list `[]` if the task produced no file changes). I signal the persistent Tribunus-executor via `SendMessage({to: "tribune-w<N>", ...})` per `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/tribune-persistent.md`, populating the message body fields the template specifies — `task_id`, `task_start_sha`, `change_set`, `implementation_summary`, and the computed `sampled` flag (all required; missing `task_start_sha` or `change_set` makes the body malformed, and the executor will return `verdict: GAP` naming the missing field). The Tribunus replies with the integrated verdict in Codex vocabulary (SOUND/CONCERN/GAP/MISUNDERSTANDING). If the persistent pattern is unavailable, I fall back to ephemeral Patrol via `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/mini-checkit.md` per the fallback procedure in the persistent template. No task passes without verification — not one, not ever.
-
-**Capture-at-emission property.** Every code path I run that emits an executor-bound `SendMessage` captures `task_start_sha` at the moment of `SendMessage` emission, where the SHA is `git rev-parse HEAD` at that moment. This property covers the primary task dispatch (this DONE handler) and the fix-soldier re-dispatch (the path triggered when the Tribunus returned GAP and I dispatch a fix). Any future code path I add that produces an executor-bound `SendMessage` must satisfy the same capture rule. I do NOT cache an earlier `task_start_sha` and reuse it for the fix-soldier dispatch — the fix's verification range is bounded by the fix dispatch SHA, not the original task's.
+**DONE** — The task is complete as specified. I dispatch a fresh ephemeral Tribunus per `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/mini-checkit.md` and wait for the verdict in Codex vocabulary (SOUND/CONCERN/GAP/MISUNDERSTANDING). No task passes without verification — not one, not ever.
 
 **DONE_WITH_CONCERNS** — The soldier completed the work but flagged doubts. I read the concerns before I do anything else. If they touch correctness or scope, I address them before the Tribunus arrives. If they are observations ("this file is getting large"), I note them and continue.
 
@@ -242,7 +209,7 @@ Soldier reports:
   - Committed
   Status: DONE
 
-[Signal persistent Tribunus\n(SendMessage)]
+[Dispatch ephemeral Tribunus\n(mini-checkit)]
 Tribunus:
   SOUND — Hook correctly targets SavedProduct per the domain bible.
   Return type matches the plan step. No stubs detected.
@@ -259,7 +226,7 @@ Soldier reports:
   - Committed
   Status: DONE
 
-[Signal persistent Tribunus\n(SendMessage)]
+[Dispatch ephemeral Tribunus\n(mini-checkit)]
 Tribunus:
   GAP — Plan step specifies fallback to product_title when display name
   is empty. Implementation renders empty string. Evidence: ProductCard.tsx
@@ -369,9 +336,9 @@ These are failures of command. If I catch myself in any of them, I halt.
 
 **When a soldier asks questions,** I answer clearly and completely. I give him more context if he needs it. I do not rush him into implementation.
 
-**When the Tribunus finds a GAP,** I dispatch a fresh fix soldier with the finding, the original task, and the current file state. When the fix-soldier reports DONE, I capture a **fresh** `task_start_sha` (via `git rev-parse HEAD` at the fix-soldier's SendMessage emission — NOT the original task's SHA) and signal the persistent Tribunus with the same SendMessage body schema (`task_id`, fresh `task_start_sha`, fix-soldier `change_set`, fix-soldier `implementation_summary`, computed `sampled` flag — fix-soldier dispatches inherit the original task's `sampled` value). The Tribunus re-verifies the fix as a unit — its diff range is `(fix_task_start_sha, HEAD]` over the fix-soldier's `change_set`, which covers only what the fix-soldier produced after dispatch. Two log entries land for the same `task_id`: the original verification and the fix's re-verification, each carrying its own `task_start_sha`. If the fix re-verifies as GAP, that is iteration 2 of the Codex auto-feed loop; per the cap, I escalate to the Imperator. CONCERNs I note for the Campaign review, not fix per task.
+**When the Tribunus finds a GAP,** I dispatch a fresh fix soldier with the finding, the original task, and the current file state. When the fix-soldier reports DONE, I dispatch another ephemeral Tribunus to re-verify the fix per `templates/mini-checkit.md`. If the fix re-verifies as GAP, that is iteration 2 of the Codex auto-feed loop; per the cap, I escalate to the Imperator. CONCERNs I note for the Campaign review, not fix per task.
 
-**Fix-soldier crash and zero-commit failure modes.** If the fix-soldier crashes mid-dispatch (LLM error, network failure, harness collision), I retry per the existing crash-recovery semantics in `tribune-persistent.md`; on retry, a fresh `task_start_sha` is captured at the retried fix dispatch, and the crashed dispatch produces no log entry. If the fix-soldier returns DONE with zero commits since dispatch (the soldier read the GAP and decided no change was needed, or staged work without committing), the Tribunus emits `verdict: GAP` with `verdict_summary: "fix-soldier produced no commits — escalate per Codex auto-feed-cap"`, and I escalate.
+**Fix-soldier crash and zero-commit failure modes.** If the fix-soldier crashes mid-dispatch, I retry once with the same orders. If the fix-soldier returns DONE with zero commits since dispatch (the soldier read the GAP and decided no change was needed, or staged work without committing), I treat the response as a GAP and escalate per the Codex auto-feed-cap.
 
 **When a soldier fails his task,** I dispatch a fix soldier with specific orders. I do not try to fix it with my own hand — that way lies context pollution, and I will not muddy my command context with the work I delegated to others.
 
