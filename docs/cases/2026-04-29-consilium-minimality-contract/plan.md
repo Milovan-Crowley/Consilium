@@ -29,7 +29,22 @@ fi
 if [ ! -d "$repo_root/.git" ] && [ ! -f "$repo_root/.git" ]; then
   git -C "$base_repo" worktree add -b feature/consilium-minimality-contract "$repo_root" main
 fi
+worktree_branch="$(git -C "$repo_root" branch --show-current)"
+if [ "$worktree_branch" != "feature/consilium-minimality-contract" ]; then
+  echo "Wrong worktree branch at $repo_root: $worktree_branch" >&2
+  exit 1
+fi
+worktree_status="$(git -C "$repo_root" status --short --untracked-files=all)"
+if [ -n "$worktree_status" ]; then
+  printf 'Worktree is dirty before sync:\n%s\n' "$worktree_status" >&2
+  exit 1
+fi
 git -C "$repo_root" merge --ff-only main
+worktree_status="$(git -C "$repo_root" status --short --untracked-files=all)"
+if [ -n "$worktree_status" ]; then
+  printf 'Worktree is dirty after sync:\n%s\n' "$worktree_status" >&2
+  exit 1
+fi
 cd "$repo_root"
 git status --short --branch
 git rev-list --left-right --count @{u}...HEAD 2>/dev/null || true
