@@ -4,7 +4,7 @@
 
 **Goal:** Codify the Minimality Contract so Centurios default to the smallest correct change and implementation verifiers can flag unjustified structure.
 
-**Architecture:** Hand-edit only canonical `source/` files, then derive Claude and Codex runtime outputs with `python3 runtimes/scripts/generate.py`. Install the generated runtime with `bash codex/scripts/install-codex.sh`, then prove repo and installed parity before calling the work complete.
+**Architecture:** Hand-edit only canonical `source/` files, then derive Claude and Codex runtime outputs with `python3 runtimes/scripts/generate.py`. Install generated Claude agents into `~/.claude/agents`, install the Codex runtime with `bash codex/scripts/install-codex.sh`, then prove repo and installed parity before calling the work complete.
 
 **Tech Stack:** Markdown doctrine and prompt templates, Python runtime generator and parity checks, Bash runtime install wrapper, Claude Markdown agents/skills, Codex TOML agents/config.
 
@@ -14,11 +14,28 @@
 
 ## Scope Guard
 
-Execute from the Consilium repo root:
+Execute from a dedicated worktree by default. The main checkout is allowed only when it is clean, upstream-synced, and explicitly chosen by the Imperator.
 
 ```bash
-repo_root="${CONSILIUM_MINIMALITY_REPO:-/Users/milovan/projects/Consilium}"
+base_repo="/Users/milovan/projects/Consilium"
+repo_root="${CONSILIUM_MINIMALITY_REPO:-$base_repo/.worktrees/feature/consilium-minimality-contract}"
+base_status="$(git -C "$base_repo" status --short --untracked-files=all)"
+base_counts="$(git -C "$base_repo" rev-list --left-right --count @{u}...HEAD 2>/dev/null || echo "no-upstream")"
+if [ -n "$base_status" ] || { [ "$base_counts" != "0 0" ] && [ "${CONSILIUM_ALLOW_LOCAL_MAIN:-0}" != "1" ]; }; then
+  printf 'Base repo is not clean/upstream-synced.\nstatus:\n%s\nupstream-counts: %s\n' "$base_status" "$base_counts" >&2
+  echo "Push/sync first, or set CONSILIUM_ALLOW_LOCAL_MAIN=1 only if the Imperator explicitly approved local-main execution." >&2
+  exit 1
+fi
+if [ ! -d "$repo_root/.git" ] && [ ! -f "$repo_root/.git" ]; then
+  git -C "$base_repo" worktree add -b feature/consilium-minimality-contract "$repo_root" main
+fi
+git -C "$repo_root" merge --ff-only main
 cd "$repo_root"
+git status --short --branch
+git rev-list --left-right --count @{u}...HEAD 2>/dev/null || true
+test -f docs/cases/2026-04-29-consilium-minimality-contract/spec.md
+test -f docs/cases/2026-04-29-consilium-minimality-contract/plan.md
+rg -n "## Implementer Report|Snapshot installed runtime state before install|install generated Claude agents" docs/cases/2026-04-29-consilium-minimality-contract/plan.md
 ```
 
 This plan intentionally stays in one repo lane. It edits source doctrine and source prompt templates only. Do not hand-edit generated, compatibility, or installed runtime files.
@@ -31,7 +48,8 @@ Scope in:
 - `source/skills/claude/legion/implementer-prompt.md`
 - `source/skills/claude/references/verification/templates/mini-checkit.md`
 - Generated and compatibility outputs produced only by `python3 runtimes/scripts/generate.py`
-- Installed runtime update produced only by `bash codex/scripts/install-codex.sh`
+- Installed Claude-agent update produced only by copying `generated/claude/agents/consilium-*.md` into `~/.claude/agents`
+- Installed Codex runtime update produced only by `bash codex/scripts/install-codex.sh`
 
 Scope out:
 
@@ -48,7 +66,7 @@ Scope out:
 - role files under `source/roles/`
 - Principales MCP package, manifest, model config, or new lint scripts
 
-If `git status --short` shows unrelated dirty files before implementation, halt and ask whether to move this into a dedicated worktree. Do not mix runtime doctrine edits with unrelated working-tree changes.
+If executing in the main checkout, halt when `git status --short --branch` shows dirt or when `git rev-list --left-right --count @{u}...HEAD` is not `0 0`, unless the Imperator explicitly approves local-main execution. Runtime prompt work should not silently land on a dirty or unpushed main checkout.
 
 ## Task 0: Preflight The Runtime Source
 
@@ -68,7 +86,7 @@ If `git status --short` shows unrelated dirty files before implementation, halt 
 Run:
 
 ```bash
-CONSILIUM_DOCS="${CONSILIUM_DOCS:-$HOME/projects/Consilium/docs}"
+export CONSILIUM_DOCS="${CONSILIUM_DOCS:-/Users/milovan/projects/Consilium/docs}"
 [ -d "$CONSILIUM_DOCS" ] || { echo "consilium-docs not found at $CONSILIUM_DOCS. Set CONSILIUM_DOCS=<path>."; exit 1; }
 [ -f "$CONSILIUM_DOCS/CONVENTIONS.md" ] && head -1 "$CONSILIUM_DOCS/CONVENTIONS.md" 2>/dev/null | grep -q "consilium-docs CONVENTIONS" || {
   echo "$CONSILIUM_DOCS is not a consilium-docs checkout (CONVENTIONS.md marker line missing or malformed)."
@@ -102,6 +120,16 @@ git diff -- source/protocols/plan-format.md
 git diff -- source/skills/claude/legion/SKILL.md
 git diff -- claude/CLAUDE.md
 git diff -- source/skills/claude/references/verification/templates/campaign-review.md source/skills/claude/references/verification/templates/spec-verification.md source/skills/claude/references/verification/templates/plan-verification.md
+export CONSILIUM_DOCS="${CONSILIUM_DOCS:-/Users/milovan/projects/Consilium/docs}"
+[ -d "$CONSILIUM_DOCS" ] || { echo "consilium-docs not found at $CONSILIUM_DOCS. Set CONSILIUM_DOCS=<path>."; exit 1; }
+[ -f "$CONSILIUM_DOCS/CONVENTIONS.md" ] && head -1 "$CONSILIUM_DOCS/CONVENTIONS.md" 2>/dev/null | grep -q "consilium-docs CONVENTIONS" || {
+  echo "$CONSILIUM_DOCS is not a consilium-docs checkout (CONVENTIONS.md marker line missing or malformed)."
+  exit 1
+}
+[ ! -f "$CONSILIUM_DOCS/.migration-in-progress" ] || {
+  echo "consilium-docs migration in progress - halt."
+  exit 1
+}
 git diff -- "$CONSILIUM_DOCS/doctrine/diagnosis-packet.md" "$CONSILIUM_DOCS/doctrine/known-gaps.md" "$CONSILIUM_DOCS/doctrine/known-gaps-protocol.md" "$CONSILIUM_DOCS/doctrine/fix-thresholds.md"
 ```
 
@@ -181,7 +209,7 @@ Implementation minimality:
 Run:
 
 ```bash
-rg -n "Implementation minimality|reviewing implementation output|Spec-stage and plan-stage verifiers|name the structure, name the missing trigger|Use `CONCERN` by default|Upgrade to `GAP`|Return `SOUND`" source/doctrine/verifier-law.md
+rg -n 'Implementation minimality|reviewing implementation output|Spec-stage and plan-stage verifiers|name the structure, name the missing trigger|Use `CONCERN` by default|Upgrade to `GAP`|Return `SOUND`' source/doctrine/verifier-law.md
 rg -n "If implementation deviates from the plan but is clearly better and justified|Call drift only when the deviation makes the work worse" source/doctrine/verifier-law.md
 ```
 
@@ -240,13 +268,13 @@ In `source/skills/claude/legion/implementer-prompt.md`, inside the prompt templa
     Extra structure is allowed only when I can name one trigger:
     - T1. Acceptance criterion: the task orders require it.
     - T2. Risk-tier or action-control invocation: only when the plan or dispatch envelope explicitly defines that control. The current plan format has no tiers, so T2 is dormant unless a future case introduces one.
-    - T3. Existing codebase pattern: the structure mirrors an established pattern in the touched module.
+    - T3. Existing codebase pattern: the structure mirrors an established pattern in the touched module, and I cite the precedent.
     - T4. Failing test or observed runtime failure: a test or observed failure demonstrates the need.
     - T5. Cited domain invariant: documented doctrine requires the structure.
 
     Over-engineering smells without a trigger: new abstractions, defensive wrappers, retry systems, fallback branches, new helpers, broad error handling, unrelated cleanup, extra tests outside the acceptance surface.
 
-    Before reporting, for every helper, branch, abstraction, fallback, retry, or test in my diff, I can name the trigger from the allowed list. If I cannot name the trigger, I remove the structure before reporting.
+    Before reporting, for every helper, branch, abstraction, fallback, retry, or test in my diff, I can name the trigger from the allowed list and include that trigger in my self-review findings. If I cannot name the trigger, I remove the structure before reporting.
 ```
 
 - [ ] **Step 2: Replace the advisory YAGNI self-review bullet**
@@ -260,15 +288,31 @@ In the `**Discipline:**` self-review list, replace:
 with:
 
 ```text
-    - For every helper, branch, abstraction, fallback, retry, or test in my diff, can I name the Minimality Contract trigger? If not, did I remove it before reporting?
+    - For every helper, branch, abstraction, fallback, retry, or test in my diff, did I name the Minimality Contract trigger in my self-review findings? If not, did I remove it before reporting?
 ```
 
-- [ ] **Step 3: Verify the implementer prompt gate**
+- [ ] **Step 3: Clarify the report-format self-review line**
+
+In the `## Report Format` list, replace:
+
+```text
+    - Self-review findings (if any)
+```
+
+with:
+
+```text
+    - Self-review findings (including Minimality trigger names for any added structure)
+```
+
+This preserves the existing report-format field and makes the trigger evidence available to the Tribunus.
+
+- [ ] **Step 4: Verify the implementer prompt gate**
 
 Run:
 
 ```bash
-rg -n "## Minimality Contract|smallest correct change|Extra structure is allowed only when I can name one trigger|Over-engineering smells without a trigger|for every helper, branch, abstraction, fallback, retry, or test in my diff|Minimality Contract trigger" source/skills/claude/legion/implementer-prompt.md
+rg -n "## Minimality Contract|smallest correct change|Extra structure is allowed only when I can name one trigger|Over-engineering smells without a trigger|for every helper, branch, abstraction, fallback, retry, or test in my diff|Minimality Contract trigger|Self-review findings \\(including Minimality trigger names" source/skills/claude/legion/implementer-prompt.md
 ```
 
 Expected: all operational gate phrases return hits.
@@ -284,17 +328,31 @@ Expected: all operational gate phrases return hits.
 - Do not modify: `source/skills/claude/references/verification/templates/spec-verification.md`
 - Do not modify: `source/skills/claude/references/verification/templates/plan-verification.md`
 
-- [ ] **Step 1: Replace the current Deviation assessment item**
+- [ ] **Step 1: Add the implementer report to the dispatch payload**
+
+In `source/skills/claude/references/verification/templates/mini-checkit.md`, insert this section after `## The Task Output` and before `## The Plan Step`.
+
+```text
+    ## Implementer Report
+
+    The implementing agent reported:
+
+    {PASTE IMPLEMENTER REPORT — status, tests, files changed, and self-review findings}
+```
+
+This gives the Tribunus the trigger-name evidence it is ordered to verify.
+
+- [ ] **Step 2: Replace the current Deviation assessment item**
 
 In `source/skills/claude/references/verification/templates/mini-checkit.md`, replace the current item `5. Deviation assessment` with this text.
 
 ```text
     5. Deviation assessment and Minimality Contract: if the implementation
-       differs from the plan step, is it an improvement or drift? If the
-       implementation adds helpers, branches, abstractions, fallbacks, retries,
-       broad error handling, unrelated cleanup, or extra tests beyond the
-       acceptance surface, does the implementer's report name a trigger from
-       execution-law?
+       differs from the plan step, is it an improvement or drift? For each
+       helper, branch, abstraction, fallback, retry, broad error handler,
+       unrelated cleanup, or extra test beyond the acceptance surface, does
+       the implementer's report name a trigger from execution-law, and does
+       the file evidence support that trigger?
        - Improvement or justified structure:
          report SOUND with reasoning.
        - Unjustified added structure with no behavior change or invariant break:
@@ -304,7 +362,7 @@ In `source/skills/claude/references/verification/templates/mini-checkit.md`, rep
          report GAP or MISUNDERSTANDING.
 ```
 
-- [ ] **Step 2: Qualify the closing disclaimer**
+- [ ] **Step 3: Qualify the closing disclaimer**
 
 In the mission close, replace:
 
@@ -319,12 +377,12 @@ with:
     the issue is a Minimality Contract finding with chain-of-evidence.
 ```
 
-- [ ] **Step 3: Verify mini-checkit mission scope**
+- [ ] **Step 4: Verify mini-checkit mission scope**
 
 Run:
 
 ```bash
-rg -n "Deviation assessment and Minimality Contract|does the implementer's report name a trigger|Unjustified added structure|report CONCERN|Minimality Contract finding with chain-of-evidence" source/skills/claude/references/verification/templates/mini-checkit.md
+rg -n "## Implementer Report|Deviation assessment and Minimality Contract|does the implementer's report name a trigger|file evidence support that trigger|Unjustified added structure|report CONCERN|Minimality Contract finding with chain-of-evidence" source/skills/claude/references/verification/templates/mini-checkit.md
 git diff -- source/skills/claude/references/verification/templates/campaign-review.md source/skills/claude/references/verification/templates/spec-verification.md source/skills/claude/references/verification/templates/plan-verification.md
 ```
 
@@ -358,6 +416,8 @@ Run:
 
 ```bash
 git diff --name-only
+git status --short --untracked-files=all
+fd -a -H '^consilium-.*-(light|heavy)\.(md|toml)$' source generated claude codex
 ```
 
 Expected changed paths are limited to:
@@ -383,6 +443,8 @@ Halt if the changed path set includes:
 - new agent files
 - any `consilium-*-light` or `consilium-*-heavy` file
 
+Expected: `git status --short --untracked-files=all` has no untracked generated, agent, template, script, or config files. The `fd` light/heavy scan prints nothing.
+
 ## Task 7: Verify, Install, And Commit
 
 > **Confidence: High** - implements [spec §Verification Checks](spec.md#verification-checks) and the runtime-unification proof chain. This is the gate that prevents a source-only change from masquerading as an active runtime change.
@@ -399,6 +461,16 @@ git diff -- source/protocols/plan-format.md
 git diff -- source/skills/claude/legion/SKILL.md
 git diff -- claude/CLAUDE.md
 git diff -- source/skills/claude/references/verification/templates/campaign-review.md source/skills/claude/references/verification/templates/spec-verification.md source/skills/claude/references/verification/templates/plan-verification.md
+export CONSILIUM_DOCS="${CONSILIUM_DOCS:-/Users/milovan/projects/Consilium/docs}"
+[ -d "$CONSILIUM_DOCS" ] || { echo "consilium-docs not found at $CONSILIUM_DOCS. Set CONSILIUM_DOCS=<path>."; exit 1; }
+[ -f "$CONSILIUM_DOCS/CONVENTIONS.md" ] && head -1 "$CONSILIUM_DOCS/CONVENTIONS.md" 2>/dev/null | grep -q "consilium-docs CONVENTIONS" || {
+  echo "$CONSILIUM_DOCS is not a consilium-docs checkout (CONVENTIONS.md marker line missing or malformed)."
+  exit 1
+}
+[ ! -f "$CONSILIUM_DOCS/.migration-in-progress" ] || {
+  echo "consilium-docs migration in progress - halt."
+  exit 1
+}
 git diff -- "$CONSILIUM_DOCS/doctrine/diagnosis-packet.md" "$CONSILIUM_DOCS/doctrine/known-gaps.md" "$CONSILIUM_DOCS/doctrine/known-gaps-protocol.md" "$CONSILIUM_DOCS/doctrine/fix-thresholds.md"
 ```
 
@@ -415,50 +487,99 @@ Run:
 
 ```bash
 python3 runtimes/scripts/check-runtime-parity.py
+export CONSILIUM_DOCS="${CONSILIUM_DOCS:-/Users/milovan/projects/Consilium/docs}"
+[ -d "$CONSILIUM_DOCS" ] || { echo "consilium-docs not found at $CONSILIUM_DOCS. Set CONSILIUM_DOCS=<path>."; exit 1; }
+[ -f "$CONSILIUM_DOCS/CONVENTIONS.md" ] && head -1 "$CONSILIUM_DOCS/CONVENTIONS.md" 2>/dev/null | grep -q "consilium-docs CONVENTIONS" || {
+  echo "$CONSILIUM_DOCS is not a consilium-docs checkout (CONVENTIONS.md marker line missing or malformed)."
+  exit 1
+}
+[ ! -f "$CONSILIUM_DOCS/.migration-in-progress" ] || {
+  echo "consilium-docs migration in progress - halt."
+  exit 1
+}
 python3 codex/scripts/check-shared-docs-adoption.py
 git diff --check
 ```
 
 Expected: all commands exit 0.
 
-- [ ] **Step 3: Install the runtime**
+- [ ] **Step 3: Snapshot installed runtime state before install**
 
 Run:
 
 ```bash
+tmp_runtime="/tmp/consilium-minimality-runtime-install"
+rm -rf "$tmp_runtime"
+mkdir -p "$tmp_runtime"
+cp -p "$HOME/.codex/config.toml" "$tmp_runtime/codex-config-before.toml"
+fd -a -H '^consilium-.*\.(md|toml)$' "$HOME/.claude/agents" "$HOME/.codex/agents" | sort > "$tmp_runtime/agents-before.txt"
+if [ -L "$HOME/.agents/skills/tribune" ]; then
+  readlink "$HOME/.agents/skills/tribune" > "$tmp_runtime/tribune-skill-before.txt"
+elif [ -e "$HOME/.agents/skills/tribune" ]; then
+  fd -a -H . "$HOME/.agents/skills/tribune" | sort > "$tmp_runtime/tribune-skill-before.txt"
+else
+  echo "missing" > "$tmp_runtime/tribune-skill-before.txt"
+fi
+printf 'runtime snapshot: %s\n' "$tmp_runtime"
+```
+
+Expected: the config snapshot, installed-agent list, and `tribune` skill target snapshot are created under `/tmp/consilium-minimality-runtime-install`.
+
+- [ ] **Step 4: Install Claude agents and Codex runtime**
+
+Run:
+
+```bash
+mkdir -p "$HOME/.claude/agents"
+install -m 0644 generated/claude/agents/consilium-*.md "$HOME/.claude/agents/"
 bash codex/scripts/install-codex.sh
 ```
 
-Expected: install exits 0 and syncs Codex agents/config from generated surfaces.
+Expected: generated Claude agents are copied to `~/.claude/agents`, and the Codex install exits 0 while syncing Codex agents, the Codex `tribune` skill, and Codex config from generated surfaces.
 
-- [ ] **Step 4: Verify installed runtime parity**
+- [ ] **Step 5: Verify installed runtime parity**
 
 Run:
 
 ```bash
 python3 claude/scripts/check-codex-drift.py
-find ~/.claude/agents ~/.codex/agents \( -name "consilium-*-light.*" -o -name "consilium-*-heavy.*" \) -print
+fd -a -H '^consilium-.*-(light|heavy)\.(md|toml)$' "$HOME/.claude/agents" "$HOME/.codex/agents"
 rg -n "Minimality Contract|over-engineering|smallest correct change|Implementation minimality" ~/.claude/agents/consilium-tribunus.md ~/.codex/agents/consilium-tribunus.toml ~/.codex/agents/consilium-centurio-primus.toml
+tmp_runtime="/tmp/consilium-minimality-runtime-install"
+cp -p "$HOME/.codex/config.toml" "$tmp_runtime/codex-config-after.toml"
+fd -a -H '^consilium-.*\.(md|toml)$' "$HOME/.claude/agents" "$HOME/.codex/agents" | sort > "$tmp_runtime/agents-after.txt"
+if [ -L "$HOME/.agents/skills/tribune" ]; then
+  readlink "$HOME/.agents/skills/tribune" > "$tmp_runtime/tribune-skill-after.txt"
+elif [ -e "$HOME/.agents/skills/tribune" ]; then
+  fd -a -H . "$HOME/.agents/skills/tribune" | sort > "$tmp_runtime/tribune-skill-after.txt"
+else
+  echo "missing" > "$tmp_runtime/tribune-skill-after.txt"
+fi
+diff -u "$tmp_runtime/agents-before.txt" "$tmp_runtime/agents-after.txt"
+diff -u "$tmp_runtime/tribune-skill-before.txt" "$tmp_runtime/tribune-skill-after.txt"
 ```
 
 Expected:
 
 - drift check exits 0
-- `find` prints nothing
+- `fd` light/heavy scan prints nothing
 - installed agent spot-read shows the Minimality and implementation-minimality clauses in installed runtime files
+- installed agent-name list is unchanged unless the plan explicitly changed the agent set
+- `tribune` skill target is unchanged unless the plan explicitly changed the skill install target
 
-- [ ] **Step 5: Final changed-path review**
+- [ ] **Step 6: Final changed-path review**
 
 Run:
 
 ```bash
 git diff --name-only
-git status --short --branch
+git status --short --branch --untracked-files=all
+fd -a -H '^consilium-.*-(light|heavy)\.(md|toml)$' source generated claude codex "$HOME/.claude/agents" "$HOME/.codex/agents"
 ```
 
-Expected: changed paths are limited to this plan, the five canonical source surfaces, and generator-derived runtime outputs. No unrelated dirty files are present.
+Expected: changed paths are limited to this plan, the five canonical source surfaces, and generator-derived runtime outputs. No unrelated dirty or untracked files are present. The light/heavy scan prints nothing.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 Run:
 

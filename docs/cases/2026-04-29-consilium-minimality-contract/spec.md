@@ -133,7 +133,7 @@ No changes to debug-fix intake routing, fix-threshold rules, or dispatch rejecti
 - Preserve the existing deviation-as-improvement rule verbatim.
 - Restate the chain-of-evidence rule as it applies to over-engineering findings (name the structure, name the missing trigger, name the category).
 
-This surface is read by Tribunus, Censor, Praetor, and Provocator on both runtimes after generation and install. The implementation plan must run `python3 runtimes/scripts/generate.py`, then install with `bash codex/scripts/install-codex.sh`, then prove installed parity with `python3 claude/scripts/check-codex-drift.py`.
+This surface is read by Tribunus, Censor, Praetor, and Provocator on both runtimes after generation and install. The implementation plan must run `python3 runtimes/scripts/generate.py`, install generated Claude agents into `~/.claude/agents`, run `bash codex/scripts/install-codex.sh` for the Codex runtime and skill/config sync, then prove installed parity with `python3 claude/scripts/check-codex-drift.py`.
 
 ### S4. Centurio Dispatch Template — `source/skills/claude/legion/implementer-prompt.md`
 
@@ -174,7 +174,7 @@ The implementation plan should inspect and amend exactly these files, in this or
 - `source/skills/claude/legion/implementer-prompt.md` (S4)
 - `source/skills/claude/references/verification/templates/mini-checkit.md` (S5)
 
-After canonical source edits, the plan must run `python3 runtimes/scripts/generate.py`. Generated and compatibility changes are expected in the derived `codex/source`, `claude/skills`, `generated/*`, and affected Codex agent TOMLs only. The plan must then run `bash codex/scripts/install-codex.sh` so user-scope runtime files inherit the new clauses, and `python3 claude/scripts/check-codex-drift.py` must report installed runtime parity.
+After canonical source edits, the plan must run `python3 runtimes/scripts/generate.py`. Generated and compatibility changes are expected in the derived `codex/source`, `claude/skills`, `generated/*`, and affected Codex agent TOMLs only. The plan must then install generated Claude agents into `~/.claude/agents`, run `bash codex/scripts/install-codex.sh` for Codex agents, skills, and config sync, and prove installed runtime parity with `python3 claude/scripts/check-codex-drift.py`.
 
 ## Acceptance Criteria
 
@@ -205,8 +205,9 @@ Required after implementation:
 - `git diff -- claude/CLAUDE.md` is empty.
 - `git diff -- source/skills/claude/references/verification/templates/campaign-review.md source/skills/claude/references/verification/templates/spec-verification.md source/skills/claude/references/verification/templates/plan-verification.md` is empty.
 - `git diff -- "$CONSILIUM_DOCS/doctrine/diagnosis-packet.md" "$CONSILIUM_DOCS/doctrine/known-gaps.md" "$CONSILIUM_DOCS/doctrine/known-gaps-protocol.md" "$CONSILIUM_DOCS/doctrine/fix-thresholds.md"` is empty.
-- `find ~/.claude/agents ~/.codex/agents -name "consilium-*-light.*" -o -name "consilium-*-heavy.*"` returns nothing.
+- `fd -a -H '^consilium-.*-(light|heavy)\.(md|toml)$' "$HOME/.claude/agents" "$HOME/.codex/agents"` returns nothing.
 - `python3 runtimes/scripts/check-runtime-parity.py` exits 0.
+- Generated Claude agents are installed into `~/.claude/agents`.
 - `bash codex/scripts/install-codex.sh` exits 0.
 - `python3 claude/scripts/check-codex-drift.py` exits 0.
 - A spot-read of one installed runtime agent body (e.g. `~/.claude/agents/consilium-tribunus.md` or `~/.codex/agents/consilium-tribunus.toml`) confirms the verifier-law over-engineering clause was installed.
@@ -218,7 +219,7 @@ Required after implementation:
 - **C4 implementation-stage scoping (S3 clause text)** — High after the Censor's first-round finding. The verifier-law clause must explicitly carve over-engineering authority to verifiers that see implementation output; spec- and plan-stage verifiers must not be granted the authority by inference from system-prompted doctrine. The acceptance criterion enforces this.
 - **S5 (mini-checkit template edit)** — High after the Censor's first-round finding. The original draft assumed Tribunus authority would follow from doctrine sync alone; the Censor showed the Tribunus's dispatch prompt currently constrains its mission to a closed five-item list with a "no architectural opinions" disclaimer, so doctrinal authority alone is operationally inert at the per-task layer. S5 is the smallest possible operationalization — one Minimality reference inside the existing mission list and a qualified disclaimer — and explicitly does not create a new template or change agent ranks. **Imperator note:** if the Imperator considers this an unacceptable surface expansion, the alternative is to drop S5 and accept that per-task drift is not surfaced until the end-of-campaign Praetor's deviation-assessment axis catches it. That alternative is honest but degrades the Contract's per-task enforcement.
 - **CLAUDE.md untouched** — High after the Censor's first-round finding. The original draft included a discretionary single-line architectural pointer; the revised spec drops it entirely. The Contract is discoverable via the canonical doctrine files (which `claude/CLAUDE.md` already names through the Codex drift-check section).
-- **Generation and installed parity as plan-execution step** — High after runtime unification. The durable proof chain is canonical `source/` edits → `runtimes/scripts/generate.py` → generated/compatibility outputs → `bash codex/scripts/install-codex.sh` → `python3 claude/scripts/check-codex-drift.py` installed parity.
+- **Generation and installed parity as plan-execution step** — High after runtime unification and second-pass plan verification. The durable proof chain is canonical `source/` edits → `runtimes/scripts/generate.py` → generated/compatibility outputs → install generated Claude agents into `~/.claude/agents` → `bash codex/scripts/install-codex.sh` for Codex agents/skills/config → `python3 claude/scripts/check-codex-drift.py` installed parity.
 
 ## Revision Notes
 
