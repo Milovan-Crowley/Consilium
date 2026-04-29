@@ -1,0 +1,12 @@
+1777064375 /Users/milovan/.claude/agents/consilium-scout.md
+1777255162 /Users/milovan/.claude/agents/consilium-censor.md
+1777255162 /Users/milovan/.claude/agents/consilium-custos.md
+1777255162 /Users/milovan/.claude/agents/consilium-praetor.md
+1777255162 /Users/milovan/.claude/agents/consilium-provocator.md
+1777255162 /Users/milovan/.claude/agents/consilium-soldier.md
+1777255162 /Users/milovan/.claude/agents/consilium-tribunus.md
+1777273889 /Users/milovan/.claude/agents/consilium-provocator-assumption.md
+1777273889 /Users/milovan/.claude/agents/consilium-provocator-edge-case.md
+1777273889 /Users/milovan/.claude/agents/consilium-provocator-failure-mode.md
+1777273889 /Users/milovan/.claude/agents/consilium-provocator-negative-claim.md
+1777273889 /Users/milovan/.claude/agents/consilium-provocator-overconfidence.md
