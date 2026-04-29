@@ -4,7 +4,7 @@ Flows spanning `/Users/milovan/projects/divinipress-store` ↔ `/Users/milovan/p
 
 ## Loading discipline
 
-When this guide is loaded, the Medicus invokes BOTH `Skill(skill: "medusa-dev:building-storefronts")` AND `Skill(skill: "medusa-dev:building-with-medusa")`. Scout/subordinate prompts name both.
+When this guide is loaded, the Tribunus diagnosis stance invokes BOTH `Skill(skill: "medusa-dev:building-storefronts")` AND `Skill(skill: "medusa-dev:building-with-medusa")`. Speculator/subordinate prompts name both.
 
 ## The cross-repo hypothesis bias
 
@@ -29,12 +29,12 @@ Symptoms that span any UI observation AND any data/backend observation default t
 
 ## Field 14 discipline
 
-The Medicus fills packet field 14 (Contract compatibility evidence) BEFORE proposing the threshold:
+The Tribunus diagnosis stance fills packet field 14 (Contract compatibility evidence) BEFORE proposing the threshold:
 
 - `backward-compatible — <evidence>` → Medium, two coordinated marches allowed.
 - `breaking — <which consumers error>` → Large, escalate to Consul for synchronized deploy planning.
 
-Do not guess on field 14. If evidence is unclear, scout first.
+Do not guess on field 14. If evidence is unclear, speculator first.
 
 ## Timing and async
 

@@ -6,7 +6,8 @@ from pathlib import Path
 
 
 CONFIG = Path.home() / ".codex" / "config.toml"
-SNIPPET = Path(__file__).resolve().parent.parent / "config" / "codex-config-snippet.toml"
+ROOT = Path(__file__).resolve().parents[2]
+SNIPPET = ROOT / "generated" / "codex" / "config" / "codex-config-snippet.toml"
 
 
 def main() -> None:

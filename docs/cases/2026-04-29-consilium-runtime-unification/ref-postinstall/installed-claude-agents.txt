@@ -1,0 +1,14 @@
+consilium-arbiter.md
+consilium-censor.md
+consilium-centurio-back.md
+consilium-centurio-front.md
+consilium-centurio-primus.md
+consilium-custos.md
+consilium-interpres-back.md
+consilium-interpres-front.md
+consilium-praetor.md
+consilium-provocator.md
+consilium-speculator-back.md
+consilium-speculator-front.md
+consilium-speculator-primus.md
+consilium-tribunus.md

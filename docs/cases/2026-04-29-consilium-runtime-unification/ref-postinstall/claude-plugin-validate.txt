@@ -1,0 +1,3 @@
+Validating marketplace manifest: /Users/milovan/projects/Consilium/.worktrees/feature/consilium-runtime-unification/claude/.claude-plugin/marketplace.json
+
+✔ Validation passed

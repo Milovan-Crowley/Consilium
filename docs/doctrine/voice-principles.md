@@ -21,7 +21,7 @@ When principles conflict, higher priority wins.
 Sound like a handshake, not a sales pitch. Warm, generous, unhurried -- but the underlying structure communicates competence. Never apologetic, never aggressive.
 
 | This                                        | Not That                                                               |
-| ------------------------------------------- | ---------------------------------------------------------------------- |
+|-|-|
 | "See where every print dollar goes."        | "Gain unprecedented visibility into your print spend."                 |
 | "We'll find it and add it to your account." | "Leverage our extensive vendor network for custom sourcing solutions." |
 
@@ -30,7 +30,7 @@ Sound like a handshake, not a sales pitch. Warm, generous, unhurried -- but the 
 Say what you mean with personality, but no filler. No motivational quotes, no business jargon, no empty enthusiasm. If a sentence does not earn its place, cut it.
 
 | This                | Not That                                      |
-| ------------------- | --------------------------------------------- |
+|-|-|
 | "No platform fees." | "Cost-effective SaaS-free platform solution." |
 
 ### 3. Practical Over Inspirational
@@ -38,7 +38,7 @@ Say what you mean with personality, but no filler. No motivational quotes, no bu
 Lead with what the product does and why it matters. Aspiration is fine as a finishing touch, but substance comes first. The audience is busy -- respect their time.
 
 | This                                         | Not That                                                    |
-| -------------------------------------------- | ----------------------------------------------------------- |
+|-|-|
 | "Proof once, reorder forever."               | "Streamline your approval workflow for maximum efficiency." |
 | "One platform for all your print and promo." | "A comprehensive, end-to-end print management ecosystem."   |
 
@@ -47,7 +47,7 @@ Lead with what the product does and why it matters. Aspiration is fine as a fini
 Short sentences. Direct structure. The reader should understand the point on first read. No jargon that requires a glossary -- use plain language first, then clarify with the precise term if needed.
 
 | This                               | Not That                                                             |
-| ---------------------------------- | -------------------------------------------------------------------- |
+|-|-|
 | "Your team orders what they need." | "Empower your team members with self-service ordering capabilities." |
 
 ### 5. Ministry-Native, Not Ministry-Themed
@@ -55,7 +55,7 @@ Short sentences. Direct structure. The reader should understand the point on fir
 Understand the audience without performing for them. Do not use church language as marketing decoration. No crosses, doves, or "blessed" in the copy. This is a professional Platform that happens to serve ministry.
 
 | This                                           | Not That                                                            |
-| ---------------------------------------------- | ------------------------------------------------------------------- |
+|-|-|
 | "Built for churches and schools."              | "Purpose-built for faith-based organizational stakeholders."        |
 | "Stop being the go-between for every reorder." | "Eliminate communication bottlenecks in your procurement pipeline." |
 
@@ -104,7 +104,7 @@ Tone-by-context prevents a single "brand voice" from being applied uniformly. Er
 Canonical terminology aligned with the domain glossary. Use these consistently; do not create synonyms.
 
 | Use              | Instead of                               |
-| ---------------- | ---------------------------------------- |
+|-|-|
 | Catalog          | product library, store, shop             |
 | My Products      | saved items, approved products           |
 | Collection       | product group, category, list            |
@@ -125,7 +125,7 @@ Term consistency prevents fragmentation across UI, docs, and marketing. Every sy
 ## Disallowed Terms
 
 | Term                          | Reason                                              |
-| ----------------------------- | --------------------------------------------------- |
+|-|-|
 | Streamline                    | Overused, means nothing specific                    |
 | Leverage                      | Corporate jargon                                    |
 | Ecosystem                     | Inflated for what this is                           |

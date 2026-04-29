@@ -4,7 +4,7 @@ Medusa Admin dashboard extensions in `/Users/milovan/projects/divinipress-backen
 
 ## Loading discipline
 
-When this guide is loaded, the Medicus invokes BOTH `Skill(skill: "medusa-dev:building-admin-dashboard-customizations")` AND `Skill(skill: "medusa-dev:building-with-medusa")` — admin customizations are UI on top of backend. Scout/subordinate prompts name both.
+When this guide is loaded, the Tribunus diagnosis stance invokes BOTH `Skill(skill: "medusa-dev:building-admin-dashboard-customizations")` AND `Skill(skill: "medusa-dev:building-with-medusa")` — admin customizations are UI on top of backend. Speculator/subordinate prompts name both.
 
 ## Canonical surfaces
 

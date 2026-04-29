@@ -7,18 +7,21 @@ import sys
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent.parent
-COMMON = ROOT / "source" / "doctrine" / "common.md"
-KNOWN_GAPS = ROOT / "source" / "doctrine" / "divinipress-known-gaps.md"
+ROOT = Path(__file__).resolve().parents[2]
+SOURCE = ROOT / "source"
+COMMON = SOURCE / "doctrine" / "common.md"
+KNOWN_GAPS = SOURCE / "doctrine" / "divinipress-known-gaps.md"
+GENERATED_CODEX_AGENTS = ROOT / "generated" / "codex" / "agents"
 INSTALLED_AGENTS = Path.home() / ".codex" / "agents"
 
 REPO_SCAN_TARGETS = [
     ROOT / "source",
-    ROOT / "agents",
-    ROOT / "scripts",
-    ROOT / "config",
-    ROOT / "README.md",
-    ROOT / "evals" / "README.md",
+    ROOT / "generated" / "codex",
+    ROOT / "generated" / "claude",
+    ROOT / "runtimes",
+    ROOT / "codex" / "scripts",
+    ROOT / "codex" / "README.md",
+    ROOT / "codex" / "evals" / "README.md",
 ]
 
 TEXT_SUFFIXES = {".md", ".py", ".sh", ".toml", ".json", ".yaml", ".yml", ".txt"}
@@ -54,7 +57,7 @@ KNOWN_GAPS_AGENT_FILES = {"consilium-consul.toml", "consilium-tribunus.toml"}
 
 
 def generated_agent_files() -> list[Path]:
-    return sorted((ROOT / "agents").glob("consilium-*.toml"))
+    return sorted(GENERATED_CODEX_AGENTS.glob("consilium-*.toml"))
 
 
 def iter_files(path: Path) -> list[Path]:

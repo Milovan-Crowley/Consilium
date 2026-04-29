@@ -4,7 +4,7 @@ Backend work in `/Users/milovan/projects/divinipress-backend/src/{modules,workfl
 
 ## Loading discipline
 
-When this guide is loaded, the Medicus invokes `Skill(skill: "medusa-dev:building-with-medusa")` and names it in every scout/subordinate prompt.
+When this guide is loaded, the Tribunus diagnosis stance invokes `Skill(skill: "medusa-dev:building-with-medusa")` and names it in every speculator/subordinate prompt.
 
 ## Canonical surfaces
 
@@ -41,7 +41,7 @@ A symptom that violates any of these is usually the root cause.
 
 ## Timing and async
 
-Backend timing bugs concentrate around **workflow-step completion waits** — tests and scouts that sleep for N milliseconds and hope the workflow finished, compensation completed, or subscribers drained. Workflows evolve; step counts change; sleeps silently break. **Wait for the workflow-execution state, not a guess at workflow duration.**
+Backend timing bugs concentrate around **workflow-step completion waits** — tests and speculators that sleep for N milliseconds and hope the workflow finished, compensation completed, or subscribers drained. Workflows evolve; step counts change; sleeps silently break. **Wait for the workflow-execution state, not a guess at workflow duration.**
 
 ### Core rule
 

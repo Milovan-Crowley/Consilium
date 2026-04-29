@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 prune_agents=0
-sync_config=0
+sync_config=1
 
 usage() {
   cat <<'USAGE'
-Usage: bash scripts/install-codex.sh [--prune-agents] [--sync-config]
+Usage: bash codex/scripts/install-codex.sh [--prune-agents] [--sync-config] [--skip-config-sync]
 
 Installs the Consilium Codex agents and skills from this repo.
 
 Options:
   --prune-agents  Remove installed consilium agent TOMLs that are no longer generated here.
-  --sync-config   Sync Consilium agent registration blocks into ~/.codex/config.toml.
+  --sync-config   Compatibility flag. Config sync is now the default.
+  --skip-config-sync
+                  Emergency rollback testing only. Skip ~/.codex/config.toml sync.
 USAGE
 }
 
@@ -25,6 +28,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --sync-config)
       sync_config=1
+      shift
+      ;;
+    --skip-config-sync)
+      sync_config=0
       shift
       ;;
     -h|--help)
@@ -44,13 +51,14 @@ if [[ "$prune_agents" == "1" ]]; then
   agent_args+=(--prune)
 fi
 
-bash "$repo_root/scripts/install-codex-agents.sh" "${agent_args[@]}"
-bash "$repo_root/scripts/install-codex-skills.sh"
+bash "$script_dir/install-codex-agents.sh" "${agent_args[@]}"
+bash "$script_dir/install-codex-skills.sh"
 
 if [[ "$sync_config" == "1" ]]; then
-  python3 "$repo_root/scripts/sync-codex-config.py"
+  python3 "$script_dir/sync-codex-config.py"
+  echo "Synced Codex config registration."
 else
-  echo "Skipped config sync. Run python3 scripts/sync-codex-config.py or pass --sync-config when ready."
+  echo "Skipped config sync by request."
 fi
 
 echo "Consilium Codex install complete. Start a fresh Codex thread before testing new agent or skill routing."

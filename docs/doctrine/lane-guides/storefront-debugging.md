@@ -4,7 +4,7 @@ Customer-facing pages in `/Users/milovan/projects/divinipress-store`. React / Ne
 
 ## Loading discipline
 
-When this guide is loaded, the Medicus also invokes `Skill(skill: "medusa-dev:building-storefronts")` for his own reasoning and names this skill in every scout/subordinate prompt touching storefront code.
+When this guide is loaded, the Tribunus diagnosis stance also invokes `Skill(skill: "medusa-dev:building-storefronts")` for his own reasoning and names this skill in every speculator/subordinate prompt touching storefront code.
 
 ## Canonical surfaces
 
@@ -79,7 +79,7 @@ await new Promise(r => setTimeout(r, 350));    // Known: 300ms debounce + 50ms m
 
 ## Known-gaps filter
 
-When loaded, the Medicus checks `$CONSILIUM_DOCS/doctrine/known-gaps.md` for entries with `Lane: storefront` or `Lane: multi-lane` with `storefront` in Constituent lanes.
+When loaded, the Tribunus diagnosis stance checks `$CONSILIUM_DOCS/doctrine/known-gaps.md` for entries with `Lane: storefront` or `Lane: multi-lane` with `storefront` in Constituent lanes.
 
 ## Escalation signals
 

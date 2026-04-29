@@ -108,7 +108,7 @@ Per-case decision and audit log. Append-only. Each entry is a decision, override
 ## Entry: YYYY-MM-DD — <short title>
 
 **Type:** [decision | override | verdict | revert | other]
-**Actor:** [Imperator | Consul | Legatus | Custos | Praetor | Provocator | Censor | Tribunus | Medicus]
+**Actor:** [Imperator | Consul | Legatus | Custos | Praetor | Provocator | Censor | Tribunus | Tribunus diagnosis stance]
 **Trigger:** <what surfaced this — e.g., "Custos returned BLOCKER on bash quoting at plan.md task 3 step 2">
 **Decision:** <what was decided>
 **Rationale:** <why; cite finding text or evidence verbatim where applicable>
@@ -141,4 +141,4 @@ A promoted known gap must preserve:
 - Debug rule
 - Route
 
-Known gaps are hypothesis accelerators, not proof. The Medicus must recheck live evidence before relying on a known gap in a diagnosis packet.
+Known gaps are hypothesis accelerators, not proof. The Tribunus diagnosis stance must recheck live evidence before relying on a known gap in a diagnosis packet.

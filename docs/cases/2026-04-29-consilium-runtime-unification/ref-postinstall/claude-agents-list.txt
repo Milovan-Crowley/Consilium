@@ -1,0 +1,49 @@
+42 active agents
+
+User agents:
+  checkit-cassius-structura · opus
+  checkit-cato-mercatus · opus
+  checkit-gaius-speculatus · opus
+  checkit-lucius-nexus · opus
+  checkit-marcus-regulus · opus
+  checkit-titus-veritas · opus
+  checkit-valerius-cursor · opus
+  code-navigator · sonnet
+  consilium-arbiter · opus
+  consilium-censor · opus
+  consilium-centurio-back · opus
+  consilium-centurio-front · opus
+  consilium-centurio-primus · opus
+  consilium-custos · opus
+  consilium-interpres-back · opus
+  consilium-interpres-front · opus
+  consilium-praetor · opus
+  consilium-provocator · opus
+  consilium-provocator-assumption · opus
+  consilium-provocator-edge-case · opus
+  consilium-provocator-failure-mode · opus
+  consilium-provocator-negative-claim · opus
+  consilium-provocator-overconfidence · opus
+  consilium-scout · opus
+  consilium-soldier · opus
+  consilium-speculator-back · opus
+  consilium-speculator-front · opus
+  consilium-speculator-primus · opus
+  consilium-tribunus · opus
+
+Plugin agents:
+  checkit:checkit-cassius-structura · opus
+  checkit:checkit-cato-mercatus · opus
+  checkit:checkit-gaius-speculatus · opus
+  checkit:checkit-lucius-nexus · opus
+  checkit:checkit-marcus-regulus · opus
+  checkit:checkit-titus-veritas · opus
+  checkit:checkit-valerius-cursor · opus
+  codex:codex-rescue · sonnet
+  consilium:code-reviewer · inherit
+
+Built-in agents:
+  Explore · haiku
+  general-purpose · inherit
+  Plan · inherit
+  statusline-setup · sonnet

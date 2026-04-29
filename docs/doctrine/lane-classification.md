@@ -1,6 +1,6 @@
-# Lane Classification — Taxonomy for the Medicus
+# Lane Classification — Taxonomy for the Tribunus diagnosis stance
 
-The Medicus applies this taxonomy in Phase 1 of a debug session to pick the matching lane guide and the matching Medusa Rig skill(s).
+The Tribunus diagnosis stance applies this taxonomy in Phase 1 of a debug session to pick the matching lane guide and the matching Medusa Rig skill(s).
 
 ## The Six Lanes
 
@@ -9,7 +9,7 @@ The Medicus applies this taxonomy in Phase 1 of a debug session to pick the matc
 - **`admin-dashboard`** — Medusa Admin dashboard extensions in `/Users/milovan/projects/divinipress-backend/src/admin/`. Widgets, custom pages, forms, tables embedded in the Medusa Admin UI. Requires `building-admin-dashboard-customizations` + `building-with-medusa` because admin customizations are UI on top of backend.
 - **`medusa-backend`** — Medusa backend work in `/Users/milovan/projects/divinipress-backend/src/{modules,workflows,api,subscribers}/`. Modules, workflows, API routes, module links, data models, subscribers.
 - **`cross-repo`** — Flows spanning both repos. Storefront consumes a backend API; a backend workflow produces state the storefront reads; a contract evolution requires coordinated changes. THIS IS THE DEFAULT SUSPECT for ambiguous Divinipress bugs.
-- **`unknown`** — Symptoms that cannot be classified at summons time. Re-classify after scout evidence returns.
+- **`unknown`** — Symptoms that cannot be classified at summons time. Re-classify after speculator evidence returns.
 
 ## Classification Heuristics (symptom → lane)
 
@@ -39,8 +39,8 @@ When a symptom is classified `unknown`:
 
 1. Load the known-gaps doctrine (`$CONSILIUM_DOCS/doctrine/known-gaps.md`).
 2. Load the cross-repo lane guide (`$CONSILIUM_DOCS/doctrine/lane-guides/cross-repo-debugging.md`) as the default reference.
-3. Dispatch a classification-focused scout with a reproduction request + instruction to report WHICH repo(s) the failing code lives in.
-4. Re-classify after scout evidence returns. Rewrite the packet's `Affected lane` field with the refined classification.
+3. Dispatch a classification-focused speculator with a reproduction request + instruction to report WHICH repo(s) the failing code lives in.
+4. Re-classify after speculator evidence returns. Rewrite the packet's `Affected lane` field with the refined classification.
 
 ## Lane-to-Guide Mapping
 
@@ -55,7 +55,7 @@ When a symptom is classified `unknown`:
 
 ## Lane-to-Rig-Skill Mapping
 
-Mirrors the table in `skills/tribune/SKILL.md` Deliverable 6 so the Medicus does not cross-reference.
+Mirrors the table in `skills/tribune/SKILL.md` Deliverable 6 so the Tribunus diagnosis stance does not cross-reference.
 
 | Lane | Skill(s) loaded (Layer 1) and named in prompts (Layer 2) |
 |-|-|

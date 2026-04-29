@@ -1,0 +1,8 @@
+claude/CLAUDE.md:17:- `consilium-soldier`, `consilium-scout`, `Medicus`, and the five lane-specific Provocator agents are retired active workflow names.
+runtimes/scripts/check-runtime-parity.py:30:    "consilium-soldier.md",
+runtimes/scripts/check-runtime-parity.py:31:    "consilium-scout.md",
+runtimes/scripts/check-runtime-parity.py:32:    "consilium-provocator-overconfidence.md",
+runtimes/scripts/check-runtime-parity.py:33:    "consilium-provocator-assumption.md",
+runtimes/scripts/check-runtime-parity.py:34:    "consilium-provocator-failure-mode.md",
+runtimes/scripts/check-runtime-parity.py:35:    "consilium-provocator-edge-case.md",
+runtimes/scripts/check-runtime-parity.py:36:    "consilium-provocator-negative-claim.md",

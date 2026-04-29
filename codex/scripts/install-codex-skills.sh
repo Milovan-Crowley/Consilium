@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 skill_name="tribune"
-src_dir="$repo_root/skills/$skill_name"
+src_dir="$repo_root/codex/skills/$skill_name"
 target_root="$HOME/.agents/skills"
 dry_run=0
 
@@ -95,7 +96,7 @@ if rg -n --glob '*.md' '^\|.*\|$' "$src_dir"; then
   exit 1
 fi
 
-python3 "$repo_root/scripts/check-tribune-shared-docs.py"
+python3 "$script_dir/check-tribune-shared-docs.py"
 
 if [[ -e "$target_dir" && ! -L "$target_dir" ]]; then
   echo "Refusing to replace non-symlink skill target: $target_dir" >&2
@@ -117,7 +118,7 @@ if [[ "$resolved" != "$src_dir" ]]; then
   exit 1
 fi
 
-python3 "$repo_root/scripts/check-tribune-shared-docs.py" --installed
+python3 "$script_dir/check-tribune-shared-docs.py" --installed
 
 echo "Installed Consilium Codex skill '$skill_name' to $target_dir"
 echo "Start a new Codex thread or session to pick up updated skill instructions."

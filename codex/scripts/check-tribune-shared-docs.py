@@ -11,26 +11,29 @@ import tempfile
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent.parent
-SKILL_DIR = ROOT / "skills" / "tribune"
+ROOT = Path(__file__).resolve().parents[2]
+CODEX = ROOT / "codex"
+SOURCE = ROOT / "source"
+CODEX_SOURCE = CODEX / "source"
+SKILL_DIR = CODEX / "skills" / "tribune"
 SKILL = SKILL_DIR / "SKILL.md"
 INSTALL_TARGET = Path.home() / ".agents" / "skills" / "tribune"
 CONSILIUM_DOCS = Path(os.environ.get("CONSILIUM_DOCS", "/Users/milovan/projects/Consilium/docs"))
 
 SCAN_TARGETS = [
     SKILL_DIR,
-    ROOT / "source" / "protocols" / "consul-routing.md",
-    ROOT / "source" / "protocols" / "legatus-routing.md",
-    ROOT / "source" / "roles" / "tribunus.md",
-    ROOT / "evals" / "tasks" / "10-tribune-initial-diagnosis.md",
-    ROOT / "evals" / "tasks" / "11-storefront-debugging.md",
-    ROOT / "evals" / "tasks" / "12-admin-debugging.md",
-    ROOT / "evals" / "tasks" / "13-medusa-backend-debugging.md",
-    ROOT / "evals" / "tasks" / "14-known-gap-discipline.md",
-    ROOT / "evals" / "tasks" / "15-admin-hold-debugging.md",
-    ROOT / "evals" / "tasks" / "16-install-staleness.md",
-    ROOT / "evals" / "tasks" / "17-debugger-routing.md",
-    ROOT / "evals" / "tasks" / "18-feedback-loop.md",
+    SOURCE / "protocols" / "consul-routing.md",
+    SOURCE / "protocols" / "legatus-routing.md",
+    SOURCE / "roles" / "tribunus.md",
+    CODEX / "evals" / "tasks" / "10-tribune-initial-diagnosis.md",
+    CODEX / "evals" / "tasks" / "11-storefront-debugging.md",
+    CODEX / "evals" / "tasks" / "12-admin-debugging.md",
+    CODEX / "evals" / "tasks" / "13-medusa-backend-debugging.md",
+    CODEX / "evals" / "tasks" / "14-known-gap-discipline.md",
+    CODEX / "evals" / "tasks" / "15-admin-hold-debugging.md",
+    CODEX / "evals" / "tasks" / "16-install-staleness.md",
+    CODEX / "evals" / "tasks" / "17-debugger-routing.md",
+    CODEX / "evals" / "tasks" / "18-feedback-loop.md",
 ]
 
 TEXT_SUFFIXES = {".md", ".yaml", ".yml", ".sh", ".txt"}
@@ -138,9 +141,9 @@ def check_skill_contract() -> list[str]:
 def check_core_debug_contract() -> list[str]:
     errors = []
     core_paths = [
-        ROOT / "source" / "protocols" / "consul-routing.md",
-        ROOT / "source" / "protocols" / "legatus-routing.md",
-        ROOT / "source" / "roles" / "tribunus.md",
+        SOURCE / "protocols" / "consul-routing.md",
+        SOURCE / "protocols" / "legatus-routing.md",
+        SOURCE / "roles" / "tribunus.md",
     ]
     for path in core_paths:
         text = path.read_text()
@@ -164,14 +167,14 @@ def check_eval_contract() -> list[str]:
         "--agent codex --type bug",
     ]
     eval_paths = [
-        ROOT / "evals" / "tasks" / "10-tribune-initial-diagnosis.md",
-        ROOT / "evals" / "tasks" / "11-storefront-debugging.md",
-        ROOT / "evals" / "tasks" / "12-admin-debugging.md",
-        ROOT / "evals" / "tasks" / "13-medusa-backend-debugging.md",
-        ROOT / "evals" / "tasks" / "14-known-gap-discipline.md",
-        ROOT / "evals" / "tasks" / "15-admin-hold-debugging.md",
-        ROOT / "evals" / "tasks" / "16-install-staleness.md",
-        ROOT / "evals" / "tasks" / "17-debugger-routing.md",
+        CODEX / "evals" / "tasks" / "10-tribune-initial-diagnosis.md",
+        CODEX / "evals" / "tasks" / "11-storefront-debugging.md",
+        CODEX / "evals" / "tasks" / "12-admin-debugging.md",
+        CODEX / "evals" / "tasks" / "13-medusa-backend-debugging.md",
+        CODEX / "evals" / "tasks" / "14-known-gap-discipline.md",
+        CODEX / "evals" / "tasks" / "15-admin-hold-debugging.md",
+        CODEX / "evals" / "tasks" / "16-install-staleness.md",
+        CODEX / "evals" / "tasks" / "17-debugger-routing.md",
     ]
     for path in eval_paths:
         text = path.read_text()
@@ -179,7 +182,7 @@ def check_eval_contract() -> list[str]:
             if snippet not in text:
                 errors.append(f"{path}: missing shared-docs eval snippet: {snippet}")
 
-    eval_18 = ROOT / "evals" / "tasks" / "18-feedback-loop.md"
+    eval_18 = CODEX / "evals" / "tasks" / "18-feedback-loop.md"
     text = eval_18.read_text()
     required = [
         "$CONSILIUM_DOCS/cases/",
@@ -241,6 +244,24 @@ def check_installed() -> list[str]:
     return []
 
 
+def check_generated_source_copy() -> list[str]:
+    errors = []
+    if not CODEX_SOURCE.is_dir():
+        return [f"{CODEX_SOURCE}: generated compatibility source copy missing"]
+    for source_path in sorted(p for p in SOURCE.rglob("*") if p.is_file()):
+        rel = source_path.relative_to(SOURCE)
+        copy_path = CODEX_SOURCE / rel
+        if not copy_path.is_file():
+            errors.append(f"{copy_path}: missing from generated codex/source copy")
+        elif source_path.read_bytes() != copy_path.read_bytes():
+            errors.append(f"{copy_path}: differs from canonical source/{rel}")
+    for copy_path in sorted(p for p in CODEX_SOURCE.rglob("*") if p.is_file()):
+        rel = copy_path.relative_to(CODEX_SOURCE)
+        if not (SOURCE / rel).is_file():
+            errors.append(f"{copy_path}: extra file not present in canonical source/{rel}")
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--installed", action="store_true", help="also verify installed Tribune skill symlink")
@@ -248,6 +269,7 @@ def main() -> int:
 
     errors = []
     errors.extend(check_shared_docs_root())
+    errors.extend(check_generated_source_copy())
     errors.extend(check_banned())
     errors.extend(check_skill_contract())
     errors.extend(check_core_debug_contract())

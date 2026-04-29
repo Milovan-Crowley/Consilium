@@ -1,6 +1,6 @@
-# Known-Gaps Protocol — How the Medicus Uses Known Gaps
+# Known-Gaps Protocol — How the Tribunus diagnosis stance Uses Known Gaps
 
-Known gaps live in `$CONSILIUM_DOCS/doctrine/known-gaps.md`. This protocol tells the Medicus how to use them during a debug session without the failure mode the persona's trauma warns against.
+Known gaps live in `$CONSILIUM_DOCS/doctrine/known-gaps.md`. This protocol tells the Tribunus diagnosis stance how to use them during a debug session without the failure mode the persona's trauma warns against.
 
 ## The One Rule
 
@@ -8,11 +8,11 @@ Known gaps live in `$CONSILIUM_DOCS/doctrine/known-gaps.md`. This protocol tells
 
 ## Session mechanics
 
-1. **Phase 2 (Doctrine load):** read `$CONSILIUM_DOCS/doctrine/known-gaps.md` into the Medicus's context. Filter to entries where `Lane` matches the current classification OR `Lane: multi-lane` with the current lane in `Constituent lanes:`.
+1. **Phase 2 (Doctrine load):** read `$CONSILIUM_DOCS/doctrine/known-gaps.md` into the Tribunus diagnosis stance's context. Filter to entries where `Lane` matches the current classification OR `Lane: multi-lane` with the current lane in `Constituent lanes:`.
 
-2. **Phase 3 (Reconnaissance):** if a known gap appears relevant by symptom signature, dispatch a scout with an explicit recheck instruction: "Recheck the evidence at `<file:line>` cited in KG-X. Does the pattern still hold? Report `pattern-present`, `pattern-absent`, or `pattern-changed-<how>`."
+2. **Phase 3 (Reconnaissance):** if a known gap appears relevant by symptom signature, dispatch a speculator with an explicit recheck instruction: "Recheck the evidence at `<file:line>` cited in KG-X. Does the pattern still hold? Report `pattern-present`, `pattern-absent`, or `pattern-changed-<how>`."
 
-3. **Phase 4 (Packet construction):** write field 9 (Known gap considered) with the scout's recheck result. If `pattern-absent` or `pattern-changed`, the known gap is NOT used as evidence — record `Used as evidence: no` and cite the recheck as contrary evidence in field 8.
+3. **Phase 4 (Packet construction):** write field 9 (Known gap considered) with the speculator's recheck result. If `pattern-absent` or `pattern-changed`, the known gap is NOT used as evidence — record `Used as evidence: no` and cite the recheck as contrary evidence in field 8.
 
 ## Validation (what Tribunus diagnosis stance checks)
 
@@ -24,6 +24,6 @@ Using a known gap as evidence without a live recheck is MISUNDERSTANDING — the
 
 ## Why this protocol exists
 
-The Medicus's trauma is exactly this failure: a known team-name scope bug matched symptoms, the diagnosis was written on hypothesis without recheck, the fix landed, the test passed — and two days later the real cause (a missing idempotency key) charged a customer twice. The known gap was a shadow of a real issue. Using it as proof was the error.
+The Tribunus diagnosis stance's trauma is exactly this failure: a known team-name scope bug matched symptoms, the diagnosis was written on hypothesis without recheck, the fix landed, the test passed — and two days later the real cause (a missing idempotency key) charged a customer twice. The known gap was a shadow of a real issue. Using it as proof was the error.
 
 Live recheck is the defense.

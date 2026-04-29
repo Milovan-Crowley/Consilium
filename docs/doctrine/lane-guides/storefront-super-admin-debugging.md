@@ -4,7 +4,7 @@ Super Admin surfaces in `/Users/milovan/projects/divinipress-store`. Same React/
 
 ## Loading discipline
 
-When this guide is loaded, the Medicus also invokes `Skill(skill: "medusa-dev:building-storefronts")` (same companion skill as customer storefront).
+When this guide is loaded, the Tribunus diagnosis stance also invokes `Skill(skill: "medusa-dev:building-storefronts")` (same companion skill as customer storefront).
 
 ## Canonical surfaces
 

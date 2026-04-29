@@ -1,0 +1,167 @@
+Installed plugins:
+
+  ❯ ast-grep@ast-grep-marketplace
+    Version: 1.0.0
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ brave-search-skills@brave-search
+    Version: 1.4.0
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ c-level-skills@claude-code-skills
+    Version: 2.1.2
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ checkit@checkit-local
+    Version: 1.0.0
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ claude-code-setup@claude-plugins-official
+    Version: 1.0.0
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ claude-hud@claude-hud
+    Version: 0.0.12
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ claude-md-management@claude-plugins-official
+    Version: 1.0.0
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ code-review@claude-plugins-official
+    Version: ebf7d635d562
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ code-simplifier@claude-plugins-official
+    Version: 1.0.0
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ codex@openai-codex
+    Version: 1.0.4
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ commit-commands@claude-plugins-official
+    Version: ebf7d635d562
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ consilium@consilium-local
+    Version: 1.0.0
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ content-creator@claude-code-skills
+    Version: 2.1.2
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ context7@claude-plugins-official
+    Version: ebf7d635d562
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ divinipress-project@divinipress-local
+    Version: 1.0.0
+    Scope: project
+    Status: ✘ disabled
+
+  ❯ divinipress-sales@divinipress-ops
+    Version: 1.0.0
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ feature-dev@claude-plugins-official
+    Version: ebf7d635d562
+    Scope: project
+    Status: ✘ disabled
+
+  ❯ frontend-design@claude-plugins-official
+    Version: ebf7d635d562
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ fullstack-dev-skills@fullstack-dev-skills
+    Version: 0.4.11
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ github@claude-plugins-official
+    Version: ebf7d635d562
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ impeccable@impeccable
+    Version: 1.6.0
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ marketing-skills@marketingskills
+    Version: 2c7c108bd53e
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ mcp-server-dev@claude-plugins-official
+    Version: ebf7d635d562
+    Scope: local
+    Status: ✘ disabled
+
+  ❯ medusa-dev@medusa
+    Version: 1.0.9
+    Scope: local
+    Status: ✔ enabled
+
+  ❯ plugin-dev@claude-plugins-official
+    Version: ebf7d635d562
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ product-management@knowledge-work-plugins
+    Version: 1.2.0
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ pw@claude-code-skills
+    Version: 2.1.2
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ sanity-plugin@sanity-agent-toolkit
+    Version: 1.0.0
+    Scope: project
+    Status: ✘ disabled
+
+  ❯ skill-codex@skill-codex
+    Version: 1.1.0
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ skill-creator@claude-plugins-official
+    Version: ebf7d635d562
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ superpowers@claude-plugins-official
+    Version: 5.0.7
+    Scope: user
+    Status: ✘ disabled
+
+  ❯ typescript-lsp@claude-plugins-official
+    Version: 1.0.0
+    Scope: user
+    Status: ✔ enabled
+
+  ❯ vercel@claude-plugins-official
+    Version: 0.40.0
+    Scope: project
+    Status: ✘ disabled
+

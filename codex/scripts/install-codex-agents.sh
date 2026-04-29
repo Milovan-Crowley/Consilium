@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-src_dir="$repo_root/agents"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+src_dir="$repo_root/generated/codex/agents"
 target_dir="$HOME/.codex/agents"
 prune="${1:-}"
 
-if [[ ! -f "$repo_root/scripts/generate_agents.py" ]]; then
+if [[ ! -f "$script_dir/generate_agents.py" ]]; then
   echo "Missing generator script" >&2
   exit 1
 fi
 
-python3 "$repo_root/scripts/generate_agents.py"
-python3 "$repo_root/scripts/check-shared-docs-adoption.py"
+python3 "$script_dir/generate_agents.py"
+python3 "$script_dir/check-shared-docs-adoption.py"
 
 mkdir -p "$target_dir"
 
@@ -72,7 +73,7 @@ else:
     print("No extra consilium agent files detected in ~/.codex/agents")
 PY
 
-python3 "$repo_root/scripts/check-shared-docs-adoption.py" --installed
+python3 "$script_dir/check-shared-docs-adoption.py" --installed
 
 echo "Installed Consilium Codex agents to $target_dir"
 echo "Start a new Codex thread or session to pick up newly added agent types."

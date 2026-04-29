@@ -1,13 +1,13 @@
 # Consilium Codex
 
-Codex-native source repo for the Consilium orchestration system.
+Codex runtime adapter for the Consilium orchestration system.
 
-This is the Codex-runtime source within the Consilium monorepo. Sibling runtime source for Claude lives at [../claude](/Users/milovan/projects/Consilium/claude). The two runtimes are not tuned the same way, and they do not share prompt source files — the subdirectories make the separation explicit.
+This directory is not a separate doctrine world. Root `source/` is the canonical prompt source, root `generated/codex/` is the generated Codex output, and this `codex/` directory keeps compatibility scripts plus install-facing copies.
 
 Rules:
-- Claude source stays in `/Users/milovan/projects/Consilium/claude`
-- Codex source stays here
-- Do not sync files from this repo into Claude's plugin cache
+- Edit root `source/`, not `codex/source`, when changing role or doctrine source.
+- Treat `codex/source` as a generated compatibility copy of root `source/`.
+- Treat `codex/agents` and `codex/config` as compatibility copies generated from root `generated/codex`.
 - Do not treat `~/.codex/agents` as source; it is install output
 
 ## Runtime Shape
@@ -27,6 +27,7 @@ Verification magistrates:
 Retrieval and interpretation:
 - `consilium-speculator-front`
 - `consilium-speculator-back`
+- `consilium-speculator-primus`
 - `consilium-interpres-front`
 - `consilium-interpres-back`
 - `consilium-arbiter`
@@ -38,13 +39,14 @@ Execution ranks:
 
 ## Source Of Truth
 
-- `source/roles/` contains compact Codex persona source files
-- `source/doctrine/` contains Codex prompt-source law baked into generated agents
+- Root `source/roles/` contains compact persona source files.
+- Root `source/doctrine/` contains prompt-source law baked into generated agents.
 - Runtime shared doctrine and Consilium artifacts live in `$CONSILIUM_DOCS`, defaulting to `/Users/milovan/projects/Consilium/docs`
-- `source/protocols/` contains routing and planning rules
-- `source/manifest.json` defines the installed agent pack
-- `scripts/generate_agents.py` renders installable TOMLs into `agents/`
-- `config/codex-config-snippet.toml` is generated from the manifest
+- Root `source/protocols/` contains routing and planning rules.
+- Root `source/manifest.json` defines the installed agent pack.
+- Root `generated/codex/agents/` contains generated Codex TOMLs.
+- Root `generated/codex/config/codex-config-snippet.toml` contains generated Codex config blocks.
+- `codex/source`, `codex/agents`, and `codex/config` are generated compatibility copies.
 
 ## Shared Docs Requirement
 
@@ -68,14 +70,14 @@ bash scripts/install-codex.sh
 Optional full refresh:
 
 ```bash
-bash scripts/install-codex.sh --prune-agents --sync-config
+bash scripts/install-codex.sh --prune-agents
 ```
 
 The wrapper:
 - regenerates and installs `consilium-*.toml` into `~/.codex/agents`
 - installs `skills/tribune` into the local skill registry at `~/.agents/skills/tribune`
 - optionally prunes stale installed Consilium agents
-- optionally syncs `~/.codex/config.toml`
+- syncs `~/.codex/config.toml` by default
 
 Start a new Codex thread or session after installing. Existing threads do not pick up newly added agent types or changed skill instructions.
 
@@ -92,7 +94,7 @@ bash scripts/install-codex-agents.sh --prune
 ```
 
 The script:
-- regenerates the TOMLs from source
+- regenerates the TOMLs from root `source/`
 - validates each generated TOML
 - syncs `consilium-*.toml` into `~/.codex/agents`
 - optionally prunes stale installed agent files
@@ -133,15 +135,15 @@ Verify:
 readlink ~/.agents/skills/tribune
 ```
 
-Expected result:
+Expected result points at this checkout's Codex Tribune skill source:
 
 ```text
-/Users/milovan/projects/Consilium/codex/skills/tribune
+<repo-root>/codex/skills/tribune
 ```
 
 ## Config Sync
 
-To sync the generated Consilium registrations into `~/.codex/config.toml`:
+To sync the generated Consilium registrations into `~/.codex/config.toml` manually:
 
 ```bash
 python3 scripts/sync-codex-config.py
@@ -172,7 +174,7 @@ The Consul should:
 ## Notes
 
 - `~/.codex/config.toml` still controls which agents are registered.
-- If you add or rename agents here, update `~/.codex/config.toml` to match. Use `config/codex-config-snippet.toml` as the reference block.
+- If you add or rename agents, update root `source/manifest.json`, regenerate, install, and start a fresh Codex session.
 - Tracers stay intentionally lighter than the other ranks. Magistrates and Centurions keep stronger identity.
 
 ## Evals
