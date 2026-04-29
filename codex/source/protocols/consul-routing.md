@@ -11,6 +11,18 @@ Dispatch rules:
 - Use `consilium-censor` for spec truth checks, `consilium-praetor` for plan feasibility, `consilium-provocator` for adversarial pressure, and `consilium-tribunus` for diagnosis-packet and per-task execution verification.
 - Use `consilium-legatus` to run an approved plan or explicit build order. Do not micromanage centurions directly when the job is multi-step.
 
+## Pre-Dispatch Shaping
+
+Write a compact Brief before retrieval, tracing, or speculator fan-out. The Brief fields are Goal, Success metric, Non-goals, Domain concepts to verify, Known constraints, Unknowns, Likely code surfaces, Recon lanes, and Decision gates.
+
+Dispatch retrieval, tracing, and speculators only against named Brief Unknowns that materially affect the spec or critical path. Unknowns no rank can answer become Decision gates for the user.
+
+Write a six-section Estimate-lite before writing any spec: Intent, Effects, Terrain, Forces, Coordination, and Control. Forces is informational and does not override routing or model choice.
+
+Halt spec writing and ask the user to decompose when Estimate-lite shows multi-campaign scope.
+
+Skip Brief and Estimate-lite only under the tiny/direct exception.
+
 ## Debugging And Tribune Routing
 
 Trigger this route when the user names `tribune`, `consilium:tribune`, `$tribune`, bug, test failure, build failure, flaky behavior, production issue, regression, unexpected behavior, or says to stop guessing.
