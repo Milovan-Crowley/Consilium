@@ -12,13 +12,13 @@ Intent: make saved print/promo/display products usable from `/products/[handle]`
 
 Effects: the saved PDP must stop treating standard products as "still loading"; it must render the existing standard product shape returned by the product fetcher; it must add saved standard variants with non-apparel metadata; apparel saved products must keep the current apparel behavior.
 
-Terrain: single-repo storefront implementation in `divinipress-store`, stacked on `feature/div-74-non-apparel-proof-detail-rendering` / PR #137. Backend DIV-100 PR #36 defines the saved non-apparel contract and does not require a backend change for this fix.
+Terrain: single-repo storefront implementation in `divinipress-store`, on the current `feature/div-74-non-apparel-proof-detail-rendering` / PR #137 branch. Backend DIV-100 PR #36 defines the saved non-apparel contract and does not require a backend change for this fix.
 
 Forces: storefront Medusa/React Query discipline applies. Backend DIV-100 matters as a current behavior contract, not as an endorsement of its internal route layering. `/store/custom-products`, `/store/carts/:id/line-items-custom`, and `/store/carts/:id/custom-complete` already support the needed shapes, so this storefront fix must rely on those contracts without refactoring backend architecture.
 
 Coordination: no backend march is required unless implementation proves the DIV-100 contract wrong. The storefront branch must not use `integration/non-apparel-products` as its base and must not merge to `develop`.
 
-Control: acceptance is visible in the logged-in browser and guarded by `npx tsc --noEmit`, `git diff --check`, saved standard PDP/cart smoke, and saved apparel PDP regression smoke.
+Control: acceptance is visible in the logged-in browser and guarded by `node .yarn/releases/yarn-4.3.1.cjs exec tsc --noEmit`, `git diff --check`, saved standard PDP/cart smoke, and saved apparel PDP regression smoke.
 
 ## Problem
 > **Confidence: High** - Diagnosis packet field 5 and storefront code both identify the same boundary failure.
@@ -132,6 +132,8 @@ The saved standard PDP may reuse standard catalog option, pricing, media, and ta
 
 The saved standard PDP must present itself as a My Products detail page, not as a catalog product page. It must not expose `Save & Proof` for an already saved product.
 
+Saved standard media must preserve the saved-product thumbnail/image hydration from `/store/custom-products`. If the standard adapter keeps `thumbnail` separate from `images`, the saved PDP must include the thumbnail in its gallery before falling back to the remaining standard images.
+
 Pricing must follow the existing standard pricing contract. Prices returned by Medusa/backend are displayed as-is, not divided by 100.
 
 The catalog URL for a saved standard handle, such as `/catalog/print/brochures-8dd0f4c4`, is a known residual risk outside this spec. This spec fixes the saved-product PDP at `/products/[handle]`; it does not redesign catalog route access or remove catalog proof actions from catalog pages.
@@ -139,12 +141,13 @@ The catalog URL for a saved standard handle, such as `/catalog/print/brochures-8
 ## Branching And Repository Constraints
 > **Confidence: High** - These were explicit Imperator constraints.
 
-Implementation must create a new storefront branch stacked on:
+Implementation stays on the current storefront branch:
 
 - `feature/div-74-non-apparel-proof-detail-rendering`
 
 Implementation must not:
 
+- Create a new fix branch for this plan unless the Imperator changes this instruction.
 - Base the fix on `integration/non-apparel-products`.
 - Merge into `develop`.
 - Push or open a PR unless the Imperator explicitly asks.
@@ -170,7 +173,7 @@ This spec does not include:
 
 Static checks:
 
-- `npx tsc --noEmit` passes.
+- `node .yarn/releases/yarn-4.3.1.cjs exec tsc --noEmit` passes.
 - `git diff --check` passes.
 
 Manual browser checks:
