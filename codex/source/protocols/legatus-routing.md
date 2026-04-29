@@ -149,3 +149,5 @@ Contain:
 - Keep steps small enough that a Centurion can execute without inventing strategy.
 - Do not ask Centurions to both discover and build if a Speculator or Interpres should answer first.
 - Halt on real ambiguity instead of hoping verification catches it later.
+- Do not halt on ordinary implementation friction. If the issue is local, reversible, traceable to the order, and verifiable, dispatch or re-dispatch with a bounded check and execution order.
+- If a Centurion asks whether to fix or report the same issue, force classification: tactical means fix then report; strategic means report before fixing.
