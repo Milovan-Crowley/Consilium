@@ -272,25 +272,18 @@ Append after Test 12c, still inside the same `describe` block:
         const productModuleService = container.resolve(Modules.PRODUCT);
         // Narrow the existing fixture's options_values.finish to ["matte"]
         // — simulating Phase 1's saved-product creation output.
+        // Medusa v2 updateProducts merges JSON metadata at the top level
+        // but REPLACES nested objects: passing `options_values` requires
+        // re-supplying every sibling key (paper_type, quantity) so they
+        // are not wiped. Other top-level metadata keys (multiplier_keys,
+        // multipliers, options_labels, base_option_keys) are merged and
+        // do not need re-supply.
         await productModuleService.updateProducts(promoProductId, {
           metadata: {
-            base_option_keys: ["paper_type", "quantity"],
-            multiplier_keys: ["finish"],
-            options_labels: {
-              paper_type: "Paper Type",
-              quantity: "Quantity",
-              finish: "Finish",
-            },
             options_values: {
               paper_type: ["matte"],
               quantity: ["500", "1000", "999"],
               finish: ["matte"], // narrowed — locked to "matte"
-            },
-            multipliers: {
-              finish: {
-                "500": { matte: 1, glossy: 1.2 },
-                "1000": { matte: 1, glossy: 1.15 },
-              },
             },
             custom_order_id: "fake_co_for_narrowing_test",
           },
@@ -463,7 +456,7 @@ undefined-throws, and saved-product-lock-rejects."
 
 - [ ] **Step 1: Delete Test 15b (the apparel-only-gate enforcement)**
 
-Edit `integration-tests/http/non-apparel-cart.spec.ts`. Delete lines 595-663 in their entirety (the comment block at `:595-602` plus the `it("non-apparel ORDER does not trigger saved-product approval...")` test at `:603-663`). After deletion, Test 15 (the previous test) is followed directly by Test 16 (`non-apparel CATALOG proof flow preserves metadata end-to-end` at `:665`).
+Edit `integration-tests/http/non-apparel-cart.spec.ts`. **Delete Test 15b by content match, not by literal line number.** Task 1's additions (Steps 6, 7) shift the file's line numbers — Test 15b's original location at lines 595-663 will have moved by the time this task runs. Locate Test 15b by its unique header comment `// Test 15b — saved-product gate is apparel-only (DIV-99 hardening; GAP 4).` and delete from that comment line through the closing `});` of the `it("non-apparel ORDER does not trigger saved-product approval even if product metadata carries custom_order_id (DIV-99 hardening; pre-DIV-100 seam closed)", ...)` block. After deletion, Test 15 is followed directly by Test 16 (`non-apparel CATALOG proof flow preserves metadata end-to-end`).
 
 The Phase-2 contract reverses this assertion: a non-apparel ORDER with `custom_order_id` set DOES auto-approve. The replacement positive test lives in `approve-proof-non-apparel.spec.ts` (added in Step 4 below) where a real saved product is already constructed via approveProof — that test exercises the full reorder shortcut end-to-end against real backing state, which Test 15b's `fake_custom_order_seam_test` ID could not.
 
@@ -623,19 +616,38 @@ Edit `integration-tests/http/approve-proof-non-apparel.spec.ts`. Find the closin
         expect(completeResp.status).toBe(200);
         const completedOrderId = completeResp.data.order.id;
 
-        const ordersResp = await api.get("/custom-order/orders");
-        const myOrder = ordersResp.data.orders.find(
-          (o: any) => o.orderId === completedOrderId,
+        // Resolve the new custom_order via order → line_item → custom_order
+        // link traversal (the same pattern the scaffold uses at
+        // approve-proof-non-apparel.spec.ts:191-212). The orders-list
+        // endpoint at /custom-order/orders does NOT return `metadata` on
+        // subOrders (it transforms to {customOrderId, productName, quantity,
+        // orderStatus, jobStatus, subTotal} per
+        // src/api/custom-order/orders/route.ts:112-121); the gate-stamped
+        // `metadata.original_custom_order_id` must be read from the
+        // custom_order record directly.
+        const orderModuleService = getContainer().resolve(Modules.ORDER);
+        const [completedOrderDetails] = await orderModuleService.listOrders(
+          { id: [completedOrderId] },
+          { relations: ["items"] },
         );
-        expect(myOrder).toBeDefined();
-        const subOrder = myOrder.subOrders[0];
-        expect(subOrder.jobStatus).toBe("approved");
-        expect(subOrder.orderStatus).toBe("proof_done");
-        expect(subOrder.metadata?.original_custom_order_id).toBe(customOrderId);
+        const reorderLineItem = completedOrderDetails.items?.[0];
+        expect(reorderLineItem).toBeDefined();
+
+        const query = getContainer().resolve(ContainerRegistrationKeys.QUERY);
+        const { data: reorderLineItems } = await query.graph({
+          entity: "order_line_item",
+          fields: ["id", "custom_order.*"],
+          filters: { id: reorderLineItem!.id },
+        });
+        const newCustomOrder = reorderLineItems[0]?.custom_order;
+        expect(newCustomOrder).toBeDefined();
+        expect(newCustomOrder.job_status).toBe("approved");
+        expect(newCustomOrder.order_status).toBe("proof_done");
+        expect(newCustomOrder.metadata?.original_custom_order_id).toBe(customOrderId);
       });
 ```
 
-The required imports — `ProofType`, `Modules` — are already present in this file (`Modules` at line 2, `ProofType` at line 10). No new imports needed.
+The required imports — `ProofType`, `Modules`, `ContainerRegistrationKeys` — are already present in this file (`ContainerRegistrationKeys` and `Modules` at line 2, `ProofType` at line 10). No new imports needed.
 
 - [ ] **Step 5: Run the integration tests — verify the new happy-path fails and old Test 15b is gone**
 
@@ -645,7 +657,7 @@ Run:
 yarn test:integration:http -t "approveProof — non-apparel catalog proof"
 ```
 
-Expected: the new "auto-approves a non-apparel saved-product reorder via custom-complete" test FAILS — `subOrder.jobStatus` is NOT `"approved"` because the gate's apparel-only clause still rejects the non-apparel reorder.
+Expected: the new "auto-approves a non-apparel saved-product reorder via custom-complete" test FAILS. The gate's apparel-only clause still rejects the non-apparel reorder, so the new sub-order is created on the fresh-proofing branch — `newCustomOrder.job_status` is NOT `"approved"`, `newCustomOrder.order_status` is NOT `"proof_done"`, and `newCustomOrder.metadata?.original_custom_order_id` is undefined. Any of the three assertions failing first is acceptable; all three failing in sequence after Step 6 implementation is the success state.
 
 Run:
 
