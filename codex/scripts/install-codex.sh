@@ -46,12 +46,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-agent_args=()
 if [[ "$prune_agents" == "1" ]]; then
-  agent_args+=(--prune)
+  bash "$script_dir/install-codex-agents.sh" --prune
+else
+  bash "$script_dir/install-codex-agents.sh"
 fi
 
-bash "$script_dir/install-codex-agents.sh" "${agent_args[@]}"
 bash "$script_dir/install-codex-skills.sh"
 
 if [[ "$sync_config" == "1" ]]; then
