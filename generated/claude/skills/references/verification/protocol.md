@@ -73,7 +73,7 @@ Every verification dispatch uses this structure. The persona identity and Codex 
 ## The Artifact
 
 {ARTIFACT CONTENT — spec, plan, or implementation output}
-{Note: the artifact carries its own inline confidence annotations; do not pass them as a separate verifier-input field.}
+{Note: the artifact may carry evidence, risk, or confidence notes when useful; do not pass them as a separate verifier-input field.}
 
 ## Context Summary
 
@@ -109,7 +109,7 @@ Categories:
 Tag each finding clearly. The dispatching persona needs to process them programmatically.
 ```
 
-The verifier reads inline confidence annotations off the artifact directly. The dispatcher does NOT extract them into a separate `## Confidence Map` section in the prompt — that practice biased verifiers toward chasing the author's certainty rather than the artifact's actual contract.
+The verifier reads any evidence, risk, or confidence notes off the artifact directly. The dispatcher does NOT extract them into a separate `## Confidence Map` section in the prompt — that practice biased verifiers toward chasing the author's certainty rather than the artifact's actual contract. Plan verification must work even when the plan has no confidence notes.
 
 ---
 
@@ -143,9 +143,9 @@ The context summary is a factual briefing. The verifier judges the artifact, not
 
 ---
 
-## 5. Inline Confidence Annotations
+## 5. Confidence And Evidence Notes
 
-Confidence is woven into the artifact, not a separate document. Each section of the spec or plan carries an annotation:
+Confidence is woven into the artifact, not a separate document. Specs may use section-level confidence notes. Plans may use targeted evidence or risk notes only where uncertainty changes execution or verification behavior:
 
 ```markdown
 ## Product Display Logic
@@ -159,7 +159,7 @@ The saved product display name is derived from...
 - **Medium** — Consul's synthesis of multiple inputs. The conclusion wasn't directly stated.
 - **Low** — Best guess. Should be rare after ambiguity elimination.
 
-**How verifiers use them:** Censor and Praetor scrutinize High-confidence sections most carefully — blind spots hide where the Consul felt safest. Provocator attacks High confidence as the primary surface. Low-confidence sections get validated or corrected. The annotations live on the artifact; the verifier reads them inline. The dispatcher does NOT pass a separate confidence-map field.
+**How verifiers use them:** Notes can guide scrutiny, but they do not define the verifier's mission. Censor, Praetor, and Provocator verify the artifact's actual contract: requirements, decisions, assumptions, dependencies, scope, and realistic failure modes. Low-confidence sections get validated or corrected. High-confidence sections can still hide blind spots, but they are not the Provocator's default primary surface. The notes live on the artifact; the verifier reads them inline. The dispatcher does NOT pass a separate confidence-map field.
 
 ---
 

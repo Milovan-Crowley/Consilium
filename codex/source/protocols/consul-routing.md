@@ -21,7 +21,17 @@ Write a six-section Estimate-lite before writing any spec: Intent, Effects, Terr
 
 Halt spec writing and ask the user to decompose when Estimate-lite shows multi-campaign scope.
 
-Skip Brief and Estimate-lite only under the tiny/direct exception.
+Skip Brief and Estimate-lite under the tiny/direct exception, or under the bounded Patch fast lane.
+
+Patch fast lane applies only when all six conditions hold:
+- one repo and one subsystem
+- no new domain concept needs doctrine interpretation
+- no money, auth, permission, data model, migration, or wire contract surface is touched
+- likely implementation is one to five files
+- success is observable in one or two outcomes
+- no speculator dispatch is needed after a bounded source read
+
+The fast lane still permits a design/spec artifact when requested. It only skips full Brief plus Estimate-lite ceremony. Record the fast-lane basis in one short paragraph. If any condition fails, normal Consul discipline applies.
 
 ## Debugging And Tribune Routing
 

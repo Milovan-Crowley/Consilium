@@ -42,9 +42,9 @@ Agent tool:
 
     Once your questions are answered:
     1. Implement exactly what the orders specify. Your work will be independently verified by the Tribunus after completion — he checks plan-step match, domain correctness, stub detection, and integration with what came before.
-    2. Write tests (follow TDD if the orders require it).
+    2. Write or update tests when the orders require them, or when a narrow proof is the safest way to verify the task.
     3. Verify your implementation works.
-    4. Commit your work.
+    4. Commit only when the orders require a commit or when the Legatus explicitly asked for one.
     5. Self-review (see below).
     6. Report back to the Legatus.
 
@@ -108,7 +108,7 @@ Agent tool:
 
     **Testing:**
     - Do my tests actually verify behavior, or do they merely verify the mocks?
-    - Did I follow TDD where the orders required it?
+    - Did I follow the ordered test-first flow where the orders required it?
     - Are my tests comprehensive enough for the Tribunus to trust them?
 
     If self-review turns up issues, I fix them before reporting. I do not hand the Legatus unfinished work dressed as finished work.

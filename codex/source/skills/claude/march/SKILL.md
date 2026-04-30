@@ -64,7 +64,7 @@ If this command returns non-zero, halt the session and do not proceed.
 For each task:
 
 1. Mark it in progress.
-2. Follow each step exactly — the edicts are bite-sized on purpose.
+2. Follow the task exactly. Edicts are coherent implementation units: execute the ordered files, decisions, acceptance, and verification without inventing strategy.
 3. Run the verifications the plan specifies.
 4. Mark it complete.
 
@@ -133,10 +133,10 @@ The case file contains:
    - The Imperator's approval annotation is not present.
    - Field 14 is empty or placeholder on cross-repo scope.
 
-4. Execute by threshold. In march mode there is no Centurio — I execute each fix step myself, TDD discipline, commit-per-step:
-   - **`small`** (single file, ≤30 lines, single repo, no schema/dep/contract change per `$CONSILIUM_DOCS/doctrine/fix-thresholds.md`): I apply the fix inline, run the verification plan (field 12) as the acceptance test, commit. Update the case file `status: routed` at start, `status: closed` after verification passes.
-   - **`medium` — single-repo**: I derive a micro-plan from the case-file diagnosis + fix site + verification plan, then execute each micro-step myself (write failing test → run → implement → run → commit), repeating for every file/function touched. `status: routed` at start, `status: closed` after the verification plan passes.
-   - **`medium` — cross-repo**: GATE on field 14 = `backward-compatible`. If passes: I execute in TWO passes, sequenced by contract direction (backend first if frontend depends on new API shape; frontend first only if the backend already supports both shapes). Each pass is a separate commit series in its own repo's working tree. I annotate the case file's "Fix route" with both pass summaries. `status: routed` at start, `status: closed` after both passes complete. If field 14 = `breaking`, threshold is wrong — re-propose as `large`.
+4. Execute by threshold. In march mode there is no Centurio — I execute each coherent fix task myself. Test-first flow and commits apply when the approved diagnosis route or derived task orders require them:
+   - **`small`** (single file, ≤30 lines, single repo, no schema/dep/contract change per `$CONSILIUM_DOCS/doctrine/fix-thresholds.md`): I apply the fix inline, run the verification plan (field 12) as the acceptance test, and commit only if the case route requires a commit. Update the case file `status: routed` at start, `status: closed` after verification passes.
+   - **`medium` — single-repo**: I derive a compact plan from the case-file diagnosis + fix site + verification plan, then execute each coherent task with the ordered verification. `status: routed` at start, `status: closed` after the verification plan passes.
+   - **`medium` — cross-repo**: GATE on field 14 = `backward-compatible`. If passes: I execute in TWO passes, sequenced by contract direction (backend first if frontend depends on new API shape; frontend first only if the backend already supports both shapes). Each pass runs in its own repo working tree with commits only when the route requires them. I annotate the case file's "Fix route" with both pass summaries. `status: routed` at start, `status: closed` after both passes complete. If field 14 = `breaking`, threshold is wrong — re-propose as `large`.
    - **`large`** (new subsystem, policy change, breaking cross-repo contract per field 14 = `breaking`, or any fix requiring a data migration): I escalate to the Consul. The case file path becomes an input to a fresh spec; Consul references it in the spec's Context section. `status: routed` at escalation; the new Consul spec's own lifecycle applies.
    - **`contain`** (Emergency Containment): I apply a reversible, scoped-minimal fix, clearly labeled. The case does NOT close — I append "contained; root cause pending; next-session carryover" and set `status: contained`. **Contained cases surface at the Imperator's next `/tribune` session** via the Tribunus diagnosis stance's Phase 1 scan of the cases directory.
 

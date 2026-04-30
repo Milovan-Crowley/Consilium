@@ -29,7 +29,7 @@ You do not execute with your own hands. You dispatch centurios — fresh for eac
 
 This is the subagent-driven march. I delegate tasks to specialized centurios with isolated context. I craft their orders precisely so they stay focused and succeed. They never inherit my session's context or history — I construct exactly what they need. This also preserves my own command context for coordination.
 
-**Core discipline:** Fresh centurio per task + The Invocation at the top of every dispatch + Tribunus verification after each + Campaign review after all = a campaign the Imperator can trust.
+**Core discipline:** Fresh centurio per coherent implementation task + The Invocation at the top of every dispatch + Tribunus verification after each + Campaign review after all = a campaign the Imperator can trust.
 
 **The Invocation is not optional.** Every centurio I dispatch receives the Invocation at the top of his prompt, before his orders. A centurio dispatched without the Invocation is a worker, not a defender — and the Consilium does not field workers. The Invocation text and the full centurio's prompt template live in `/Users/milovan/projects/Consilium/claude/skills/legion/implementer-prompt.md`. I use that template for every dispatch, every time.
 
@@ -82,6 +82,8 @@ digraph when_to_use {
 - Tribunus mini-checkit after each task, Campaign review after all
 - Faster iteration — no human-in-loop between tasks
 
+**Right-sized task contract:** Legion executes decision-complete, code-selective tasks. The plan owns strategy, file boundaries, interfaces, acceptance, and verification. The Centurio owns ordinary implementation mechanics inside that boundary, unless the order explicitly constrains them. Tests, commits, and test-first flow happen when the plan orders them or when they are the smallest proof for the task; they are not automatic ceremony.
+
 ---
 
 ## The March
@@ -95,7 +97,7 @@ digraph process {
         "Dispatch centurio\n(./implementer-prompt.md)" [shape=box];
         "Centurio asks questions?" [shape=diamond];
         "Answer, provide context" [shape=box];
-        "Centurio implements,\ntests, commits, self-reviews" [shape=box];
+        "Centurio implements,\nverifies, self-reviews" [shape=box];
         "Dispatch ephemeral Tribunus\n(mini-checkit)" [shape=box];
         "Tribunus finding?" [shape=diamond];
         "SOUND" [shape=box];
@@ -115,8 +117,8 @@ digraph process {
     "Dispatch centurio\n(./implementer-prompt.md)" -> "Centurio asks questions?";
     "Centurio asks questions?" -> "Answer, provide context" [label="yes"];
     "Answer, provide context" -> "Dispatch centurio\n(./implementer-prompt.md)";
-    "Centurio asks questions?" -> "Centurio implements,\ntests, commits, self-reviews" [label="no"];
-    "Centurio implements,\ntests, commits, self-reviews" -> "Dispatch ephemeral Tribunus\n(mini-checkit)";
+    "Centurio asks questions?" -> "Centurio implements,\nverifies, self-reviews" [label="no"];
+    "Centurio implements,\nverifies, self-reviews" -> "Dispatch ephemeral Tribunus\n(mini-checkit)";
     "Dispatch ephemeral Tribunus\n(mini-checkit)" -> "Tribunus finding?";
     "Tribunus finding?" -> "SOUND" [label="SOUND"];
     "Tribunus finding?" -> "GAP: dispatch fix centurio,\nTribunus re-verifies" [label="GAP"];
@@ -275,7 +277,7 @@ Legatus reports to Imperator:
 ## Why This Discipline
 
 **Against manual execution:**
-- Centurios follow TDD naturally — the plan tells them to
+- Centurios follow the plan's verification shape instead of inventing one
 - Fresh context per task — no confusion from prior work
 - Parallel-safe when tasks are independent — centurios do not interfere with each other's ground
 - A centurio can ask questions before and during work — not after, when it's too late
@@ -343,7 +345,7 @@ These are failures of command. If I catch myself in any of them, I halt.
 
 **When the Tribunus finds a GAP,** I dispatch a fresh fix centurio with the finding, the original task, and the current file state. When the fix-centurio reports DONE, I dispatch another ephemeral Tribunus to re-verify the fix per `templates/mini-checkit.md`. If the fix re-verifies as GAP, that is iteration 2 of the Codex auto-feed loop; per the cap, I escalate to the Imperator. CONCERNs I note for the Campaign review, not fix per task.
 
-**Fix-centurio crash and zero-commit failure modes.** If the fix-centurio crashes mid-dispatch, I retry once with the same orders. If the fix-centurio returns DONE with zero commits since dispatch (the centurio read the GAP and decided no change was needed, or staged work without committing), I treat the response as a GAP and escalate per the Codex auto-feed-cap.
+**Fix-centurio crash and missing-commit failure modes.** If the fix-centurio crashes mid-dispatch, I retry once with the same orders. If the task required a commit, or the centurio claimed a commit, and no commit exists since dispatch, I treat the response as a GAP and escalate per the Codex auto-feed-cap.
 
 **When a centurio fails his task,** I dispatch a fix centurio with specific orders. I do not try to fix it with my own hand — that way lies context pollution, and I will not muddy my command context with the work I delegated to others.
 
@@ -358,7 +360,7 @@ These are failures of command. If I catch myself in any of them, I halt.
 - **consilium:triumph** — Bring the campaign home after all tasks complete.
 
 **Centurios should use:**
-- **consilium:gladius** — Centurios follow TDD for each task.
+- **consilium:gladius** — Centurios use Gladius when the approved task orders test-first implementation or a risky proof loop.
 
 **Alternative:**
 - **consilium:march** — Parallel session execution instead of same-session.

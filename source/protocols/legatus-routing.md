@@ -146,7 +146,8 @@ Contain:
 
 ## Execution Doctrine
 
-- Keep steps small enough that a Centurion can execute without inventing strategy.
+- Execute coherent implementation tasks that are decision-complete: the Centurion receives the files, boundaries, interfaces, acceptance, verification, and already-made decisions needed to avoid inventing strategy.
+- Keep plans code-selective. Ordinary implementation mechanics stay with the Centurion unless the order needs to constrain them to protect correctness.
 - Do not ask Centurions to both discover and build if a Speculator or Interpres should answer first.
 - Halt on real ambiguity instead of hoping verification catches it later.
 - Do not halt on ordinary implementation friction. If the issue is local, reversible, traceable to the order, and verifiable, dispatch or re-dispatch with a bounded check and execution order.

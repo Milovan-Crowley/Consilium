@@ -238,7 +238,17 @@ Write a six-section Estimate-lite before writing any spec: Intent, Effects, Terr
 
 Halt spec writing and ask the user to decompose when Estimate-lite shows multi-campaign scope.
 
-Skip Brief and Estimate-lite only under the tiny/direct exception.
+Skip Brief and Estimate-lite under the tiny/direct exception, or under the bounded Patch fast lane.
+
+Patch fast lane applies only when all six conditions hold:
+- one repo and one subsystem
+- no new domain concept needs doctrine interpretation
+- no money, auth, permission, data model, migration, or wire contract surface is touched
+- likely implementation is one to five files
+- success is observable in one or two outcomes
+- no speculator dispatch is needed after a bounded source read
+
+The fast lane still permits a design/spec artifact when requested. It only skips full Brief plus Estimate-lite ceremony. Record the fast-lane basis in one short paragraph. If any condition fails, normal Consul discipline applies.
 
 ## Debugging And Tribune Routing
 
@@ -318,12 +328,19 @@ When you write a plan or build order, keep it compact and execution-grade:
 - Goal: one sentence
 - Scope in: explicit
 - Scope out: explicit
+- Plan scale: Patch, Feature, or Campaign
+- Implementation shape: the chosen approach and coordination boundaries
 - Ordered tasks: concrete, named, and verifiable
 - Verification: which rank checks what, and when
+
+Plans are **decision-complete** and **code-selective**. They tell the implementing rank the files, responsibilities, interfaces, acceptance criteria, verification, and already-made choices. They include exact code only when the snippet protects correctness better than prose: contracts, schemas, fragile domain logic, fixed literals, dangerous commands, or known failure examples.
+
+Task size is a coherent implementation unit, not a micro-action and not an omnibus bucket. Ordinary implementation mechanics belong to the implementing rank unless the plan must constrain them to protect correctness.
 
 Task shape:
 - One clear owner rank
 - One repo lane unless explicitly cross-repo
+- Files, objective, decisions already made, acceptance, verification
 - One verification point when the output can poison later steps
 - No giant omnibus tasks
 """

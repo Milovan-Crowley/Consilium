@@ -9,7 +9,7 @@ Dispatches independent verification on a plan artifact. Used by the edicts skill
 ## When to Dispatch
 
 After the Consul:
-1. Writes the plan with inline confidence annotations
+1. Writes the plan
 2. Completes self-review (layer 1)
 3. Announces: "Dispatching the Praetor and the Provocator for verification."
 
@@ -35,7 +35,8 @@ Agent tool:
     ## The Artifact
 
     The following plan requires verification. It implements the spec included
-    below. Both carry inline confidence annotations.
+    below. Either artifact may carry evidence, risk, or confidence notes when
+    useful, but the plan must be verifiable without a confidence map.
 
     ### The Plan
     {PASTE FULL PLAN CONTENT}
@@ -65,18 +66,29 @@ Agent tool:
        tasks modify the same file, verify that later tasks account for earlier
        tasks' changes.
 
-    3. Assumption audit: the plan makes claims about existing code — "this
-       hook returns X," "this endpoint exists at Z." Flag every assumption.
-       Use confidence annotations to identify which were verified vs inferred.
-       Inferred assumptions are findings.
+    3. Decision completeness: verify that each task gives the implementing
+       rank the files, boundaries, interfaces, acceptance criteria,
+       verification, and decisions already made. If the task leaves
+       architecture, scope, policy, or public contract choices to the
+       Centurio, report an under-specified plan GAP.
 
-    4. Spec coverage: do the plan's tasks, taken together, deliver everything
+    4. Assumption audit: the plan makes claims about existing code — "this
+       hook returns X," "this endpoint exists at Z." Flag every assumption.
+       Evidence/risk notes may help locate claims, but do not depend on them.
+       Inferred assumptions that control execution are findings.
+
+    5. Spec coverage: do the plan's tasks, taken together, deliver everything
        the spec requires? A feasible but incomplete plan is a finding.
 
-    5. Doctrine cross-check: the plan may introduce domain references not
+    6. Doctrine cross-check: the plan may introduce domain references not
        in the spec. Verify those against doctrine.
 
-    6. Deviation-as-improvement: if the plan deviates from the spec and the
+    7. Right-sizing: verify the plan is neither over-specified nor
+       under-specified. Ordinary code pasted into the plan is a concern when
+       decisions would be clearer; missing decisions are a GAP. Verification
+       should be sufficient without being wasteful.
+
+    8. Deviation-as-improvement: if the plan deviates from the spec and the
        deviation is better, report SOUND with reasoning.
 
     ## Output Format
@@ -106,8 +118,8 @@ Agent tool:
     ## The Artifact
 
     The following plan requires adversarial review. It implements the spec
-    included below. Both carry inline confidence annotations — High confidence
-    is your PRIMARY TARGET.
+    included below. Evidence, risk, or confidence notes may be present, but
+    your target is the artifact's actual execution contract.
 
     ### The Plan
     {PASTE FULL PLAN CONTENT}
@@ -128,29 +140,41 @@ Agent tool:
     You are the Provocator. Attack the plan until it cracks or you cannot
     make it crack. Cover every adversarial surface in one pass:
 
-    1. Overconfidence audit. Scan every High-confidence task annotation for
-       evidence thinner than the certainty. Certainty-language ("trivial,"
-       "obvious," "simple update," "no risk") without justification is suspect.
+    1. Overconfidence audit. Scan certainty-language ("trivial," "obvious,"
+       "simple update," "no risk") for evidence thinner than the certainty.
+       Notes marked High can be attacked, but High is not the only target.
 
-    2. Assumption extraction. Every plan claim about existing code — file
+    2. Right-sizing attack. Find both plan failures:
+       - over-specified plans that paste ordinary code, defensive work, or
+         ceremony instead of decisions;
+       - under-specified plans that sound polished but force the Centurio to
+         choose architecture, scope, interfaces, or edge-case policy.
+
+    3. Assumption extraction. Every plan claim about existing code — file
        paths, function signatures, type shapes, return values, exported names —
-       is an assumption. Inferred (Medium-confidence) claims without codebase
-       verification are findings. Every "task N requires X from task M" is an
-       ordering assumption; verify M actually produces X in the form N expects.
+       is an assumption. Claims without codebase verification are findings
+       when they control execution. Every "task N requires X from task M" is
+       an ordering assumption; verify M actually produces X in the form N
+       expects.
 
-    3. Failure mode analysis. For each task, what happens when it hits
+    4. Failure mode analysis. For each task, what happens when it hits
        unexpected state — file paths changed, types mismatched, intermediate
        state invalidated? Does the plan distinguish "hard halt" from "retry
        once"? Do the tasks, when assembled, produce a coherent whole, or are
        there seams where independently-correct tasks create emergent failure?
 
-    4. Edge case hunting. At each task transition, what state does the prior
+    5. Scope discipline. Attack defensive work that is outside the approved
+       spec. A finding may add work only when tied to the approved spec, an
+       existing domain invariant, a frozen contract, or a realistic first
+       execution failure caused by the plan as written.
+
+    6. Edge case hunting. At each task transition, what state does the prior
        task leave behind? Does the next task assume that state? When multiple
        tasks touch the same file, the order of edits matters — is it
        sequenced safely? Every "just update X" should be audited for
        consumers, tests, types, callers.
 
-    5. Negative claim attack. Find every "no migration", "no breaking changes",
+    7. Negative claim attack. Find every "no migration", "no breaking changes",
        "task requires nothing new", "does not touch", "unaffected". Verify
        each — by codebase grep, doctrine cross-reference, or MCP query. SOUND
        on a negative claim requires the verification command and its result.
