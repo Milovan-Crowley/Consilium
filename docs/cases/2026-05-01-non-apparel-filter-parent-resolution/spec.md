@@ -43,6 +43,8 @@ The fix must preserve current category browse URLs, including:
 - `/catalog/display_table_covers`
 - `/catalog/display_tents`
 - `/catalog/print_cards`
+- `/catalog/print_marketing`
+- `/catalog/print_stationary`
 - `/catalog/promo_pens`
 - `/catalog/apparel_t_shirts`
 
@@ -58,9 +60,15 @@ For any category that exists inside the loaded category tree, the returned objec
 
 For example, resolving `display_banners` must return a category whose ancestry reaches `display`, not a bare `display_banners` object with no parent. Resolving `apparel_t_shirts_short_sleeves` must preserve ancestry through `apparel_t_shirts` to `apparel`.
 
+Fallback behavior must stay conservative. If no rooted-tree match exists for a category handle, the resolver may return the flat match instead of turning an existing category into `Category not found`; however, that flat fallback must not be used to fake non-apparel ancestry. A non-apparel child page only qualifies for filter suppression when the returned category's real ancestry reaches `display`, `print`, or `promo`.
+
+The returned shape must also preserve the data needed by category chips. Ancestors used by `getNonApparelTopLevelCategory` must remain compatible with chip navigation, including the top-level category's usable `category_children`. A resolver change that suppresses filters by attaching a minimal parent stub while breaking non-apparel chips does not satisfy this spec.
+
+The returned category graph must remain safe for existing adapters. In particular, it must not create a cyclic object graph that makes recursive category adapters or render helpers loop indefinitely.
+
 The resolver must remain data-driven. It must not special-case `display_banners`, `print_cards`, `promo_pens`, or any fixed list of non-apparel child handles to fake ancestry.
 
-Confidence: High - this is the smallest route that fixes the diagnosed failure without changing routes, handles, or backend data.
+Confidence: Medium - this is the smallest route that fits the diagnosed failure without changing routes, handles, or backend data, but implementation must still prove the live payload shape or reproduce the duplicate flat-plus-nested case.
 
 ## Branch Detection Contract
 
@@ -108,8 +116,12 @@ Non-apparel pages must not show filter chrome and must show the non-apparel head
 - `/catalog/display_tents`
 - `/catalog/print`
 - `/catalog/print_cards`
+- `/catalog/print_marketing`
+- `/catalog/print_stationary`
 - `/catalog/promo`
 - `/catalog/promo_pens`
+
+Browser verification must include both desktop and mobile viewport checks. At minimum, verify one non-apparel root route and one non-apparel child route in a mobile viewport to prove the mobile filter button is absent, not only the desktop sidebar.
 
 Apparel pages must still show filters:
 
@@ -123,10 +135,13 @@ Product-detail routing must remain valid:
 - A direct product-detail route such as `/catalog/display/<known-display-product-handle>` still renders the product detail page.
 - The product-detail category breadcrumb still links to the route category segment and does not imply nested category browse semantics.
 
-If a focused automated test is practical, cover this fixture shape:
+Either capture the authenticated category API payload used by the browser session or add a focused resolver regression test. Browser-only visual smoke is not enough by itself unless the captured payload proves the same ancestry shape the fix relies on.
+
+If using a focused automated test, cover this fixture shape:
 
 - API response contains a bare `display_banners` object before a rooted `display -> display_banners` object.
 - Resolving `display_banners` returns the rooted version with parent `display`.
+- The returned top-level `display` ancestor still exposes its child categories for chip navigation.
 - Resolving an apparel descendant returns ancestry through `apparel`.
 
 Confidence: Medium - static and browser checks are required; the exact available automated test harness for this hook should be chosen during implementation.
