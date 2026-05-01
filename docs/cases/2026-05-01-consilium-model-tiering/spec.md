@@ -23,7 +23,7 @@ This campaign extends the *value space* of the existing `model` and `reasoning_e
 - No changes to `runtimes/scripts/generate.py`. It already pipes both runtimes' model fields and the Codex `reasoning_effort` field unchanged.
 - No changes to `runtimes/scripts/check-runtime-parity.py`. Model drift surfaces transitively as byte-difference on generated/installed file comparison; no explicit model-parity check is needed for this campaign's correctness.
 - No tiering of `checkit-*` agents. They live outside the Consilium manifest at a separate user-global surface and warrant a follow-up campaign with its own scope.
-- No tiering of skill entries (`consilium-consul`, `consilium-legatus`). Skills execute in the parent session; the `claude.model` value on a skill entry is documentation-only and not consumed at dispatch. Skill entries' field values stay at their current settings.
+- No tiering of skill entries (`consilium-consul`, `consilium-legatus`). On Claude, skills execute in the parent session and the `claude.model` value on a skill entry is documentation-only — not consumed at dispatch. On Codex, `consilium-consul` and `consilium-legatus` are dispatched as their own agents (Codex `runtime_surfaces.codex.surface: "agent"`) and the top-level `model` and `reasoning_effort` ARE consumed at dispatch; Tier I is the intentional Codex tier for these orchestrators because their synthesis quality matters — same reasoning as the verifier triad. Skill entries' field values stay at their current settings on both runtimes.
 
 ## 4. Tier Definitions (Boundary Contract)
 
@@ -52,13 +52,13 @@ Of the 16 entries in `source/manifest.json`: 6 stay at Tier I, 8 drop to Tier II
 | `consilium-centurio-front` | implementation; task complexity unpredictable at dispatch |
 | `consilium-centurio-primus` | senior fallback for ambiguous or cross-cutting lanes |
 
-Centurions stay uniformly on Tier I because runtime task-type tiering is a hard non-goal of this campaign — the Legatus does not know at dispatch time whether a centurion's task will be a five-line CSS adjustment or a deep architectural change. Uniform Tier I is the only safe default given that constraint.
+Centurions stay uniformly on Tier I because runtime task-type tiering is a hard non-goal of this campaign and because depth within declared task scope can vary — a Centurion that hits a deep architectural boundary mid-task needs Tier I to escalate-or-execute well. Plan-stage scoping (edicts → legion → march) bounds the task envelope, but inside that envelope reasoning depth is not capped. Uniform Tier I is the only safe default given that variance.
 
 ### 5.2 Tier II — Verification / translation (8 ranks)
 
 | Rank | Justification |
 |-|-|
-| `consilium-speculator-primus` | retrieval-with-citation; the Consul (parent session, Opus) is the synthesis quality gate, not the speculator |
+| `consilium-speculator-primus` | retrieval-with-citation; the Consul (parent session, Opus) is intended to be the synthesis quality gate, not the speculator |
 | `consilium-speculator-back` | retrieval during execution; ground-truth verification of already-planned work |
 | `consilium-speculator-front` | retrieval during execution; ground-truth verification of already-planned work |
 | `consilium-tribunus` | per-task verification during execution; mechanical alignment check between task spec and produced code |
@@ -71,10 +71,10 @@ Centurions stay uniformly on Tier I because runtime task-type tiering is a hard 
 
 | Entry | Reason |
 |-|-|
-| `consilium-consul` | skill surface; executes in parent session; `claude.model` field is documentation-only and not consumed at dispatch |
-| `consilium-legatus` | skill surface; same reasoning |
+| `consilium-consul` | skill surface on Claude (executes in parent session; `claude.model` is documentation-only); agent surface on Codex (dispatched as agent — Tier I is intentional for orchestrator synthesis quality) |
+| `consilium-legatus` | same reasoning on both runtimes |
 
-These entries' field values stay byte-unchanged at their current settings (`opus` on the Claude side, `gpt-5.5` with `reasoning_effort: xhigh` on the Codex side). Tiering would be a no-op semantically because the skill is loaded into the parent conversation rather than dispatched to its own runtime context.
+These entries' field values match the pre-campaign manifest exactly on both runtimes (`opus` on the Claude side, `gpt-5.5` with `reasoning_effort: xhigh` on the Codex side). On Claude, tiering would be a semantic no-op because the skill loads into the parent conversation rather than dispatching to its own runtime context. On Codex, where these are real dispatched agents, Tier I is the intentional tier for orchestrators — same reasoning as the verifier triad — and a future amendment that "fixes" the field as if it were a no-op would incorrectly drop Codex orchestration to Tier II.
 
 ## 6. Acceptance Criteria
 
@@ -82,11 +82,11 @@ After implementation:
 
 1. `source/manifest.json` field values per rank match the tier table at section 4 and the per-rank assignment at section 5 exactly. Specifically: each Tier-I rank carries `runtime_surfaces.claude.model: "opus"` and top-level `model: "gpt-5.5"` with `reasoning_effort: "xhigh"`; each Tier-II rank carries `runtime_surfaces.claude.model: "sonnet"` and top-level `model: "gpt-5.5"` with `reasoning_effort: "medium"`.
 2. `python3 runtimes/scripts/generate.py` regenerates without errors, producing updated `~/.claude/agents/*.md`, `~/.codex/agents/*.toml`, `~/.codex/config.toml`, and the regenerated `codex/source/manifest.json` compatibility copy.
-3. After install, every regenerated `~/.claude/agents/{rank}.md` file's frontmatter `model:` value matches the rank's tier.
+3. After install, every regenerated `~/.claude/agents/{rank}.md` file's frontmatter `model:` value matches the rank's tier (verified by spot-check at install time; no tooled assertion exists today — see §10 for the validation-enforcement deferral).
 4. After install, every Codex agent file's `model = "..."` and `model_reasoning_effort = "..."` TOML values match the rank's tier.
 5. `python3 runtimes/scripts/check-runtime-parity.py --installed` exits zero (parity holds across source → generated → installed).
-6. Skill entries (`consilium-consul`, `consilium-legatus`) field values are byte-unchanged from the pre-campaign manifest.
-7. No file outside `source/manifest.json` (the source edit), `codex/source/manifest.json` (regenerated compatibility copy), `~/.claude/agents/*.md` (regenerated), `~/.codex/agents/*.toml` (regenerated), and `~/.codex/config.toml` (regenerated registration) changes as a result of this campaign.
+6. Skill entries (`consilium-consul`, `consilium-legatus`) field values match the pre-campaign manifest exactly.
+7. No file outside `source/manifest.json` (the source edit), `codex/source/manifest.json` (regenerated compatibility copy), `generated/claude/agents/*.md` (regenerated), `generated/codex/agents/*.toml` (regenerated), `generated/codex/config/codex-config-snippet.toml` (regenerated), `codex/agents/*.toml` (regenerated compatibility copy), `codex/config/codex-config-snippet.toml` (regenerated compatibility copy), `~/.claude/agents/*.md` (installed), `~/.codex/agents/*.toml` (installed), and `~/.codex/config.toml` (installed registration) changes as a result of this campaign.
 
 ## 7. Relationship to Prior Locks
 
@@ -100,11 +100,11 @@ This campaign is the deliberate, separately-specced revisit of that decision. Th
 
 The right-sized-edicts spec (`docs/cases/2026-04-30-consilium-right-sized-edicts/spec.md`) §11 line 249 forbids the right-sized-edicts plan from introducing "new model-routing policy" as a side effect. That non-goal is scoped to its parent campaign. This is a separate, properly-scoped campaign whose entire purpose is model-tier policy. Tiering existing field values is not a "new metadata regime" — no new fields, no new schemas, no new lookup tables; the `model` and `reasoning_effort` fields already exist and are already runtime-specific per the runtime-unification manifest contract (§5).
 
-The minimality contract spec (`docs/cases/2026-04-29-consilium-minimality-contract/spec.md`) §Non-Goals line 58 forbids the minimality plan from doing model-routing changes. That non-goal is scoped to its parent campaign. Reconnaissance confirmed zero file overlap between the two campaigns; minimality edits doctrine markdown, this edits the manifest.
+The minimality contract spec (`docs/cases/2026-04-29-consilium-minimality-contract/spec.md`) §Non-Goals line 58 reads: "**No model-routing changes.** Opus stays the default for Claude verifiers; existing Centurio-grade rules in `source/skills/claude/legion/SKILL.md` are unchanged. No reasoning-effort downgrades, no Sonnet defaults, no Haiku light tier." That wording explicitly names the three mechanisms this campaign deploys (reasoning-effort drops, Sonnet defaults, Haiku-tier reservation). The non-goal is scoped to the minimality plan itself — preventing minimality from doing tiering as a side effect — not to durable Consilium doctrine forbidding tiering forever. This campaign is the deliberate, separately-specced introduction of those mechanisms via a different surface and plan. Reconnaissance confirmed zero file overlap at the source-edit level: minimality edits doctrine markdown, this edits the manifest.
 
 ## 8. Coordination With Concurrent Campaign 1
 
-Campaign 1 (minimality contract, awaiting march at the time of this spec) edits doctrine markdown files in `source/`. This campaign edits `source/manifest.json`. There is zero file overlap. Both campaigns must run `python3 runtimes/scripts/generate.py` and the parity checker after their edits; whichever campaign lands second regenerates to absorb the first's changes. This is generation-flow coordination, not architectural coupling. No "Centurion will merge at implementation" reconciliation is needed because the touched surfaces do not intersect.
+Campaign 1 (minimality contract, awaiting march at the time of this spec) edits doctrine markdown files in `source/`. This campaign edits `source/manifest.json`. At the source-edit level, there is zero file overlap. Both campaigns must run `python3 runtimes/scripts/generate.py` and the parity checker after their edits; whichever campaign lands second regenerates to absorb the first's changes. The second-lander's commit will therefore contain regenerated outputs (Codex agent TOMLs, Claude agent MDs) that include the first-lander's doctrine bytes via the generator's `composed_body()` includes — that is expected generation-flow behavior, not architectural coupling. No "Centurion will merge at implementation" reconciliation is needed because the source-edit surfaces do not intersect.
 
 ## 9. Risks
 
