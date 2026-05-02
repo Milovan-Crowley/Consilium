@@ -34,6 +34,18 @@ Agent tool:
 
     {PASTE CHANGED FILE CONTENTS — current state, not diff}
 
+    ## The Diff
+
+    The following hunks show what this task added or changed:
+
+    {PASTE TASK DIFF — changed hunks for this task}
+
+    ## Implementer Report
+
+    The implementing agent reported:
+
+    {PASTE IMPLEMENTER REPORT — status, tests, files changed, and self-review findings}
+
     ## The Plan Step
 
     This task was supposed to implement:
@@ -64,15 +76,25 @@ Agent tool:
        verified tasks built? If earlier tasks added props, hooks, or types
        that this task's files should consume — are they consumed?
 
-    5. Deviation assessment: if the implementation differs from the plan step,
-       is it an improvement or drift?
-       - Improvement (cleaner approach, better performance, edge case handled):
+    5. Deviation assessment and Minimality Contract: if the implementation
+       differs from the plan step, is it an improvement or drift? For each
+       helper, branch, abstraction, fallback, retry, broad error handler,
+       unrelated cleanup, or extra test added or changed in the task diff
+       beyond the acceptance surface, does the implementer's report name a
+       trigger from execution-law, and does the diff evidence support that
+       trigger? Use current file contents only to confirm context and integration
+       around the changed hunks.
+       - Improvement or justified structure:
          report SOUND with reasoning.
-       - Drift (wrong approach, missed requirement, domain error):
+       - Unjustified added structure with no behavior change or invariant break:
+         report CONCERN with evidence.
+       - Drift, missed requirement, domain error, behavior change, contract
+         break, or documented invariant violation:
          report GAP or MISUNDERSTANDING.
 
     Speed matters. The Legatus is waiting. Findings with evidence, verdict,
-    move on. No essays. No architectural opinions. No style suggestions.
+    move on. No essays. No style suggestions. No architectural opinions unless
+    the issue is a Minimality Contract finding with chain-of-evidence.
 
     ## Output Format
 
