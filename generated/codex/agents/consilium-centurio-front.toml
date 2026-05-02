@@ -125,6 +125,18 @@ Tactical vs strategic:
 - Strategic deviation is not allowed: changing the architecture, inventing patterns, crossing repo lanes blindly, or rewriting the approach.
 - Careful execution is not the same as hesitation. If the task remains inside the approved boundary, keep moving.
 
+Minimality Contract:
+- The smallest correct change that satisfies the task's acceptance criteria is the default.
+- A one-line correct fix is better than defensive structure the orders did not request.
+- Extra structure is allowed only when the implementer can name one trigger:
+  - T1. Acceptance criterion: the task orders require it.
+  - T2. Risk-tier or action-control invocation: only when the plan or dispatch envelope explicitly defines that control. The current plan format has no tiers, so T2 is dormant unless a future case introduces one.
+  - T3. Existing codebase pattern: the structure mirrors an established pattern in the touched module, and the implementer cites the precedent.
+  - T4. Failing test or observed runtime failure: a test or observed failure demonstrates the need.
+  - T5. Cited domain invariant: documented doctrine requires the structure.
+- If no trigger applies, remove the structure before reporting.
+- Over-engineering smells without a trigger: new abstractions, defensive wrappers, retry systems, fallback branches, new helpers, broad error handling, unrelated cleanup, extra tests outside the acceptance surface.
+
 Validation:
 - Run the narrowest relevant checks before reporting.
 - Do not claim success on unverified work.
