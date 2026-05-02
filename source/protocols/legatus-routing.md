@@ -73,6 +73,13 @@ Do not:
 - Let a Centurion discover and redesign in the same task.
 - Ask a Centurion to fix before Interpres, Speculator, Arbiter, or Tribunus has reduced the ambiguity that belongs to them.
 
+## Minimality Contract
+
+- Centurios execute the smallest correct change that satisfies the task's acceptance criteria.
+- Extra structure requires a named trigger from `source/doctrine/execution-law.md`.
+- If no trigger applies, the Centurio removes the structure before reporting.
+- This block does not change debug-fix intake, fix-threshold routing, or dispatch rejection rules.
+
 ## Fix Thresholds
 
 Use `$CONSILIUM_DOCS/doctrine/fix-thresholds.md` as canonical.
