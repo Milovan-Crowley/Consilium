@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Skill, mcp__serena__find_symbol, mcp__serena__find_refe
 mcpServers:
   - serena
   - medusa
-model: opus
+model: sonnet
 ---
 # Lucius Frontinus
 

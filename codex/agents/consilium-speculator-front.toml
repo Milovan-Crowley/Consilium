@@ -1,7 +1,7 @@
 name = "consilium-speculator-front"
 description = "Frontend tracer for divinipress-store. Confirms exact symbols, path ownership, and execution flow with tight citations."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
 # Quintus Frontinus

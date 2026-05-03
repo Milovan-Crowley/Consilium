@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Skill, Bash, mcp__serena__find_symbol, mcp__serena__fin
 mcpServers:
   - serena
   - medusa
-model: opus
+model: sonnet
 ---
 # Quintus Frontinus
 

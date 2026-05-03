@@ -117,7 +117,7 @@
         "pragmaticus"
       ],
       "model": "gpt-5.5",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "medium",
       "sandbox_mode": "read-only",
       "role_file": "roles/praetor.md",
       "include_files": [
@@ -134,7 +134,7 @@
         "claude": {
           "surface": "agent",
           "enabled": true,
-          "model": "opus",
+          "model": "sonnet",
           "tools_profile": "read"
         }
       }
@@ -148,7 +148,7 @@
         "record keeper"
       ],
       "model": "gpt-5.5",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "medium",
       "sandbox_mode": "read-only",
       "role_file": "roles/tabularius.md",
       "include_files": [
@@ -208,7 +208,7 @@
         "vigil"
       ],
       "model": "gpt-5.5",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "medium",
       "sandbox_mode": "read-only",
       "role_file": "roles/tribunus.md",
       "include_files": [
@@ -226,7 +226,7 @@
         "claude": {
           "surface": "agent",
           "enabled": true,
-          "model": "opus",
+          "model": "sonnet",
           "tools_profile": "read_bash",
           "mcp_servers": [
             "serena",
@@ -244,7 +244,7 @@
         "pernix"
       ],
       "model": "gpt-5.5",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "medium",
       "sandbox_mode": "read-only",
       "role_file": "roles/custos.md",
       "include_files": [
@@ -262,7 +262,7 @@
         "claude": {
           "surface": "agent",
           "enabled": true,
-          "model": "opus",
+          "model": "sonnet",
           "tools_profile": "read_bash"
         }
       }
@@ -275,7 +275,7 @@
         "quintus frontinus"
       ],
       "model": "gpt-5.5",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "medium",
       "sandbox_mode": "read-only",
       "role_file": "roles/speculator-front.md",
       "include_files": [
@@ -291,7 +291,7 @@
         "claude": {
           "surface": "agent",
           "enabled": true,
-          "model": "opus",
+          "model": "sonnet",
           "tools_profile": "read_bash"
         }
       }
@@ -304,7 +304,7 @@
         "decimus varro"
       ],
       "model": "gpt-5.5",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "medium",
       "sandbox_mode": "read-only",
       "role_file": "roles/speculator-back.md",
       "include_files": [
@@ -321,7 +321,7 @@
         "claude": {
           "surface": "agent",
           "enabled": true,
-          "model": "opus",
+          "model": "sonnet",
           "tools_profile": "read_bash"
         }
       }
@@ -335,7 +335,7 @@
         "marcus speculator"
       ],
       "model": "gpt-5.5",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "medium",
       "sandbox_mode": "read-only",
       "role_file": "roles/speculator-primus.md",
       "include_files": [
@@ -351,7 +351,7 @@
         "claude": {
           "surface": "agent",
           "enabled": true,
-          "model": "opus",
+          "model": "sonnet",
           "tools_profile": "read_bash"
         }
       }
@@ -364,7 +364,7 @@
         "lucius frontinus"
       ],
       "model": "gpt-5.5",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "medium",
       "sandbox_mode": "read-only",
       "role_file": "roles/interpres-front.md",
       "include_files": [
@@ -379,7 +379,7 @@
         "claude": {
           "surface": "agent",
           "enabled": true,
-          "model": "opus",
+          "model": "sonnet",
           "tools_profile": "read"
         }
       }
@@ -392,7 +392,7 @@
         "gaius ordinator"
       ],
       "model": "gpt-5.5",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "medium",
       "sandbox_mode": "read-only",
       "role_file": "roles/interpres-back.md",
       "include_files": [
@@ -408,7 +408,7 @@
         "claude": {
           "surface": "agent",
           "enabled": true,
-          "model": "opus",
+          "model": "sonnet",
           "tools_profile": "read"
         }
       }

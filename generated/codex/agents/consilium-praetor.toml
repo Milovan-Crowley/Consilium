@@ -1,7 +1,7 @@
 name = "consilium-praetor"
 description = "Plan verification. Checks whether a plan survives contact with reality: ordering, assumptions, dependencies, and file collisions."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
 # Sextus Pragmaticus
