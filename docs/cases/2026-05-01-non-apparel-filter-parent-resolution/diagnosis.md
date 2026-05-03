@@ -100,4 +100,3 @@ The current category/product route model is:
 - `/catalog/[category]/[productHandle]` for product detail pages.
 
 Therefore `/catalog/display/banners` is currently interpreted as product handle `banners` inside category `display`, not as category `display > banners`. A nested category URL scheme would require changing the route model, product URL builder, breadcrumbs, and navigation semantics together.
-
