@@ -66,29 +66,42 @@ Agent tool:
        tasks modify the same file, verify that later tasks account for earlier
        tasks' changes.
 
-    3. Decision completeness: verify that each task gives the implementing
+    3. Files-block well-formedness: every task must carry a `**Files:**`
+       block. Recognized sub-bullets are exactly `Create:`, `Modify:`,
+       `Test:`, and `Read:`. Unknown sub-bullets are findings. Write entries
+       under `Create:`, `Modify:`, and `Test:` must be explicit paths with no
+       globs or wildcards; `Read:` entries may be files or path patterns. A
+       task with no writes must use the literal `(none)` marker directly under
+       `**Files:**`; reads-only tasks keep `(none)` and add `Read:` entries
+       after it. Malformed Files blocks are GAP findings because this block is
+       a contract surface the Centurio cannot repair in the field. Dormant
+       hook: if a plan declares parallel-safe task groups, paths under
+       `Create:`, `Modify:`, and `Test:` must be disjoint within each
+       declared group.
+
+    4. Decision completeness: verify that each task gives the implementing
        rank the files, boundaries, interfaces, acceptance criteria,
        verification, and decisions already made. If the task leaves
        architecture, scope, policy, or public contract choices to the
        Centurio, report an under-specified plan GAP.
 
-    4. Assumption audit: the plan makes claims about existing code — "this
+    5. Assumption audit: the plan makes claims about existing code — "this
        hook returns X," "this endpoint exists at Z." Flag every assumption.
        Evidence/risk notes may help locate claims, but do not depend on them.
        Inferred assumptions that control execution are findings.
 
-    5. Spec coverage: do the plan's tasks, taken together, deliver everything
+    6. Spec coverage: do the plan's tasks, taken together, deliver everything
        the spec requires? A feasible but incomplete plan is a finding.
 
-    6. Doctrine cross-check: the plan may introduce domain references not
+    7. Doctrine cross-check: the plan may introduce domain references not
        in the spec. Verify those against doctrine.
 
-    7. Right-sizing: verify the plan is neither over-specified nor
+    8. Right-sizing: verify the plan is neither over-specified nor
        under-specified. Ordinary code pasted into the plan is a concern when
        decisions would be clearer; missing decisions are a GAP. Verification
        should be sufficient without being wasteful.
 
-    8. Deviation-as-improvement: if the plan deviates from the spec and the
+    9. Deviation-as-improvement: if the plan deviates from the spec and the
        deviation is better, report SOUND with reasoning.
 
     ## Output Format
