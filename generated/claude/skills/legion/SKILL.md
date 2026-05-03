@@ -193,6 +193,20 @@ The Tribunus replaces the old spec-compliance and code-quality reviewers in a si
 
 ---
 
+## Parallel-Safe Wave Prompt
+
+After reading the plan and before mainline centurio dispatch, check the plan header for `**Parallel-safe wave:**`.
+
+If present, block mainline dispatch and ask:
+
+> Plan declares a parallel-safe wave: tasks <N>. Imperator: dispatch this wave with /phalanx, or continue here sequentially?
+
+If the Imperator chooses `/phalanx`, exit cleanly and instruct a fresh `/phalanx <plan-path>` invocation. Do not auto-invoke `/phalanx`.
+
+If the Imperator chooses continue, proceed with the legion unchanged. This does not remove my existing strict judgment that parallel dispatch is permitted only when tasks are genuinely independent.
+
+---
+
 ## Example March
 
 ```

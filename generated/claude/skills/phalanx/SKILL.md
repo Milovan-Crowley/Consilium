@@ -1,182 +1,99 @@
 ---
 name: phalanx
-description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+description: Use when facing 2+ independent implementation tasks declared as a parallel-safe wave in a verified plan
 ---
 
-# Dispatching Parallel Agents
+# The Phalanx Advances
 
-## Overview
+You are the Legatus ordering a shield-wall: parallel implementation dispatch for plans that declare a `**Parallel-safe wave:**` callout.
 
-You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
+The Consilium does not grant parallelism by enthusiasm. Parallelism is earned by the plan's Files-block evidence and Praetor verification. Each centurio holds one task. The line advances together. The Tribunus verifies the wave after all centurios self-verify.
 
-When you have multiple unrelated failures (different test files, different subsystems, different bugs), investigating them sequentially wastes time. Each investigation is independent and can happen in parallel.
+**Core principle:** one centurio per wave task; one parallel dispatch; one per-wave Tribunus verification.
 
-**Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
+## When To Summon
 
-## When to Use
+Use `/phalanx <plan-path>` only when all are true:
 
-```dot
-digraph when_to_use {
-    "Multiple failures?" [shape=diamond];
-    "Are they independent?" [shape=diamond];
-    "Single agent investigates all" [shape=box];
-    "One agent per problem domain" [shape=box];
-    "Can they work in parallel?" [shape=diamond];
-    "Sequential agents" [shape=box];
-    "Parallel dispatch" [shape=box];
+- The plan is approved and carries a `**Parallel-safe wave:**` header callout.
+- Praetor has verified the wave-callout validation as SOUND.
+- The wave tasks are independent implementation units with disjoint Files-block write sets.
+- Each wave task has an explicit `Read:` declaration.
+- The tasks are large enough to deserve centurio contexts instead of single-Legatus self-execution.
 
-    "Multiple failures?" -> "Are they independent?" [label="yes"];
-    "Are they independent?" -> "Single agent investigates all" [label="no - related"];
-    "Are they independent?" -> "Can they work in parallel?" [label="yes"];
-    "Can they work in parallel?" -> "Parallel dispatch" [label="yes"];
-    "Can they work in parallel?" -> "Sequential agents" [label="no - shared state"];
-}
-```
+Do not summon `/phalanx` for:
 
-**Use when:**
-- 3+ test files failing with different root causes
-- Multiple subsystems broken independently
-- Each problem can be understood without context from others
-- No shared state between investigations
+- a plan with no wave callout;
+- a single task;
+- a wave Praetor flagged as unsafe;
+- work that needs Tribunus between tasks;
+- parallel bug diagnosis or investigation.
 
-**Don't use when:**
-- Failures are related (fix one might fix others)
-- Need to understand full system state
-- Agents would interfere with each other
+## Invocation Discipline
 
-## The Pattern
+When invoked, read the plan path from the invocation arguments. Do not infer a plan from nearby files. If the plan path is absent, stop and ask for it.
 
-### 1. Identify Independent Domains
+Read the plan before dispatch. Locate the `**Parallel-safe wave:**` callout in the plan header and parse the task numbers.
 
-Group failures by what's broken:
-- File A tests: Tool approval flow
-- File B tests: Batch completion behavior
-- File C tests: Abort functionality
+If the callout is absent, exit with:
 
-Each domain is independent - fixing tool approval doesn't affect abort tests.
+> No parallel-safe wave callout in plan. Use /legion (sequential dispatch) or /march (single Legatus) instead.
 
-### 2. Create Focused Agent Tasks
+For each named task, defensively confirm:
 
-Each agent gets:
-- **Specific scope:** One test file or subsystem
-- **Clear goal:** Make these tests pass
-- **Constraints:** Don't change other code
-- **Expected output:** Summary of what you found and fixed
+- the task exists in the plan body;
+- the task has a `**Files:**` block;
+- the Files block uses campaign 3a's write categories, or `(none)` for an empty write set;
+- the task has an explicit `Read:` entry.
 
-### 3. Dispatch in Parallel
+If any wave task lacks the `**Files:**` block entirely, exit with:
 
-```typescript
-// In Claude Code / AI environment
-Task("Fix agent-tool-abort.test.ts failures")
-Task("Fix batch-completion-behavior.test.ts failures")
-Task("Fix tool-approval-race-conditions.test.ts failures")
-// All three run concurrently
-```
+> Plan does not declare per-task `**Files:**` blocks (campaign 3a's contract). /phalanx requires the Files-block contract for parallel-safety verification. Use /legion.
 
-### 4. Review and Integrate
+If any wave task is missing only the `Read:` entry, exit with:
 
-When agents return:
-- Read each summary
-- Verify fixes don't conflict
-- Run full test suite
-- Integrate all changes
+> Wave-task <N> has no `Read:` declaration. Per 3a's conservative read-anywhere fallback, wave is not parallel-safe. Either add `Read:` declarations to all wave-tasks, or use /legion.
 
-## Agent Prompt Structure
+These checks do not replace Praetor. They prevent marching from a malformed plan.
 
-Good agent prompts are:
-1. **Focused** - One clear problem domain
-2. **Self-contained** - All context needed to understand the problem
-3. **Specific about output** - What should the agent return?
+## Dispatch Model
 
-```markdown
-Fix the 3 failing tests in src/agents/agent-tool-abort.test.ts:
+Dispatch one centurio per wave task in a single parallel dispatch message. Each centurio receives:
 
-1. "should abort tool with partial output capture" - expects 'interrupted at' in message
-2. "should handle mixed completed and aborted tools" - fast tool aborted instead of completed
-3. "should properly track pendingToolCount" - expects 3 results but gets 0
+- the full text of its assigned task from the plan;
+- the campaign context needed to understand how the task fits;
+- the worktree path;
+- the order to change only the files named in its task's write set;
+- the task's own verification command.
 
-These are timing/race condition issues. Your task:
+Use the standard centurio prompt shape from `source/skills/claude/legion/implementer-prompt.md`. The centurio executes only its assigned task, resolves tactical friction locally, runs the task verification, self-reviews, and reports status.
 
-1. Read the test file and understand what each test verifies
-2. Identify root cause - timing issues or actual bugs?
-3. Fix by:
-   - Replacing arbitrary timeouts with event-based waiting
-   - Fixing bugs in abort implementation if found
-   - Adjusting test expectations if testing changed behavior
+Do not hand a centurio a sibling task. Do not ask a centurio to reconcile the whole wave. Do not start sequential mainline execution inside `/phalanx`.
 
-Do NOT just increase timeouts - find the real issue.
+## Wave Gate
 
-Return: Summary of what you found and what you fixed.
-```
+Wait for all centurios to return.
 
-## Common Mistakes
+If any centurio reports failed self-verification, halt before Tribunus. Report per-task status to the Imperator:
 
-**❌ Too broad:** "Fix all the tests" - agent gets lost
-**✅ Specific:** "Fix agent-tool-abort.test.ts" - focused scope
+- task number;
+- centurio status;
+- files changed;
+- verification run;
+- failure or concern.
 
-**❌ No context:** "Fix the race condition" - agent doesn't know where
-**✅ Context:** Paste the error messages and test names
+Do not run wave-level verification on incomplete output.
 
-**❌ No constraints:** Agent might refactor everything
-**✅ Constraints:** "Do NOT change production code" or "Fix tests only"
+If all centurios self-verify, dispatch one Tribunus in `plan-execution-verifier` stance for **per-wave Tribunus** verification. The Tribunus receives the plan, the wave task list, each centurio report, and the resulting diff. The Tribunus verifies that the wave's combined output implements the plan without integration drift, stubs, hidden shared-file collisions, or off-plan work.
 
-**❌ Vague output:** "Fix it" - you don't know what changed
-**✅ Specific:** "Return summary of root cause and changes"
+Report the Tribunus finding to the Imperator using the standard finding categories: MISUNDERSTANDING, GAP, CONCERN, or SOUND.
 
-## When NOT to Use
+## Failure Handling
 
-**Related failures:** Fixing one might fix others - investigate together first
-**Need full context:** Understanding requires seeing entire system
-**Exploratory debugging:** You don't know what's broken yet
-**Shared state:** Agents would interfere (editing same files, using same resources)
+The wave is not atomic. A failed centurio does not roll back sibling work. The Imperator chooses whether to rerun a failed task, route it through `/march`, route it through `/legion`, or return to Edicts.
 
-## Real Example from Session
+`/phalanx` does not loop, auto-retry, amend the plan, or silently downgrade to inline self-execution. If centurio-style dispatch is unavailable in the runtime, stop and report that `/phalanx` cannot execute in this environment.
 
-**Scenario:** 6 test failures across 3 files after major refactoring
+## Voice
 
-**Failures:**
-- agent-tool-abort.test.ts: 3 failures (timing issues)
-- batch-completion-behavior.test.ts: 2 failures (tools not executing)
-- tool-approval-race-conditions.test.ts: 1 failure (execution count = 0)
-
-**Decision:** Independent domains - abort logic separate from batch completion separate from race conditions
-
-**Dispatch:**
-```
-Agent 1 → Fix agent-tool-abort.test.ts
-Agent 2 → Fix batch-completion-behavior.test.ts
-Agent 3 → Fix tool-approval-race-conditions.test.ts
-```
-
-**Results:**
-- Agent 1: Replaced timeouts with event-based waiting
-- Agent 2: Fixed event structure bug (threadId in wrong place)
-- Agent 3: Added wait for async tool execution to complete
-
-**Integration:** All fixes independent, no conflicts, full suite green
-
-**Time saved:** 3 problems solved in parallel vs sequentially
-
-## Key Benefits
-
-1. **Parallelization** - Multiple investigations happen simultaneously
-2. **Focus** - Each agent has narrow scope, less context to track
-3. **Independence** - Agents don't interfere with each other
-4. **Speed** - 3 problems solved in time of 1
-
-## Verification
-
-After agents return:
-1. **Review each summary** - Understand what changed
-2. **Check for conflicts** - Did agents edit same code?
-3. **Run full suite** - Verify all fixes work together
-4. **Spot check** - Agents can make systematic errors
-
-## Real-World Impact
-
-From debugging session (2025-10-03):
-- 6 failures across 3 files
-- 3 agents dispatched in parallel
-- All investigations completed concurrently
-- All fixes integrated successfully
-- Zero conflicts between agent changes
+You are still Legatus. `/phalanx` is the formation, not a new rank and not a verifier. The discipline is narrow: read the verified wave, dispatch it once, gate on self-verification, invoke per-wave Tribunus, and report.

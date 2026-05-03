@@ -159,6 +159,8 @@ Size is governed by whether the next agent can execute the task without choosing
 
 **Implementation Shape:** [2-4 sentences naming the approach, coordination boundaries, and what stays out of scope]
 
+**Parallel-safe wave:** tasks <task numbers> — Files-block write sets are disjoint, `Read:` entries declared and non-overlapping with sibling writes. [Omit unless earned by task Files blocks.]
+
 **Scope In:** [Short bullet list]
 
 **Scope Out:** [Short bullet list]
@@ -175,6 +177,8 @@ Plan scale is guidance, not ceremony:
 - **Campaign** — cross-repo, migrations, state machines, money, auth, permissions, or breaking contracts.
 
 The scale changes the amount of structure. Patch plans should be short and decision-dense. Feature plans can carry more task detail. Campaign plans may need milestone commits, stronger handoffs, and wider verification.
+
+The `**Parallel-safe wave:**` header line is optional and must be omitted unless the plan earns it from task `**Files:**` evidence. Declare it only when 2+ tasks have disjoint write sets, every wave task declares `Read:`, no wave task reads a sibling's writes, and no two wave tasks invoke the same recognized canonical generator command. The writes set is exactly `Create:` + `Modify:` + `Test:`; `Read:` never authorizes writes, and `(none)` is the empty write set. At most one wave callout is allowed per plan; multi-wave structure returns to spec-stage decomposition.
 
 ---
 

@@ -74,23 +74,33 @@ Agent tool:
        task with no writes must use the literal `(none)` marker directly under
        `**Files:**`; reads-only tasks keep `(none)` and add `Read:` entries
        after it. Malformed Files blocks are GAP findings because this block is
-       a contract surface the Centurio cannot repair in the field. Dormant
-       hook: if a plan declares parallel-safe task groups, paths under
-       `Create:`, `Modify:`, and `Test:` must be disjoint within each
-       declared group.
+       a contract surface the Centurio cannot repair in the field.
 
-    4. Decision completeness: verify that each task gives the implementing
+    4. wave-callout validation: when the plan declares a `Parallel-safe wave`,
+       parse the task list and verify each task exists. Compute each wave
+       task's writes as `Create:` + `Modify:` + `Test:` paths at file-path
+       level; line ranges do not make same-file writes disjoint. Require an
+       explicit `Read:` entry for every wave task, check those read patterns
+       against sibling writes under glob semantics, and flag any read/write
+       overlap. Also flag two wave tasks invoking the same recognized
+       generator command, because generator outputs race even when hand-write
+       paths are disjoint. Failures are GAP findings. SOUND requires reasoning
+       that syntax, disjoint writes, `Read:` presence, read/write separation,
+       and generator conflicts were checked. CONCERN is reserved for a
+       plausible undeclared wave; Praetor does not author the callout.
+
+    5. Decision completeness: verify that each task gives the implementing
        rank the files, boundaries, interfaces, acceptance criteria,
        verification, and decisions already made. If the task leaves
        architecture, scope, policy, or public contract choices to the
        Centurio, report an under-specified plan GAP.
 
-    5. Assumption audit: the plan makes claims about existing code — "this
+    6. Assumption audit: the plan makes claims about existing code — "this
        hook returns X," "this endpoint exists at Z." Flag every assumption.
        Evidence/risk notes may help locate claims, but do not depend on them.
        Inferred assumptions that control execution are findings.
 
-    6. Spec coverage: do the plan's tasks, taken together, deliver everything
+    7. Spec coverage: do the plan's tasks, taken together, deliver everything
        the spec requires? A feasible but incomplete plan is a finding.
 
     7. Doctrine cross-check: the plan may introduce domain references not

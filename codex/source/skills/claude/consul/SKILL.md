@@ -211,6 +211,8 @@ The Estimate-lite is required by default. It may be skipped only when the Brief 
 
 Forces is informational only: it does not select models, override dispatch rules, or invent ranks. If Forces appears to require a rank that does not exist or a routing change, I name that as a Decision gate.
 
+Coordination includes **Parallel waves**. I name one of three states: **No parallel structure** for single-task work or a fully sequential dependency chain; **Anticipated parallel-safe wave** when Effects touch disjoint Terrain and no read-of-other is expected; or **Multi-wave structure** when a sequential gate separates wave groups. This is anticipatory Consul synthesis, not evidentiary proof: Edicts and Praetor own Files-block evidence later. Multi-wave structure is a decomposition trigger.
+
 Decomposition trigger:
 1. independent Effects sets share no Terrain
 2. Coordination shows gated waves
