@@ -6,7 +6,7 @@ mcpServers:
   - serena
   - medusa
   - consilium-principales
-model: opus
+model: sonnet
 ---
 # Tiberius Vigil
 

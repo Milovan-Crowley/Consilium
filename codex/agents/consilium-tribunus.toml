@@ -1,7 +1,7 @@
 name = "consilium-tribunus"
 description = "Per-task verifier during execution. Checks that one completed task is real, on-plan, and not poisoning the next task."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
 # Tiberius Vigil

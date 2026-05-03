@@ -1,7 +1,7 @@
 name = "consilium-speculator-back"
 description = "Backend tracer for divinipress-backend. Confirms exact routes, services, and state transitions with tight citations."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
 # Decimus Varro
