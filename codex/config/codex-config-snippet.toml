@@ -20,6 +20,11 @@ config_file = "/Users/milovan/.codex/agents/consilium-praetor.toml"
 description = "Plan verification. Checks whether a plan survives contact with reality: ordering, assumptions, dependencies, and file collisions."
 nickname_candidates = ["praetor", "pragmaticus"]
 
+[agents.consilium-tabularius]
+config_file = "/Users/milovan/.codex/agents/consilium-tabularius.toml"
+description = "Contract inventory verifier. Enumerates canonical contract surfaces and checks that each has a named Inventory home."
+nickname_candidates = ["tabularius", "marcus tabularius", "record keeper"]
+
 [agents.consilium-provocator]
 config_file = "/Users/milovan/.codex/agents/consilium-provocator.toml"
 description = "Adversarial verifier. Hunts failure modes, brittle assumptions, and overconfidence in specs, plans, and implementations."

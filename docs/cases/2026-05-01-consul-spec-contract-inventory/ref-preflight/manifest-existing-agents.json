@@ -1,0 +1,503 @@
+[
+  {
+    "description": "Main orchestration Consul. Thinks, sequences, judges, and synthesizes. Delegates retrieval, tracing, verification, and implementation aggressively to specialists.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/frontend.md",
+      "doctrine/backend.md",
+      "doctrine/medusa-backend.md",
+      "doctrine/cross-repo.md",
+      "doctrine/divinipress-known-gaps.md",
+      "doctrine/orchestration-law.md",
+      "protocols/consul-routing.md",
+      "protocols/plan-format.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-consul",
+    "nickname_candidates": [
+      "consul",
+      "publius",
+      "auctor"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/consul.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "skill_names": [
+          "consul",
+          "edicts"
+        ],
+        "surface": "skill",
+        "tools_profile": "read"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Execution commander. Takes an approved plan or explicit build order, dispatches the right centurions, and uses the Tribunus to stop drift early.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/frontend.md",
+      "doctrine/backend.md",
+      "doctrine/medusa-backend.md",
+      "doctrine/cross-repo.md",
+      "doctrine/execution-law.md",
+      "protocols/legatus-routing.md",
+      "protocols/plan-format.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-legatus",
+    "nickname_candidates": [
+      "legatus",
+      "gnaeus",
+      "imperius"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/legatus.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "skill_names": [
+          "legion",
+          "march"
+        ],
+        "surface": "skill",
+        "tools_profile": "read"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Spec verification. Reviews a spec cold against the real domain and returns MISUNDERSTANDING, GAP, CONCERN, or SOUND with evidence.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/medusa-backend.md",
+      "doctrine/cross-repo.md",
+      "doctrine/verifier-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-censor",
+    "nickname_candidates": [
+      "censor",
+      "scrutinus"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/censor.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Plan verification. Checks whether a plan survives contact with reality: ordering, assumptions, dependencies, and file collisions.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/medusa-backend.md",
+      "doctrine/cross-repo.md",
+      "doctrine/verifier-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-praetor",
+    "nickname_candidates": [
+      "praetor",
+      "pragmaticus"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/praetor.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Adversarial verifier. Hunts failure modes, brittle assumptions, and overconfidence in specs, plans, and implementations.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/medusa-backend.md",
+      "doctrine/cross-repo.md",
+      "doctrine/verifier-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-provocator",
+    "nickname_candidates": [
+      "provocator",
+      "ferox"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/provocator.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read_bash"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Per-task verifier during execution. Checks that one completed task is real, on-plan, and not poisoning the next task.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/medusa-backend.md",
+      "doctrine/cross-repo.md",
+      "doctrine/divinipress-known-gaps.md",
+      "doctrine/verifier-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-tribunus",
+    "nickname_candidates": [
+      "tribunus",
+      "vigil"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/tribunus.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "mcp_servers": [
+          "serena",
+          "medusa",
+          "consilium-principales"
+        ],
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read_bash"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Dispatch-readiness verifier. Walks shell, env, tests, baseline, blast radius, and document coherence to catch what kills a plan in zsh after the magistrates have cleared it. Default placement: after Praetor/Provocator, before Legatus dispatch.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/medusa-backend.md",
+      "doctrine/cross-repo.md",
+      "doctrine/divinipress-known-gaps.md",
+      "doctrine/verifier-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-custos",
+    "nickname_candidates": [
+      "custos",
+      "pernix"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/custos.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read_bash"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Frontend tracer for divinipress-store. Confirms exact symbols, path ownership, and execution flow with tight citations.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/frontend.md",
+      "doctrine/retrieval-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-speculator-front",
+    "nickname_candidates": [
+      "front speculator",
+      "quintus frontinus"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/speculator-front.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read_bash"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Backend tracer for divinipress-backend. Confirms exact routes, services, and state transitions with tight citations.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/backend.md",
+      "doctrine/medusa-backend.md",
+      "doctrine/retrieval-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-speculator-back",
+    "nickname_candidates": [
+      "back speculator",
+      "decimus varro"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/speculator-back.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read_bash"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Source and runtime tracer for Consilium. Confirms exact source, generated output, installed runtime, plugin/cache/config, and unknown-lane facts with tight citations.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/retrieval-law.md",
+      "doctrine/orchestration-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-speculator-primus",
+    "nickname_candidates": [
+      "speculator primus",
+      "primus speculator",
+      "marcus speculator"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/speculator-primus.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read_bash"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Frontend interpreter for divinipress-store. Explains domain-layer behavior, proof and order UI rules, and canonical frontend truth surfaces.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/frontend.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-interpres-front",
+    "nickname_candidates": [
+      "front interpres",
+      "lucius frontinus"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/interpres-front.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Backend interpreter for divinipress-backend. Explains proof, order, tenancy, and Medusa workflow rules from backend truth.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/backend.md",
+      "doctrine/medusa-backend.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-interpres-back",
+    "nickname_candidates": [
+      "back interpres",
+      "gaius ordinator"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/interpres-back.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Cross-repo contract judge. Compares frontend assumptions with backend truth for statuses, permissions, payloads, and lifecycle transitions.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/frontend.md",
+      "doctrine/backend.md",
+      "doctrine/cross-repo.md",
+      "doctrine/arbitration-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-arbiter",
+    "nickname_candidates": [
+      "arbiter",
+      "concordius"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/arbiter.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "read"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "read-only"
+  },
+  {
+    "description": "Frontend execution centurion for divinipress-store. Implements one bounded frontend task without wandering into backend.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/frontend.md",
+      "doctrine/execution-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-centurio-front",
+    "nickname_candidates": [
+      "front centurion",
+      "titus frontinus"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/centurio-front.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "write"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "workspace-write"
+  },
+  {
+    "description": "Backend execution centurion for divinipress-backend. Implements one bounded backend task without wandering into frontend.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/backend.md",
+      "doctrine/medusa-backend.md",
+      "doctrine/execution-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-centurio-back",
+    "nickname_candidates": [
+      "back centurion",
+      "titus severus"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/centurio-back.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "write"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "workspace-write"
+  },
+  {
+    "description": "Senior fallback centurion for work that does not fit clean frontend or backend lanes, or for rescue missions after ambiguity is reduced.",
+    "include_files": [
+      "doctrine/common.md",
+      "doctrine/cross-repo.md",
+      "doctrine/execution-law.md"
+    ],
+    "model": "gpt-5.5",
+    "name": "consilium-centurio-primus",
+    "nickname_candidates": [
+      "centurio primus",
+      "gnaeus primus"
+    ],
+    "reasoning_effort": "xhigh",
+    "role_file": "roles/centurio-primus.md",
+    "runtime_surfaces": {
+      "claude": {
+        "enabled": true,
+        "model": "opus",
+        "surface": "agent",
+        "tools_profile": "write"
+      },
+      "codex": {
+        "enabled": true,
+        "surface": "agent"
+      }
+    },
+    "sandbox_mode": "workspace-write"
+  }
+]
