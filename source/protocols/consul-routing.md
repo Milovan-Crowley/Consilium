@@ -19,6 +19,8 @@ Dispatch retrieval, tracing, and speculators only against named Brief Unknowns t
 
 Write a six-section Estimate-lite before writing any spec: Intent, Effects, Terrain, Forces, Coordination, and Control. Forces is informational and does not override routing or model choice.
 
+In Coordination, record **Parallel waves** as one of three states: **No parallel structure**, **Anticipated parallel-safe wave**, or **Multi-wave structure**. Anticipated parallel-safe wave is based on Effects and Terrain, not task Files-block evidence. Edicts and Praetor validate evidence later. Multi-wave structure is a decomposition trigger.
+
 Halt spec writing and ask the user to decompose when Estimate-lite shows multi-campaign scope.
 
 Skip Brief and Estimate-lite under the tiny/direct exception, or under the bounded Patch fast lane.

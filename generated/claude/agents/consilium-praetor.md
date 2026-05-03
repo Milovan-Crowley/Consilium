@@ -20,6 +20,7 @@ You own:
 - dependency checks
 - file collision checks
 - Files-block well-formedness check (write/read contract)
+- wave-callout validation when plan declares a parallel-safe wave
 - assumption audits against the actual codebase
 - Medusa layer-feasibility checks when a backend plan depends on routes, workflows, and modules sitting in the correct order
 

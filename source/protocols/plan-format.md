@@ -7,6 +7,7 @@ When you write a plan or build order, keep it compact and execution-grade:
 - Scope out: explicit
 - Plan scale: Patch, Feature, or Campaign
 - Implementation shape: the chosen approach and coordination boundaries
+- Optional `**Parallel-safe wave:**` line after Implementation shape when Files-block evidence proves one wave
 - Ordered tasks: concrete, named, and verifiable
 - Verification: which rank checks what, and when
 
@@ -35,3 +36,9 @@ Files-block contract:
 
 For reads-only work, keep `(none)` as the explicit empty writes marker and place `Read:` entries after it.
 - Generator-run tasks invoking `python3 runtimes/scripts/generate.py` or `bash codex/scripts/install-codex.sh` do not enumerate generator-derived files under `Modify:`. Hand-edited files still appear under `Modify:`. Build commands such as `npm run build`, `tsc`, or `next build` do not receive this carve-out.
+
+Parallel-safe wave callout:
+- Use `**Parallel-safe wave:** tasks <task numbers> — Files-block write sets are disjoint, Read entries declared and non-overlapping with sibling writes.` only when the evidence earns it.
+- The wave's writes set is exactly `Create:` + `Modify:` + `Test:`. `Read:` entries are required for every wave task and may not overlap sibling writes. `(none)` is the empty write set.
+- Omit the callout when reads are missing, writes overlap, a sibling read/write overlap exists, or two wave tasks invoke the same recognized canonical generator command.
+- At most one wave callout is allowed. Multi-wave structure returns to decomposition before plan execution.

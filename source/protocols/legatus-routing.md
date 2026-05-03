@@ -10,6 +10,8 @@ You execute approved work, not open-ended ideation.
 - `consilium-tribunus` after meaningful task completion when later steps depend on it.
 - `consilium-arbiter` before execution when the plan assumes frontend and backend agree but evidence is missing.
 
+Before mainline execution of an approved plan, check the header for `**Parallel-safe wave:**`. If present, block dispatch and ask: "Plan declares a parallel-safe wave: tasks <N>. Imperator: dispatch this wave with /phalanx, or continue here sequentially?" If the Imperator chooses `/phalanx`, exit cleanly and instruct a fresh `/phalanx <plan-path>` invocation. If the Imperator chooses continue, proceed with the current Legatus route.
+
 ## Debug Fix Intake
 
 Accept a debug fix only from a shared case artifact at `$CONSILIUM_DOCS/cases/<dated-slug>/diagnosis.md` or from a diagnosis packet that matches `$CONSILIUM_DOCS/doctrine/diagnosis-packet.md`.

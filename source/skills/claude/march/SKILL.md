@@ -56,8 +56,9 @@ If this command returns non-zero, halt the session and do not proceed.
 
 1. Read the plan file.
 2. Examine it critically. Look for flaws — unclear instructions, assumptions that may not hold, missing context.
-3. If you find concerns, raise them with the Imperator before the first step. A flawed plan caught early saves a failed campaign.
-4. If the edicts are sound, create your task tracking and advance.
+3. Before mainline self-execution, check the plan header for `**Parallel-safe wave:**`. If present, block execution and ask: *"Plan declares a parallel-safe wave: tasks <N>. Imperator: dispatch this wave with /phalanx, or continue here sequentially?"* If the Imperator chooses `/phalanx`, exit cleanly and instruct a fresh `/phalanx <plan-path>` invocation. Do not auto-invoke `/phalanx`. If the Imperator chooses continue, proceed here sequentially.
+4. If you find concerns, raise them with the Imperator before the first step. A flawed plan caught early saves a failed campaign.
+5. If the edicts are sound, create your task tracking and advance.
 
 ### 2. Execute Task by Task
 

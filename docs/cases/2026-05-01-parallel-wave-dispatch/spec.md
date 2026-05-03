@@ -1,7 +1,7 @@
 # Parallel-Wave Dispatch
 
 **Date:** 2026-05-01
-**Status:** Draft, pre-verification
+**Status:** Draft, local verification pass complete; implementation not started
 **Campaign:** Consilium tightening, campaign 5 of 6
 
 **Lineage.** Originally named "phalanx surfacing" in `.planning/2026-05-01-consilium-tightening-briefing.md`. Renamed during Consul deliberation when reconnaissance revealed that the original brief's premise — "/phalanx is rarely invoked because Edicts plans are written sequentially by default" — understated the real failure mode. /phalanx today is debug fan-out framing that duplicates Tribunus's diagnosis stance, and the implementation pipeline never routes to it. Surfacing parallel waves upstream without a redefined consumer would be theater. This campaign therefore expanded scope to include rewriting /phalanx's body. The rename reflects the expanded scope: not just visibility, but a real parallel-dispatch path through the Consilium.
@@ -55,7 +55,7 @@ This spec stays explicitly out of:
 - **Automatic /phalanx invocation.** /legion and /march surface the wave-callout to the Imperator as a one-line prompt. The Imperator dispatches.
 - **Plan Writer agent.** Future option, deferred. Trigger criteria recorded in §13.
 - **Multi-bug parallel diagnosis.** /phalanx drops the debug-fanout framing entirely. Multi-bug parallel diagnosis remains the Imperator manually invoking /tribune in parallel sessions, as today. If it becomes a recurring need, a separate Tribunus-fanout skill is the right shape — not /phalanx. That decision belongs to a different spec.
-- **3a's Files-block contract definition.** This spec consumes 3a's contract by reference. 3a is a concurrent spec and owns its contract definition.
+- **3a's Files-block contract definition.** This spec consumes 3a's merged contract by reference. Campaign 3a owns its contract definition.
 - **New ranks, new agents, new verifier roles, new model-routing or diagnosis-routing changes.** None of these are needed. The existing roles (Consul, Speculator, Censor, Provocator, Praetor, Tribunus, Legatus, Centurio) cover this campaign with body amendments only.
 
 **Confidence: High** — all non-goals stated explicitly by the Imperator or derived directly from the right-sized-edicts ban.
@@ -72,7 +72,7 @@ A single-line declarative observation in the plan header:
 **Parallel-safe wave:** tasks <comma-separated task numbers> — Files-block write sets are disjoint, `Read:` entries declared and non-overlapping with sibling writes.
 ```
 
-**Position.** In the plan header, immediately after the `**Implementation Shape:**` block, immediately before the `---` separator that introduces the task list.
+**Position.** In the plan header, immediately after the `**Implementation Shape:**` block and before `**Scope In:**`. The existing `**Scope In:**`, `**Scope Out:**`, and `**Verification:**` fields remain in their normal positions before the `---` separator that introduces the task list.
 
 **Optionality.** Present only when **all** of the following hold per campaign 3a's `**Files:**`-block contract:
 
@@ -313,7 +313,7 @@ The /march case is interesting because /march has no Legatus-dispatched centurio
 
 ## 10. External Dependency: Campaign 3a
 
-This spec consumes campaign 3a's Files-block write/read contract by reference. 3a is a concurrent spec being written today (2026-05-01) by a separate Consul session. The contract substrate is named here at the dependency level, not redefined.
+This spec consumes campaign 3a's Files-block write/read contract by reference. Campaign 3a is merged on fetched `origin/main` as PR #5 (`[codex] Add Edicts Files-block contract`, merged 2026-05-03). The contract substrate is named here at the dependency level, not redefined.
 
 ### 10.1 What this spec assumes about 3a's contract
 
@@ -333,24 +333,24 @@ This spec also relies on 3a's explicit **sister-campaign interface** for campaig
 - **Generator-run carve-out (3a's C5).** Two recognized canonical commands (`python3 runtimes/scripts/generate.py`, `bash codex/scripts/install-codex.sh`) delegate derived-output enforcement to the generator's manifest. /phalanx and Praetor must additionally treat two wave-tasks invoking the same canonical command as a generator-run conflict — they race on derived outputs even when their declared writes sets are disjoint.
 - **Legacy plan fallback delegated to this spec.** 3a explicitly delegates pre-3a plan handling to its consumers: my §8.5 step 4 defines /phalanx's exit behavior; my §7.1 check 3 defines Praetor's GAP behavior.
 
-**This spec does not redefine 3a's contract. If 3a re-shapes during its re-verification draft in a way that affects this spec's consumers (Praetor's wave-validation, /phalanx's safety check), this spec halts at implementation and re-deliberates. That is the Decision gate.**
+**This spec does not redefine 3a's contract. If the merged 3a contract later changes in a way that affects this spec's consumers (Praetor's wave-validation, /phalanx's safety check), this spec halts at implementation and re-deliberates. That is the Decision gate.**
 
 ### 10.2 Coordination and sequencing
 
-3a is in re-verification draft and depends on right-sized-edicts and minimality landing first (per 3a's "Sequencing With Sister Campaigns" section). The implementation chain is therefore:
+3a has landed on fetched `origin/main`. The implementation chain is therefore satisfied up to this campaign:
 
 ```
-right-sized-edicts → minimality-contract → 3a (Files-block contract) → this campaign (parallel-wave dispatch)
+right-sized-edicts -> minimality-contract -> 3a (Files-block contract) -> this campaign (parallel-wave dispatch)
 ```
 
-Plan-stage implementation of this campaign orders tasks so 3a's contract is in place before /phalanx body and Praetor amendments land:
+Plan-stage implementation of this campaign still orders tasks so consumers of 3a's contract are explicit about the merged contract they rely on:
 
-- 3a's Files-block contract amendment must merge before this campaign's Praetor wave-callout-validation amendment and /phalanx body rewrite.
-- If 3a delays, this campaign's tasks for /phalanx and Praetor remain blocked. The Estimate-lite Coordination amendment (consul/), the Edicts wave-callout slot (edicts/), and the /legion + /march light additions can land independently of 3a — they introduce the wave-callout *syntax* but do not consume 3a's *contract surface*. Wave callouts on legacy plans simply fail Praetor's validation per §7.1 until 3a lands.
+- The Praetor wave-callout-validation amendment and /phalanx body rewrite consume the merged 3a Files-block contract directly.
+- The Estimate-lite Coordination amendment (consul/), the Edicts wave-callout slot (edicts/), and the /legion + /march light additions introduce or surface the wave-callout syntax; they do not change 3a's contract surface.
 
 ### 10.3 Degradation when 3a is absent at runtime
 
-If a plan reaches /phalanx without per-task `**Files:**` blocks (3a not yet landed, or plan author omitted them):
+If a plan reaches /phalanx without per-task `**Files:**` blocks (legacy plan, or plan author omitted them):
 
 - /phalanx exits per §8.5 step 4 with a clear message naming 3a as the missing contract.
 - Praetor reports GAP via 3a's S3 well-formedness check (which fires before this spec's wave-callout validation can run) — the missing block is detected upstream of my §7.1 checks, so the failure mode is "3a's well-formedness GAP" rather than a wave-specific finding.
@@ -371,11 +371,9 @@ The 2026-05-01 Consilium tightening briefing names six campaigns. This spec coor
 
 ### 11.1 Campaign 4 (Spec Contract Inventory + Tabularius)
 
-Campaign 4 amends `source/skills/claude/consul/SKILL.md` Phase 3 Spec Discipline and pre-verification dispatch, and adds `source/roles/tabularius.md`, `source/manifest.json`, and `source/skills/claude/references/verification/templates/contract-inventory-verification.md`. This spec amends Phase 3 Estimate-lite Coordination (lines 200-220 per recon). Same Consul source file, different Phase 3 subsections. **No file-line collision** confirmed during Consul reconnaissance.
+Campaign 4 is merged on fetched `origin/main` as PR #6 (`[codex] Add Tabularius contract inventory verification`, merged 2026-05-03). `source/manifest.json` on fetched `origin/main` includes `consilium-tabularius`. Campaign 4 amends `source/skills/claude/consul/SKILL.md` Phase 3 Spec Discipline and pre-verification dispatch, and adds `source/roles/tabularius.md`, `source/manifest.json`, and `source/skills/claude/references/verification/templates/contract-inventory-verification.md`. This spec amends Phase 3 Estimate-lite Coordination (lines 200-220 per recon). Same Consul source file, different Phase 3 subsections. **No file-line collision** confirmed during Consul reconnaissance.
 
-If both campaigns ship plans concurrently, the implementation tasks must coordinate at merge time but the spec-level amendments are disjoint.
-
-**Forward-compatibility note.** If campaign 4's Tabularius rank lands before this spec is implemented, this spec touches multiple contract surfaces (the wave callout in §4, Praetor's wave-validation check in §7, /phalanx's behavioral contract in §8, /legion + /march prompt contract in §9) and would need a Contract Inventory section per Tabularius's mission. A follow-on amendment adding the Inventory section is the appropriate response — not an inline addition during this spec's first verification pass, because campaign 4 itself is in re-verification draft and its mission may still shift. If campaign 4 lands first, the Consul revisits this spec for an Inventory amendment before its plan-stage implementation begins.
+Because Campaign 4 has landed before this campaign's implementation plan, this spec now carries a Contract Inventory section before plan-stage work proceeds.
 
 ### 11.2 Campaign 3a (Files-block write/read contract)
 
@@ -399,13 +397,13 @@ Independent consumer of 3a's contract. No coordination with this campaign requir
 
 This spec amends:
 
-- `source/skills/claude/consul/SKILL.md` — Phase 3 Codification, Estimate-lite section. Coordination subsection expansion (§5).
-- `source/skills/claude/edicts/SKILL.md` — Plan template header (wave-callout slot per §4, §6); plan-writer guidance for declaring the callout; one-wave-per-plan enforcement.
+- `source/skills/claude/consul/SKILL.md` and `source/protocols/consul-routing.md` — Phase 3 Codification / Codex-consumed routing, Estimate-lite section. Coordination subsection expansion (§5).
+- `source/skills/claude/edicts/SKILL.md` and `source/protocols/plan-format.md` — Plan template / Codex-consumed plan format (wave-callout slot per §4, §6); plan-writer guidance for declaring the callout; one-wave-per-plan enforcement.
 - `source/roles/praetor.md` — One bullet addition to "You own": "wave-callout validation when plan declares a parallel-safe wave."
 - `source/skills/claude/references/verification/templates/plan-verification.md` — New mission item for Praetor: wave-callout validation per §7.
 - `source/skills/claude/phalanx/SKILL.md` — Full body rewrite per §8. Current debug fan-out framing dropped entirely.
-- `source/skills/claude/legion/SKILL.md` — Pre-mainline addition per §9.
-- `source/skills/claude/march/SKILL.md` — Pre-mainline addition per §9.
+- `source/skills/claude/legion/SKILL.md` and `source/skills/claude/march/SKILL.md` — Pre-mainline addition per §9.
+- `source/protocols/legatus-routing.md` — Codex Legatus recognition equivalent for plans that carry a wave callout.
 
 ### 12.1 The plan should not introduce
 
@@ -419,6 +417,22 @@ This spec amends:
 - edits to historical case docs except this case's own artifacts
 
 **Confidence: High** — surfaces enumerated during Consul reconnaissance.
+
+---
+
+## Contract Inventory
+
+This is a Consilium-runtime spec. It defines no Divinipress product canonical-six surfaces (wire shape on a module boundary, API contract at a module boundary, idempotency anchor, link.create boundary, workflow ownership claim, subscriber boundary). It does define Consilium dispatch and verification contracts that the Tabularius can locate:
+
+- **Estimate-lite Coordination contract:** §5.1 defines the three Coordination states Consul may write for parallel waves: no parallel structure, anticipated parallel-safe wave, or multi-wave structure with sequential gate. The implementation covers both Claude Consul skill text and Codex Consul routing protocol text.
+- **Plan-header wave-callout contract:** §4.1 and §6 define the `**Parallel-safe wave:**` format, placement, optionality, one-wave maximum, and Edicts authoring conditions. The implementation covers both Claude Edicts skill text and Codex-consumed plan-format protocol text.
+- **Praetor wave-validation contract:** §7.1 and §7.2 define the wave-callout validation checks and finding severities.
+- **/phalanx dispatch and verification contract:** §8.5 and §8.6 define /phalanx invocation checks, refusal messages, parallel centurio dispatch, and per-wave Tribunus verification.
+- **/legion and /march recognition prompt contract:** §9.1 defines the dispatch-time prompt properties and blocking behavior when a plan header carries a wave callout. The implementation covers Claude `/legion` and `/march`, plus the Codex Legatus routing equivalent.
+
+Consumed external contract, not redefined here: Campaign 3a's Files-block contract (§10.1), where writes are `Create:` + `Modify:` + `Test:`, `Read:` is optional, and `(none)` marks an empty writes set.
+
+**Confidence: High** — Campaign 4 is merged and `consilium-tabularius` exists in `source/manifest.json` on fetched `origin/main`; these entries point to the contract definitions already present in this spec.
 
 ---
 
@@ -450,7 +464,7 @@ The Plan Writer would follow the existing artifact-producing-subagent pattern (C
 
 ## 14. Risks and Guardrails
 
-**Risk: 3a doesn't ship by the time this campaign reaches plan execution.** /phalanx body and Praetor amendments lose their contract substrate. **Guardrail:** spec declares the dependency explicitly; plan-stage task ordering puts 3a's contract before this campaign's consumers; degradation behavior (§10.3) is exit-with-message, not silent failure.
+**Risk: a legacy plan without 3a Files blocks reaches /phalanx.** /phalanx body and Praetor amendments require the merged 3a contract substrate. **Guardrail:** spec declares the dependency explicitly; plan-stage tasks consume the merged 3a contract directly; degradation behavior (§10.3) is exit-with-message, not silent failure.
 
 **Risk: per-wave Tribunus context cost is heavier than expected.** Tribunus reasoning over a multi-task wave's combined output may strain context on large waves. **Guardrail:** Tribunus's existing plan-execution-verifier stance handles multi-file outputs today; per-wave verification is comparable to verifying a /legion-completed plan in one pass. If context cost becomes prohibitive in practice, the fallback is per-task parallel Tribunus (the model originally proposed during deliberation, before the Imperator selected per-wave); revisit if observed empirically. This is a tuning question, not a structural one.
 
@@ -462,7 +476,7 @@ The Plan Writer would follow the existing artifact-producing-subagent pattern (C
 
 **Risk: 3a's conservative read-anywhere fallback makes wave declarations rare in practice.** Plan-writers who don't bother declaring per-task `Read:` sub-bullets get no wave callout — Praetor's check 3 fails on absent `Read:` entries. The "make /phalanx more invokable" goal is partially defeated if plan-writers rarely opt in. **Guardrail:** this is a feature, not a bug. Conservative-by-default with explicit-opt-in via Reads declaration is the correct safety posture for parallel dispatch — plan-writers who care about parallelism declare reads; default behavior is sequential. The Edicts plan-writer guidance (§6.1) names this trade-off explicitly so plan-writers understand wave callouts are earned by Reads declaration. The /legion + /march prompt (§9) provides the Imperator a chance to redirect to /phalanx when a plan does opt in.
 
-**Risk: 3a is in re-verification draft; its contract may shift before landing.** This spec's terminology and check semantics (writes set as Create+Modify+Test union, glob-matches-path for reads-vs-writes, generator-run carve-out, conservative read-anywhere) are anchored to 3a's current sister-campaign-interface section. **Guardrail:** §10.1 names the Decision gate explicitly. If 3a re-shapes during re-verification (new sub-categories, changed glob semantics, removed conservative fallback), this spec halts and re-deliberates against the changed substrate. The plan-stage sequencing chain (right-sized-edicts → minimality → 3a → me) provides natural checkpoint moments to detect drift before /phalanx body and Praetor amendments land.
+**Risk: 3a's merged contract later changes.** This spec's terminology and check semantics (writes set as Create+Modify+Test union, glob-matches-path for reads-vs-writes, generator-run carve-out, conservative read-anywhere) are anchored to the merged 3a contract on fetched `origin/main`. **Guardrail:** §10.1 names the Decision gate explicitly. If 3a changes later (new sub-categories, changed glob semantics, removed conservative fallback), this spec halts and re-deliberates against the changed substrate before /phalanx body or Praetor amendments are executed.
 
 **Risk: rename creates cross-reference drift.** The briefing calls this "campaign 5 (phalanx surfacing)." Concurrent specs (3a, 3b, 4, 6) being written today by other Consul sessions may cite this campaign by its briefing label. **Guardrail:** Lineage section (preamble) records the rename; cross-spec citations in Consilium prose are typically by description ("campaign 3a's Files-block contract") rather than directory path, limiting drift impact; briefing reference can be updated post-merge.
 
@@ -526,9 +540,10 @@ After self-application, a second campaign — any subsequent multi-task spec whe
 | 7 Praetor amendment | High | Checks derived from wave semantics. |
 | 8 /phalanx redefinition | High | Per-wave Tribunus model approved. |
 | 9 /legion + /march | High | Prompt scope explicit. |
-| 10 Campaign 3a dependency | High | Patched against 3a's actual spec (`docs/cases/2026-05-01-consilium-edicts-writes-contract/`). Decision gate retained for 3a's re-verification drift. |
-| 11 Concurrent campaign coordination | High | Collisions audited. |
+| 10 Campaign 3a dependency | High | Patched against 3a's merged actual spec (`docs/cases/2026-05-01-consilium-edicts-writes-contract/`). |
+| 11 Concurrent campaign coordination | High | Campaign 4 and 3a merge state refreshed from fetched main. |
 | 12 Source surfaces | High | Enumerated during reconnaissance. |
+| Contract Inventory | High | Added after Campaign 4 merged and Tabularius appeared in manifest. |
 | 13 Plan Writer deferral | Medium | Trigger criteria are this Consul's judgment. |
 | 14 Risks and guardrails | High | Mapped to spec sections. |
 | 15 Success criteria | High | Observable outcomes. |
