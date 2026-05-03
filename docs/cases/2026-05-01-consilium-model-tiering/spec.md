@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-01
 **Status:** Draft (pre-verification)
-**Scope:** `source/manifest.json` (Consilium agent fleet), regenerate via `runtimes/scripts/generate.py`, verify via `runtimes/scripts/check-runtime-parity.py`.
+**Scope:** `source/manifest.json` (Consilium agent fleet; 16-entry manifest before Campaign 4, 17-entry manifest if Campaign 4's `consilium-tabularius` lands first), regenerate via `runtimes/scripts/generate.py`, verify via `runtimes/scripts/check-runtime-parity.py`.
 
 ## 1. Intent
 
@@ -12,11 +12,11 @@ Tier the per-role model-capability binding in the Consilium manifest so heavy-th
 
 Today every Consilium-manifest agent runs uniformly at maximum capability on both runtimes — Claude `opus` and Codex `gpt-5.5` with `reasoning_effort: "xhigh"`. Heavy thinking is right for ranks that perform adversarial verification, cross-repo contract synthesis, or code writing. It is over-spec'd for ranks that retrieve citations, translate doctrine, verify per-task ordering, or check dispatch readiness. The cost ratio between Opus and Sonnet is roughly 5x per token in typical workflows, which makes uniform Opus a real burn on routine work — with no quality benefit because the routine work is below Opus's capability ceiling.
 
-This campaign extends the *value space* of the existing `model` and `reasoning_effort` fields per rank. It introduces no new fields, no new agents, no new tools, and no runtime task-type tiering. The rank determines the tier; the task does not.
+This campaign extends the *value space* of the existing `model` and `reasoning_effort` fields per rank. It introduces no new fields, no new tools, and no runtime task-type tiering. It does not itself create an agent, but it must tier the manifest that exists when it lands: if Campaign 4 has already added `consilium-tabularius`, this campaign includes that rank in Tier II. The rank determines the tier; the task does not.
 
 ## 3. Hard Non-Goals
 
-- No new agents; no retiring agents.
+- No agents created by this campaign; no retiring agents. If Campaign 4 has already added `consilium-tabularius`, tier that existing rank rather than treating it as out of scope.
 - No tools or MCP-profile changes.
 - No runtime task-type tiering. Model selection at dispatch time based on task content is explicitly forbidden — the rank carries the tier, not the task.
 - No new metadata regimes. The `model`, `runtime_surfaces.claude.model`, and `reasoning_effort` fields already exist in the manifest; this campaign extends their value space, it does not add fields, schemas, or lookup tables.
@@ -39,7 +39,7 @@ Tier III is defined and reserved. No Consilium-manifest rank lands on it in this
 
 ## 5. Per-Rank Tier Assignment
 
-Of the 16 entries in `source/manifest.json`: 6 stay at Tier I, 8 drop to Tier II, 2 skill entries are out of scope.
+The manifest count is conditional on campaign order. Before Campaign 4, `source/manifest.json` has 16 entries: 6 stay at Tier I, 8 drop to Tier II, 2 skill entries are out of scope. If Campaign 4 lands first, the manifest has 17 entries: 6 stay at Tier I, 9 drop to Tier II, 2 skill entries are out of scope. `consilium-tabularius` is the additional Tier II rank in that 17-entry shape.
 
 ### 5.1 Tier I — Heavy synthesis (6 ranks)
 
@@ -54,7 +54,7 @@ Of the 16 entries in `source/manifest.json`: 6 stay at Tier I, 8 drop to Tier II
 
 Centurions stay uniformly on Tier I because runtime task-type tiering is a hard non-goal of this campaign and because depth within declared task scope can vary — a Centurion that hits a deep architectural boundary mid-task needs Tier I to escalate-or-execute well. Plan-stage scoping (edicts → legion → march) bounds the task envelope, but inside that envelope reasoning depth is not capped. Uniform Tier I is the only safe default given that variance.
 
-### 5.2 Tier II — Verification / translation (8 ranks)
+### 5.2 Tier II — Verification / translation (8 or 9 ranks)
 
 | Rank | Justification |
 |-|-|
@@ -66,6 +66,7 @@ Centurions stay uniformly on Tier I because runtime task-type tiering is a hard 
 | `consilium-custos` | dispatch-readiness verification; shell, env, tests, baseline checks |
 | `consilium-interpres-back` | doctrine translation from backend truth; pattern-matching with semantic depth |
 | `consilium-interpres-front` | doctrine translation from frontend truth; pattern-matching with semantic depth |
+| `consilium-tabularius` | Campaign 4 contract-inventory verifier when present; enumerates canonical-six contract surfaces and cross-checks the spec Inventory against the spec body |
 
 ### 5.3 Out of scope — skill entries (2 entries)
 
@@ -80,13 +81,15 @@ These entries' field values match the pre-campaign manifest exactly on both runt
 
 After implementation:
 
-1. `source/manifest.json` field values per rank match the tier table at section 4 and the per-rank assignment at section 5 exactly. Specifically: each Tier-I rank carries `runtime_surfaces.claude.model: "opus"` and top-level `model: "gpt-5.5"` with `reasoning_effort: "xhigh"`; each Tier-II rank carries `runtime_surfaces.claude.model: "sonnet"` and top-level `model: "gpt-5.5"` with `reasoning_effort: "medium"`.
+1. `source/manifest.json` field values per rank match the tier table at section 4 and the per-rank assignment at section 5 exactly for the manifest shape that exists at implementation time. Specifically: each Tier-I rank carries `runtime_surfaces.claude.model: "opus"` and top-level `model: "gpt-5.5"` with `reasoning_effort: "xhigh"`; each Tier-II rank carries `runtime_surfaces.claude.model: "sonnet"` and top-level `model: "gpt-5.5"` with `reasoning_effort: "medium"`.
 2. `python3 runtimes/scripts/generate.py` regenerates without errors, producing updated `~/.claude/agents/*.md`, `~/.codex/agents/*.toml`, `~/.codex/config.toml`, and the regenerated `codex/source/manifest.json` compatibility copy.
 3. After install, every regenerated `~/.claude/agents/{rank}.md` file's frontmatter `model:` value matches the rank's tier (verified by spot-check at install time; no tooled assertion exists today — see §10 for the validation-enforcement deferral).
 4. After install, every Codex agent file's `model = "..."` and `model_reasoning_effort = "..."` TOML values match the rank's tier.
 5. `python3 runtimes/scripts/check-runtime-parity.py --installed` exits zero (parity holds across source → generated → installed).
-6. Skill entries (`consilium-consul`, `consilium-legatus`) field values match the pre-campaign manifest exactly.
-7. No file outside `source/manifest.json` (the source edit), `codex/source/manifest.json` (regenerated compatibility copy), `generated/claude/agents/*.md` (regenerated), `generated/codex/agents/*.toml` (regenerated), `generated/codex/config/codex-config-snippet.toml` (regenerated), `codex/agents/*.toml` (regenerated compatibility copy), `codex/config/codex-config-snippet.toml` (regenerated compatibility copy), `~/.claude/agents/*.md` (installed), `~/.codex/agents/*.toml` (installed), and `~/.codex/config.toml` (installed registration) changes as a result of this campaign.
+6. If `consilium-tabularius` is present, it carries Tier II values: `runtime_surfaces.claude.model: "sonnet"`, top-level `model: "gpt-5.5"`, and `reasoning_effort: "medium"`. If it is absent, this campaign does not add a placeholder.
+7. Skill entries (`consilium-consul`, `consilium-legatus`) field values match the pre-campaign manifest exactly.
+8. No acceptance check asserts the fleet remains exactly 16 entries. The valid source manifest count is 16 before Campaign 4 or 17 after Campaign 4.
+9. No file outside `source/manifest.json` (the source edit), `codex/source/manifest.json` (regenerated compatibility copy), `generated/claude/agents/*.md` (regenerated), `generated/codex/agents/*.toml` (regenerated), `generated/codex/config/codex-config-snippet.toml` (regenerated), `codex/agents/*.toml` (regenerated compatibility copy), `codex/config/codex-config-snippet.toml` (regenerated compatibility copy), `~/.claude/agents/*.md` (installed), `~/.codex/agents/*.toml` (installed), and `~/.codex/config.toml` (installed registration) changes as a result of this campaign.
 
 ## 7. Relationship to Prior Locks
 
@@ -102,16 +105,21 @@ The right-sized-edicts spec (`docs/cases/2026-04-30-consilium-right-sized-edicts
 
 The minimality contract spec (`docs/cases/2026-04-29-consilium-minimality-contract/spec.md`) §Non-Goals line 58 reads: "**No model-routing changes.** Opus stays the default for Claude verifiers; existing Centurio-grade rules in `source/skills/claude/legion/SKILL.md` are unchanged. No reasoning-effort downgrades, no Sonnet defaults, no Haiku light tier." That wording explicitly names the three mechanisms this campaign deploys (reasoning-effort drops, Sonnet defaults, Haiku-tier reservation). The non-goal is scoped to the minimality plan itself — preventing minimality from doing tiering as a side effect — not to durable Consilium doctrine forbidding tiering forever. This campaign is the deliberate, separately-specced introduction of those mechanisms via a different surface and plan. Reconnaissance confirmed zero file overlap at the source-edit level: minimality edits doctrine markdown, this edits the manifest.
 
-## 8. Coordination With Concurrent Campaign 1
+## 8. Coordination With Concurrent Campaigns
 
 Campaign 1 (minimality contract, awaiting march at the time of this spec) edits doctrine markdown files in `source/`. This campaign edits `source/manifest.json`. At the source-edit level, there is zero file overlap. Both campaigns must run `python3 runtimes/scripts/generate.py` and the parity checker after their edits; whichever campaign lands second regenerates to absorb the first's changes. The second-lander's commit will therefore contain regenerated outputs (Codex agent TOMLs, Claude agent MDs) that include the first-lander's doctrine bytes via the generator's `composed_body()` includes — that is expected generation-flow behavior, not architectural coupling. No "Centurion will merge at implementation" reconciliation is needed because the source-edit surfaces do not intersect.
+
+Campaign 4 has evolved to the Tabularius design and will add `consilium-tabularius` to the Consilium fleet. Preferred run order: Campaign 4 lands before this model-tiering campaign, then model tiering applies to the 17-entry manifest and sets `consilium-tabularius` to Tier II (`sonnet`, `gpt-5.5`, `reasoning_effort: medium`) during the same generation/parity pass. If model tiering lands before Campaign 4, this campaign applies only to the 16-entry manifest; Campaign 4 must then add `consilium-tabularius` with those Tier II values and rerun generation plus installed parity. In both orders, the second lander owns regeneration/parity against the manifest it actually sees.
 
 ## 9. Risks
 
 - **Quality regression on Tier II.** Sonnet 4.6 may underperform on verification tasks that look mechanical but require subtle code reasoning (e.g. plan-ordering check on a complex dependency graph, or interpres translating a contested doctrine passage). Mitigation: tier assignments are not load-bearing on doctrine, only on cost. The Imperator can ratify per-rank Tier-I overrides at any time by amending this section's table; no doctrinal re-spec is required for individual rank promotions.
 - **Spec quality from Sonnet-tier speculator-primus.** Speculator-primus is dispatched by the Consul during Phase 1 reconnaissance; its findings shape spec content. A wrong citation, missed file, or shallow reasoning at the Brief Unknown stage poisons downstream spec quality. Mitigation: the Consul (parent session, Opus) reads speculator reports critically, challenges weak findings, and re-dispatches when reports are insufficient. The Consul's synthesis is the quality gate for spec accuracy, not the speculator's retrieval. If Sonnet retrieval proves insufficient over a sample of campaigns, `consilium-speculator-primus` is the natural first candidate for Tier-I revert.
+- **Campaign-order drift with Tabularius.** A stale implementation that assumes exactly 16 manifest entries could omit `consilium-tabularius` or force Campaign 4 to repair tier values after the fact. Mitigation: acceptance criteria explicitly allow 16 or 17 entries and define Tabularius's Tier II binding when present; the preferred order is Campaign 4 first, model tiering second.
 - **Codex `reasoning_effort: medium` and `low` semantics unverified.** The runtime accepts the values (no enum validator at the manifest layer) but their actual effect on Codex behavior is the rig's contract, not the Consilium's. If `medium` underperforms in practice, the Tier II Codex value can be revised to `high` without re-spec — section 4's table is the boundary contract and amendments to its values are spec-amendments, not new specs.
 - **Tier-III future ambiguity.** Defining Tier III without populating it leaves a future decision (`gpt-5.5` + `low` vs `gpt-5.4-mini` or another smaller variant) for the rig to revisit when the first Tier III rank lands. This is intentional — populate-then-decide rather than decide-then-populate. The first Tier III client (likely the `checkit-*` follow-up campaign) inherits the values defined here and may amend the table if validation reveals a better Codex Tier III binding.
+
+Confidence note: high that the source surface remains limited to the manifest and generated runtime outputs; medium-high on run-order safety because it depends on the second campaign honoring the generation/parity obligation rather than on a tool-enforced count check.
 
 ## 10. Out of Scope / Follow-up Campaigns
 

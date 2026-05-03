@@ -19,7 +19,11 @@ Implementation artifact: `plan.md`
 
 ## Current State
 
-Spec revised after verifier findings, then routed to implementation planning. Implementation completed in the `feature/consul-spec-contract-inventory` castra worktree. Repo-local generation, user-scope install, repo parity, installed parity, and legacy drift checks have passed. Fresh Claude and Codex sessions are still required before relying on the updated runtime routing in already-open sessions.
+Spec revised after verifier findings, then routed to implementation planning. Implementation completed in the `feature/consul-spec-contract-inventory` castra worktree. During that implementation pass, repo-local generation, user-scope install, repo parity, installed parity, and legacy drift checks passed.
+
+This publish refresh has been merged with current `main` and repo parity has been rerun. Current installed-runtime parity is not treated as publish proof here because the installed runtime points at `main` until Campaign 4 lands and is reinstalled.
+
+Main has since merged the 3b hook runtime inventory and Edicts Files-block contract campaigns. This case remains limited to the Campaign 4 Spec Contract Inventory and Tabularius work.
 
 ## What's Next
 
@@ -28,8 +32,10 @@ Spec revised after verifier findings, then routed to implementation planning. Im
 - [x] Task 0 preflight baseline captured.
 - [x] Plan verification cleared.
 - [x] Implementation executed.
-- [x] Generated and installed runtime parity proved.
+- [x] Generated and installed runtime parity proved during Campaign 4 implementation pass.
+- [x] Publish-refresh repo parity rerun.
 - [x] Campaign review closed.
+- [ ] Post-merge installed parity proved from main runtime after reinstall and fresh session.
 
 ## Open Questions
 

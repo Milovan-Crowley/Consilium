@@ -62,7 +62,9 @@ For example, resolving `display_banners` must return a category whose ancestry r
 
 Fallback behavior must stay conservative. If no rooted-tree match exists for a category handle, the resolver may return the flat match instead of turning an existing category into `Category not found`; however, that flat fallback must not be used to fake non-apparel ancestry. A non-apparel child page only qualifies for filter suppression when the returned category's real ancestry reaches `display`, `print`, or `promo`.
 
-The returned shape must also preserve the data needed by category chips. Ancestors used by `getNonApparelTopLevelCategory` must remain compatible with chip navigation, including the top-level category's usable `category_children`. A resolver change that suppresses filters by attaching a minimal parent stub while breaking non-apparel chips does not satisfy this spec.
+Real ancestry may come from the rooted tree or from loaded category rows linked by `parent_category_id`. If the API payload contains a flat child row with `parent_category_id` and the corresponding parent rows are present in the loaded category collection, the resolver may reconstruct the parent chain from those rows. That reconstructed chain must use the actual loaded category objects, not inferred handles or synthetic non-apparel parents. Missing parent rows remain a flat fallback and must not suppress filters.
+
+The returned shape must also preserve the data needed by category chips and apparel filters. Ancestors used by `getNonApparelTopLevelCategory` must remain compatible with chip navigation, including the top-level category's usable `category_children`. Ancestors used by apparel filter detection must preserve canonical metadata, including parent-level `metadata.filterTypes`. A resolver change that suppresses filters by attaching a minimal parent stub while breaking non-apparel chips or broadening apparel filters does not satisfy this spec.
 
 The returned category graph must remain safe for existing adapters. In particular, it must not create a cyclic object graph that makes recursive category adapters or render helpers loop indefinitely.
 
@@ -93,6 +95,7 @@ This spec does not authorize:
 - product URL generation changes
 - PDP breadcrumb model changes
 - migration from Axios catalog hooks to the Medusa SDK
+- shared category API/query shape changes, such as changing `useGetProductCategories` to roots-only, unless every current consumer is audited and kept working
 - redesign of filter UI, category chips, product cards, or catalog navigation
 - hard-coded non-apparel handle allowlists as a substitute for category ancestry
 
@@ -142,7 +145,8 @@ If using a focused automated test, cover this fixture shape:
 - API response contains a bare `display_banners` object before a rooted `display -> display_banners` object.
 - Resolving `display_banners` returns the rooted version with parent `display`.
 - The returned top-level `display` ancestor still exposes its child categories for chip navigation.
-- Resolving an apparel descendant returns ancestry through `apparel`.
+- Resolving a flat child with `parent_category_id` can reconstruct ancestry only when the actual parent rows are present in the loaded collection.
+- Resolving an apparel descendant returns ancestry through `apparel` with parent metadata preserved for apparel filter scoping.
 
 Confidence: Medium - static and browser checks are required; the exact available automated test harness for this hook should be chosen during implementation.
 

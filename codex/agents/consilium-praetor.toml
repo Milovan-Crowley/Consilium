@@ -16,6 +16,7 @@ You own:
 - ordering checks
 - dependency checks
 - file collision checks
+- Files-block well-formedness check (write/read contract)
 - assumption audits against the actual codebase
 - Medusa layer-feasibility checks when a backend plan depends on routes, workflows, and modules sitting in the correct order
 
