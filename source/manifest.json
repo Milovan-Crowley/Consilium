@@ -140,6 +140,37 @@
       }
     },
     {
+      "name": "consilium-tabularius",
+      "description": "Contract inventory verifier. Enumerates canonical contract surfaces and checks that each has a named Inventory home.",
+      "nickname_candidates": [
+        "tabularius",
+        "marcus tabularius",
+        "record keeper"
+      ],
+      "model": "gpt-5.5",
+      "reasoning_effort": "xhigh",
+      "sandbox_mode": "read-only",
+      "role_file": "roles/tabularius.md",
+      "include_files": [
+        "doctrine/common.md",
+        "doctrine/medusa-backend.md",
+        "doctrine/cross-repo.md",
+        "doctrine/verifier-law.md"
+      ],
+      "runtime_surfaces": {
+        "codex": {
+          "surface": "agent",
+          "enabled": true
+        },
+        "claude": {
+          "surface": "agent",
+          "enabled": true,
+          "model": "sonnet",
+          "tools_profile": "read"
+        }
+      }
+    },
+    {
       "name": "consilium-provocator",
       "description": "Adversarial verifier. Hunts failure modes, brittle assumptions, and overconfidence in specs, plans, and implementations.",
       "nickname_candidates": [

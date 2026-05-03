@@ -1,0 +1,1 @@
+?? docs/cases/2026-05-01-consul-spec-contract-inventory/

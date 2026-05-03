@@ -1,0 +1,8 @@
+docs/cases/2026-05-01-consul-spec-contract-inventory/STATUS.md
+docs/cases/2026-05-01-consul-spec-contract-inventory/plan.md
+docs/cases/2026-05-01-consul-spec-contract-inventory/ref-preflight/base-sha.txt
+docs/cases/2026-05-01-consul-spec-contract-inventory/ref-preflight/claude-plugin-symlink.txt
+docs/cases/2026-05-01-consul-spec-contract-inventory/ref-preflight/git-dirty-paths.txt
+docs/cases/2026-05-01-consul-spec-contract-inventory/ref-preflight/git-status-short.txt
+docs/cases/2026-05-01-consul-spec-contract-inventory/ref-preflight/manifest-existing-agents.json
+docs/cases/2026-05-01-consul-spec-contract-inventory/spec.md
