@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Divinipress — Loader</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #FAF7F2;
+    --ink: #008A70;
+    /* Longer loop so the original draw-on speed can stay close to the current loader. */
+    --dur: 5.2s;
+  }
+
+  html,
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .dp-loader {
+    width: 360px;
+    height: 360px;
+    color: var(--ink);
+    position: relative;
+    display: block;
+  }
+
+  .dp-loader > svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+
+  /* The clean logo is the only visible artwork. It is defined once,
+     duplicated into visual reveal lanes, and clipped/masked there. */
+  .dp-visible-logo path {
+    fill: currentColor;
+    stroke: none;
+  }
+
+  /* Protect mask/brush geometry from site-wide svg/path CSS. */
+  .dp-lane-shape {
+    fill: #fff !important;
+    stroke: #fff !important;
+    stroke-width: 6px;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  .dp-mask-erase {
+    fill: #000 !important;
+    stroke: #000 !important;
+    stroke-width: 0 !important;
+  }
+
+  .dp-brush,
+  .dp-erase-brush {
+    fill: none !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: var(--dash) var(--dash);
+    stroke-dashoffset: var(--dash);
+  }
+
+  .dp-brush {
+    stroke: #fff !important;
+    stroke-opacity: 1;
+  }
+
+  .dp-erase-brush {
+    stroke: #000 !important;
+    stroke-opacity: 0;
+  }
+
+  .dp-brush-top,
+  .dp-erase-top {
+    --dash: 177;
+  }
+
+  .dp-brush-mid,
+  .dp-erase-mid {
+    --dash: 356;
+  }
+
+  .dp-brush-bot,
+  .dp-erase-bot {
+    --dash: 223;
+  }
+
+  .dp-brush-top { stroke-width: 92px; }
+  .dp-brush-mid { stroke-width: 88px; }
+  .dp-brush-bot { stroke-width: 104px; }
+
+  /* Eraser brushes are intentionally a few pixels wider than the reveal brushes.
+     That prevents one-pixel anti-aliased crumbs at section handoffs/endcaps while
+     keeping the erase direction visually identical. */
+  .dp-erase-top { stroke-width: 100px; }
+  .dp-erase-mid { stroke-width: 98px; }
+  .dp-erase-bot { stroke-width: 112px; }
+
+  .dp-brush-top { animation: dp-brush-top var(--dur) linear infinite; }
+  .dp-brush-mid { animation: dp-brush-mid var(--dur) linear infinite; }
+  .dp-brush-bot { animation: dp-brush-bot var(--dur) linear infinite; }
+
+  .dp-erase-top { animation: dp-erase-top var(--dur) linear infinite; }
+  .dp-erase-mid { animation: dp-erase-mid var(--dur) linear infinite; }
+  .dp-erase-bot { animation: dp-erase-bot var(--dur) linear infinite; }
+
+  /* The heads run along one continuous centerline:
+       1) white strokes reveal top → middle → bottom,
+       2) the full logo holds briefly,
+       3) black strokes erase top → middle → bottom in the same forward direction.
+     Because the erase brushes are drawn after the reveal brushes inside each mask,
+     the second pass removes sections instead of reversing the first pass. */
+  @keyframes dp-brush-top {
+    0%, 1.99%    { stroke-dashoffset: 177; stroke-opacity: 0; }
+    2%           { stroke-dashoffset: 177; stroke-opacity: 1; }
+    18.35%, 100% { stroke-dashoffset: 0;   stroke-opacity: 1; }
+  }
+
+  @keyframes dp-brush-mid {
+    0%, 18.09%   { stroke-dashoffset: 356; stroke-opacity: 0; }
+    18.1%        { stroke-dashoffset: 356; stroke-opacity: 1; }
+    35.67%, 100% { stroke-dashoffset: 0;   stroke-opacity: 1; }
+  }
+
+  @keyframes dp-brush-bot {
+    0%, 35.66%   { stroke-dashoffset: 223; stroke-opacity: 0; }
+    35.67%       { stroke-dashoffset: 223; stroke-opacity: 1; }
+    44.85%, 100% { stroke-dashoffset: 0;   stroke-opacity: 1; }
+  }
+
+  @keyframes dp-erase-top {
+    0%, 53.49%   { stroke-dashoffset: 177; stroke-opacity: 0; }
+    53.5%        { stroke-dashoffset: 177; stroke-opacity: 1; }
+    69.8%, 100%  { stroke-dashoffset: 0;   stroke-opacity: 1; }
+  }
+
+  @keyframes dp-erase-mid {
+    0%, 69.39%   { stroke-dashoffset: 356; stroke-opacity: 0; }
+    69.4%        { stroke-dashoffset: 356; stroke-opacity: 1; }
+    86.98%, 100% { stroke-dashoffset: 0;   stroke-opacity: 1; }
+  }
+
+  @keyframes dp-erase-bot {
+    0%, 86.97%   { stroke-dashoffset: 223; stroke-opacity: 0; }
+    86.98%       { stroke-dashoffset: 223; stroke-opacity: 1; }
+    96.15%, 100% { stroke-dashoffset: 0;   stroke-opacity: 1; }
+  }
+
+  .dp-revealed {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dp-brush-top,
+    .dp-brush-mid,
+    .dp-brush-bot,
+    .dp-erase-top,
+    .dp-erase-mid,
+    .dp-erase-bot {
+      animation: none;
+    }
+
+    .dp-revealed { opacity: 1; }
+    .dp-brush-top,
+    .dp-brush-mid,
+    .dp-brush-bot { stroke-dashoffset: 0; stroke-opacity: 1; }
+    .dp-erase-top,
+    .dp-erase-mid,
+    .dp-erase-bot { stroke-dashoffset: var(--dash); stroke-opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="dp-loader" role="img" aria-label="Loading">
+  <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 337.903 318.795" aria-hidden="true">
+    <defs>
+      <!-- Clean Divinipress monogram, defined once. -->
+      <symbol id="dp-clean-logo" viewBox="0 0 337.903 318.795">
+        <path fill="currentColor" d="M178.732,133.638h64.65c42.315,0,64.65-32.325,64.65-51.72v51.72c0,22.628-22.335,51.72-64.65,51.72H107.617c-40.422,0-58.186,32.326-58.186,51.721-.001-17.34-.002-34.68-.003-52.02,0-17.183,19.398-51.42,58.189-51.42h71.115Z" />
+        <path fill="currentColor" d="M178.732,133.638v-46.757c0-3.59.737-7.146,2.194-10.428,11.408-25.704,35.242-43.547,62.456-46.255,37.352-3.717,64.65,19.395,64.65,25.86v25.86c-10.229-3.04-18.96-6.694-64.65-1.617-29.093,3.233-64.65,22.628-64.65,53.337h0Z" />
+        <path fill="currentColor" d="M178.747,185.157v46.757c0,3.59-.737,7.146-2.194,10.428-11.408,25.704-35.242,43.547-62.456,46.255-37.352,3.717-64.65-19.395-64.65-25.86v-25.86c10.229,3.04,18.96,6.694,64.65,1.617,29.093-3.233,64.65-22.628,64.65-53.337h0Z" />
+      </symbol>
+
+      <!-- Visual lane masks. These use shape-following regions from the
+           source artwork, with small overlap strokes to prevent seams. -->
+      <mask id="dp-lane-top" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="-24" y="-24" width="386" height="367" mask-type="luminance" style="mask-type: luminance;">
+        <rect x="-24" y="-24" width="386" height="367" fill="#000" />
+        <g class="dp-lane-shape">
+          <polygon points="204.95 111.08 337.903 73.91 274.572 0 216.53 101.501 204.95 111.08" />
+          <polygon points="204.95 111.08 196.944 49.75 274.572 0 216.53 101.501 204.95 111.08" />
+          <polygon points="204.95 111.08 196.944 49.75 173.525 62.445 199.657 113.091 204.95 111.08" />
+          <polygon points="178.732 133.639 178.732 133.639 173.525 62.445 199.657 113.091 178.732 133.639" />
+          <!-- Small inner-edge stitch for the upper loop only.
+               It intentionally stops before the right handoff so the
+               next lane cannot appear ahead of the painted front. -->
+          <path d="M205.5,108.5 C229.0,99.7 253.5,97.4 276.0,99.7 L270.5,109.3 C247.5,104.8 226.7,106.8 207.0,116.8 Z" />
+        </g>
+        <rect class="dp-mask-erase" x="170.8" y="134.0" width="17.2" height="14.5" rx="3" />
+        <path class="dp-mask-erase" d="M274,96 C292,97 315,101 344,106 L344,178 L258,178 C276,156 290,134 298,112 C292,105 284,100 274,96 Z" />
+      </mask>
+
+      <mask id="dp-lane-mid" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="-24" y="-24" width="386" height="367" mask-type="luminance" style="mask-type: luminance;">
+        <rect x="-24" y="-24" width="386" height="367" fill="#000" />
+        <g class="dp-lane-shape">
+          <polygon points="204.95 111.08 337.903 73.91 325.462 167.39 216.53 101.501 204.95 111.08" />
+          <polygon points="204.95 111.08 208.81 199.963 325.462 167.39 216.53 101.501 204.95 111.08" />
+          <path d="M206.032,133.619l2.915,51.776h-106.883l-24.044-52.748s100.849.992,100.357.97c.492.021,27.655.002,27.655.002Z" />
+          <path d="M43.665,240.819l58.399-55.424-24.044-52.748S.492,206.74,0,206.719c.355.022,43.665,34.1,43.665,34.1Z" />
+        </g>
+        <rect class="dp-mask-erase" x="41.8" y="238.0" width="18.5" height="18" rx="2" />
+      </mask>
+
+      <mask id="dp-lane-bottom" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="-24" y="-24" width="386" height="367" mask-type="luminance" style="mask-type: luminance;">
+        <rect x="-24" y="-24" width="386" height="367" fill="#000" />
+        <g class="dp-lane-shape">
+          <polygon points="152.529 207.715 19.576 244.885 82.907 318.795 140.949 217.294 152.529 207.715" />
+          <polygon points="152.529 207.715 160.534 269.045 82.907 318.795 140.949 217.294 152.529 207.715" />
+          <polygon points="152.529 207.715 160.534 269.045 183.954 256.35 157.822 205.703 152.529 207.715" />
+          <polygon points="178.747 185.156 178.747 185.156 183.954 256.35 157.822 205.703 178.747 185.156" />
+        </g>
+        <rect class="dp-mask-erase" x="173.4" y="181.2" width="10.0" height="8.8" rx="1.6" />
+      </mask>
+
+      <!-- Brush masks. Explicit dash lengths avoid wrapping chunks and keep each handoff on the same ribbon centerline. -->
+      <mask id="dp-brush-mask-top" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="-24" y="-24" width="386" height="367" mask-type="luminance" style="mask-type: luminance;">
+        <rect x="-24" y="-24" width="386" height="367" fill="#000" />
+        <path class="dp-brush dp-brush-top" d="M178.7,133.7 C180.0,110.5 190.6,91.1 211.5,76.0 C235.7,58.5 268.0,54.0 292.6,66.0 C302.0,70.6 307.0,76.0 307.9,80.5" />
+        <path class="dp-erase-brush dp-erase-top" d="M178.7,133.7 C180.0,110.5 190.6,91.1 211.5,76.0 C235.7,58.5 268.0,54.0 292.6,66.0 C302.0,70.6 307.0,76.0 307.9,80.5" />
+      </mask>
+
+      <mask id="dp-brush-mask-mid" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="-24" y="-24" width="386" height="367" mask-type="luminance" style="mask-type: luminance;">
+        <rect x="-24" y="-24" width="386" height="367" fill="#000" />
+        <path class="dp-brush dp-brush-mid" d="M307.9,80.5 C307.5,112.0 286.0,153.5 244.0,159.0 C230.0,161.0 214.0,159.2 197.0,159.2 L108.0,159.2 C75.0,159.2 49.0,189.0 49.0,237.0" />
+        <path class="dp-erase-brush dp-erase-mid" d="M307.9,80.5 C307.5,112.0 286.0,153.5 244.0,159.0 C230.0,161.0 214.0,159.2 197.0,159.2 L108.0,159.2 C75.0,159.2 49.0,189.0 49.0,237.0" />
+      </mask>
+
+      <mask id="dp-brush-mask-bottom" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="-24" y="-24" width="386" height="367" mask-type="luminance" style="mask-type: luminance;">
+        <rect x="-24" y="-24" width="386" height="367" fill="#000" />
+        <path class="dp-brush dp-brush-bot" d="M49.0,237.0 C54.0,263.0 82.0,288.0 116.0,288.0 C153.0,288.0 176.0,242.0 178.7,185.0" />
+        <path class="dp-erase-brush dp-erase-bot" d="M49.0,237.0 C54.0,263.0 82.0,288.0 116.0,288.0 C153.0,288.0 176.0,242.0 178.7,185.0" />
+      </mask>
+    </defs>
+
+    <g class="dp-revealed dp-visible-logo">
+      <g mask="url(#dp-brush-mask-top)">
+        <g mask="url(#dp-lane-top)">
+          <use href="#dp-clean-logo" xlink:href="#dp-clean-logo" />
+        </g>
+      </g>
+
+      <g mask="url(#dp-brush-mask-mid)">
+        <g mask="url(#dp-lane-mid)">
+          <use href="#dp-clean-logo" xlink:href="#dp-clean-logo" />
+        </g>
+      </g>
+
+      <g mask="url(#dp-brush-mask-bottom)">
+        <g mask="url(#dp-lane-bottom)">
+          <use href="#dp-clean-logo" xlink:href="#dp-clean-logo" />
+        </g>
+      </g>
+    </g>
+  </svg>
+</div>
+
+</body>
+</html>

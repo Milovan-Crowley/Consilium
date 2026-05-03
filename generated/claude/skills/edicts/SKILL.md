@@ -187,6 +187,7 @@ The scale changes the amount of structure. Patch plans should be short and decis
 - Create: `exact/path/to/file.py`
 - Modify: `exact/path/to/existing.py:123-145`
 - Test: `tests/exact/path/to/test.py`
+- Read: `exact/path/or/pattern/needed-for-context.py`
 
 **Objective:** [What this task accomplishes]
 
@@ -204,6 +205,17 @@ The scale changes the amount of structure. Patch plans should be short and decis
 
 **Stop conditions:** [Only when real ambiguity or failure is plausible]
 ```
+
+The `**Files:**` block is a contract surface. The task's writes set is the union of `Create:` + `Modify:` + `Test:` entries; sister campaigns 3b (file-ownership hook) and 5 (parallel-wave dispatch) consume that writes set. Use exact file paths for write entries, with no globs or wildcards. Use `Read:` for load-bearing context: files or path patterns the task depends on for correctness or decisions, but does not write.
+
+A task with no writes still carries the Files block with the literal `(none)` marker:
+
+```markdown
+**Files:**
+- (none)
+```
+
+For reads-only work, keep `(none)` as the empty writes marker and add `Read:` entries after it. Generator-run tasks invoking `python3 runtimes/scripts/generate.py` or `bash codex/scripts/install-codex.sh` do not list generator-derived outputs under `Modify:`; hand edits still appear under `Modify:`. Build commands like `npm run build`, `tsc`, or `next build` do not receive that carve-out.
 
 ### Code-Selective Rule
 
