@@ -1,17 +1,15 @@
-# consilium-docs
+# Consilium Docs
 
-Shared home for Consilium artifacts and doctrine.
+Shared home for Consilium artifacts, doctrine, and case memory used by the internal Divinipress team.
 
-Claude-Consilium is repointed here. Codex-Consilium adoption is tracked separately in `cases/2026-04-24-codex-consilium-docs-adoption/`.
+Canonical docs live here:
 
-Local-only git repo. No GitHub remote.
-
-See:
-
+- `doctrine/` for shared runtime doctrine
+- `CONVENTIONS.md` for current case-folder and `STATUS.md` rules
 - `INDEX.md` for navigation
-- `CONVENTIONS.md` for case conventions
-- `cases/` for case folders
-- `doctrine/` for shared doctrine
+- `cases/` for planning, spec, diagnosis, and handoff history
 - `archive/` for manually archived cases
-- `scripts/` for lifecycle scripts
-- `preflight/` for Piece 2 cutover inventory
+- `scripts/` for case lifecycle helpers
+- `preflight/` for readiness and cutover inventory
+
+Case folders are useful working memory, but they are not automatically current instructions. Check a case's `STATUS.md` before treating a spec or plan as active.

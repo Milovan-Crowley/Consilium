@@ -83,7 +83,7 @@ Planning and diagnosis artifacts live in dated case folders under `$CONSILIUM_DO
 
 ## Backend Doctrine
 
-Repo: `/Users/milovan/projects/divinipress-backend`
+Repo: `divinipress-backend` checkout. Default local convention: `$HOME/projects/divinipress-backend`; use the teammate's actual clone path when different.
 
 Canonical truth surfaces:
 - `src/api/custom-order/`

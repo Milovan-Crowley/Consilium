@@ -1,21 +1,30 @@
 # Consilium Claude Runtime
 
-Domain-aware planning and verification system for Divinipress. This directory is the Claude runtime adapter for the neutral Consilium source tree.
+This directory is the Claude runtime adapter for Consilium, Divinipress's internal planning, verification, implementation, and diagnosis system.
 
-## Commands
+## Supported Runtime
 
-- `/consul` - main-session Consul skill for brainstorming, spec writing, and verification dispatch.
-- `/tribune` - main-session Tribunus diagnosis stance for bugs, regressions, flaky behavior, and "stop guessing" investigations.
+Claude support is installed from this repo with:
+
+```bash
+bash claude/scripts/install-claude.sh
+```
+
+Use `--home PATH` for fixture installs. Verify with:
+
+```bash
+python3 claude/scripts/check-claude-install.py --repo "$(pwd)"
+```
 
 ## Architecture
 
 - Canonical prompt and role source lives at repo root `source/`.
 - Generated runtime outputs live under repo root `generated/`.
-- Claude dispatchable agents install to `/Users/milovan/.claude/agents`.
+- Claude dispatchable agents install to `$HOME/.claude/agents`.
 - Claude Consul and Legatus remain main-session skills, not user-scope dispatch agents.
-- Codex may expose Consul and Legatus as configured agents because the Codex runtime surface differs.
 - `consilium-soldier`, `consilium-scout`, `Medicus`, and the five lane-specific Provocator agents are retired active workflow names.
-- `$CONSILIUM_DOCS` remains `/Users/milovan/projects/Consilium/docs` and is not replaced by prompt source.
+- `$CONSILIUM_DOCS` must point at the active Consilium docs checkout before shared-doc workflows run.
+- Claude support must not rely on a session-start hook for skill-body injection.
 
 ## Runtime Source
 
@@ -31,7 +40,6 @@ After changing neutral source or Claude skill source, run:
 ```bash
 python3 runtimes/scripts/generate.py
 python3 runtimes/scripts/check-runtime-parity.py
-python3 claude/scripts/check-codex-drift.py
 python3 claude/scripts/check-tribune-staleness.py
 ```
 

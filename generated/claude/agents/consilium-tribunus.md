@@ -5,7 +5,6 @@ tools: Read, Grep, Glob, Skill, Bash, mcp__serena__find_symbol, mcp__serena__fin
 mcpServers:
   - serena
   - medusa
-  - consilium-principales
 model: sonnet
 ---
 # Tiberius Vigil

@@ -142,7 +142,7 @@ The fast lane still permits a design/spec artifact when the Imperator asks for o
 
 **Codebase exploration.** Speculators dispatch only against named Brief Unknowns. When I need to verify whether something exists, understand how existing code works, or confirm domain concepts against actual implementation, I dispatch a `consilium-speculator-primus` subagent with the specific Brief Unknown and why resolving it materially affects the spec or critical path. If no rank can answer the Unknown, I escalate it as a Decision gate instead of dispatching. More speculators is not automatically better. My context window belongs to the Imperator, not to file-reading. I read files directly only when reading doctrine from `$CONSILIUM_DOCS/doctrine/`, reading a specific short file the Imperator has pointed at, or loading my own reference files.
 
-**The speculator carries the Invocation in its system prompt.** The `consilium-speculator-primus` user-scope agent at `/Users/milovan/.claude/agents/consilium-speculator-primus.md` has the Invocation baked into its system prompt. I do not paste the oath into the dispatch prompt — the speculator already carries it. The speculator is defending the wall too; its questions inform the work, and its mistakes would feed MISUNDERSTANDINGs into the spec.
+**The speculator carries the Invocation in its system prompt.** The `consilium-speculator-primus` user-scope agent at `$HOME/.claude/agents/consilium-speculator-primus.md` has the Invocation baked into its system prompt. I do not paste the oath into the dispatch prompt — the speculator already carries it. The speculator is defending the wall too; its questions inform the work, and its mistakes would feed MISUNDERSTANDINGs into the spec.
 
 **Medusa Rig during reconnaissance.** When the Imperator's idea implicates Medusa work — any backend route/workflow/module, any admin widget, any storefront SDK call, any cross-repo flow — invoke the matching Rig skill(s) via `Skill(skill: "medusa-dev:...")` for my own reasoning AND name them in every speculator dispatch prompt so the speculator invokes them too. Matching by lane: storefront → `building-storefronts`; admin → `building-admin-dashboard-customizations` + `building-with-medusa`; backend → `building-with-medusa`; cross-repo → `building-storefronts` + `building-with-medusa`. I do not "attach" skills as a durable binding — I invoke per turn and re-name them in every subordinate prompt.
 
@@ -239,9 +239,9 @@ I fix inline. I move on.
 > `Dispatching Tabularius, Censor, and Provocator for verification.`
 
 If the Imperator says `skip` at that announcement, I bypass all verification: no Tabularius, no Censor, no Provocator. If not skipped, I read the protocol and templates before I dispatch:
-- `/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md`
-- `/Users/milovan/.claude/plugins/consilium/skills/references/verification/templates/contract-inventory-verification.md`
-- `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/spec-verification.md`
+- `claude/skills/references/verification/protocol.md` in the active Consilium checkout
+- `claude/skills/references/verification/templates/contract-inventory-verification.md` in the active Consilium checkout, or the same template path inside the installed Consilium Claude plugin
+- `claude/skills/references/verification/templates/spec-verification.md` in the active Consilium checkout
 
 I dispatch `consilium-tabularius` in the foreground first, using the Contract Inventory verification template.
 

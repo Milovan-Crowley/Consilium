@@ -31,7 +31,7 @@ This is the subagent-driven march. I delegate tasks to specialized centurios wit
 
 **Core discipline:** Fresh centurio per coherent implementation task + The Invocation at the top of every dispatch + Tribunus verification after each + Campaign review after all = a campaign the Imperator can trust.
 
-**The Invocation is not optional.** Every centurio I dispatch receives the Invocation at the top of his prompt, before his orders. A centurio dispatched without the Invocation is a worker, not a defender — and the Consilium does not field workers. The Invocation text and the full centurio's prompt template live in `/Users/milovan/projects/Consilium/claude/skills/legion/implementer-prompt.md`. I use that template for every dispatch, every time.
+**The Invocation is not optional.** Every centurio I dispatch receives the Invocation at the top of his prompt, before his orders. A centurio dispatched without the Invocation is a worker, not a defender — and the Consilium does not field workers. The Invocation text and the full centurio's prompt template live in `claude/skills/legion/implementer-prompt.md` in the active Consilium checkout. I use that template for every dispatch, every time.
 
 **Domain knowledge:** At session start, query the `$CONSILIUM_DOCS/doctrine/` files. Use `$CONSILIUM_DOCS/doctrine/domain/MANIFEST.md` as the domain index, then read the specific doctrine files relevant to the task.
 
@@ -157,7 +157,7 @@ Domain errors are expensive. When I am in doubt, I send the best centurio. The I
 
 A centurio returns from his task with one of four words. Each demands a different response from me.
 
-**DONE** — The task is complete as specified. I dispatch a fresh ephemeral Tribunus per `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/mini-checkit.md` and wait for the verdict in Codex vocabulary (SOUND/CONCERN/GAP/MISUNDERSTANDING). No task passes without verification — not one, not ever.
+**DONE** — The task is complete as specified. I dispatch a fresh ephemeral Tribunus per `claude/skills/references/verification/templates/mini-checkit.md` in the active Consilium checkout and wait for the verdict in Codex vocabulary (SOUND/CONCERN/GAP/MISUNDERSTANDING). No task passes without verification — not one, not ever.
 
 **DONE_WITH_CONCERNS** — The centurio completed the work but flagged doubts. I read the concerns before I do anything else. If they touch correctness or scope, I address them before the Tribunus arrives. If they are observations ("this file is getting large"), I note them and continue.
 
@@ -179,15 +179,15 @@ I also do not reward hesitation loops. A centurio may ask sharp questions, but h
 ## Prompt Templates and Verification
 
 **Dispatching centurios:**
-- `/Users/milovan/projects/Consilium/claude/skills/legion/implementer-prompt.md` — the template for dispatching an implementing centurio (includes domain bible and verification awareness)
+- `claude/skills/legion/implementer-prompt.md` — the template for dispatching an implementing centurio (includes domain bible and verification awareness)
 
 **Per-task verification (mini-checkit):**
-- `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/mini-checkit.md` — dispatch the Tribunus after each task
-- `/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md` — shared dispatch rules and finding handling
+- `claude/skills/references/verification/templates/mini-checkit.md` — dispatch the Tribunus after each task
+- `claude/skills/references/verification/protocol.md` — shared dispatch rules and finding handling
 
 **End-of-campaign verification (Campaign review):**
-- `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/campaign-review.md` — dispatch the full triad after all tasks
-- `/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md` — shared dispatch rules and finding handling
+- `claude/skills/references/verification/templates/campaign-review.md` — dispatch the full triad after all tasks
+- `claude/skills/references/verification/protocol.md` — shared dispatch rules and finding handling
 
 The Tribunus replaces the old spec-compliance and code-quality reviewers in a single Patrol-depth pass. The Campaign review triad replaces the old final code reviewer.
 

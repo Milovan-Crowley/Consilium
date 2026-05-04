@@ -2,17 +2,18 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 prune_agents=0
 sync_config=1
+dry_run=0
 
 usage() {
   cat <<'USAGE'
-Usage: bash codex/scripts/install-codex.sh [--prune-agents] [--sync-config] [--skip-config-sync]
+Usage: bash codex/scripts/install-codex.sh [--dry-run] [--prune-agents] [--sync-config] [--skip-config-sync]
 
 Installs the Consilium Codex agents and skills from this repo.
 
 Options:
+  --dry-run       Validate agents, skills, and config sync without writing installed files.
   --prune-agents  Remove installed consilium agent TOMLs that are no longer generated here.
   --sync-config   Compatibility flag. Config sync is now the default.
   --skip-config-sync
@@ -22,6 +23,10 @@ USAGE
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --dry-run)
+      dry_run=1
+      shift
+      ;;
     --prune-agents)
       prune_agents=1
       shift
@@ -45,6 +50,21 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+bash "$script_dir/install-codex-agents.sh" --validate-only
+bash "$script_dir/install-codex-skills.sh" --dry-run
+
+if [[ "$sync_config" == "1" ]]; then
+  python3 "$script_dir/sync-codex-config.py" --dry-run
+  python3 "$script_dir/check-codex-config-portability.py" --simulate-fresh-config
+else
+  echo "Skipped config sync preflight by request."
+fi
+
+if [[ "$dry_run" == "1" ]]; then
+  echo "Consilium Codex dry run complete. No installed files or config were changed."
+  exit 0
+fi
 
 if [[ "$prune_agents" == "1" ]]; then
   bash "$script_dir/install-codex-agents.sh" --prune

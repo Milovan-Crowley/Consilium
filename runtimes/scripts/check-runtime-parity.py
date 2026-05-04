@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -77,6 +78,51 @@ def expected_names(manifest: dict, runtime: str, surface: str | None = None) -> 
     return names
 
 
+def codex_config_file_values(text: str) -> tuple[dict[str, str], list[str]]:
+    values = {}
+    errors = []
+    current_agent = None
+    for line in text.splitlines():
+        block_match = re.match(r"^\[agents\.(consilium-[^\]]+)\]\s*$", line)
+        if block_match:
+            current_agent = block_match.group(1)
+            continue
+        if current_agent and line.startswith("["):
+            current_agent = None
+            continue
+        if current_agent:
+            value_match = re.match(r"^config_file\s*=\s*(.+)$", line)
+            if value_match:
+                try:
+                    values[current_agent] = json.loads(value_match.group(1))
+                except json.JSONDecodeError as exc:
+                    errors.append(f"[agents.{current_agent}] config_file is not a valid TOML string: {exc}")
+    return values, errors
+
+
+def check_codex_config_paths(path: Path, expected: set[str], expected_dir: str | Path, label: str) -> list[str]:
+    if not path.is_file():
+        return [f"{path}: missing"]
+
+    text = path.read_text()
+    values, errors = codex_config_file_values(text)
+    result = [f"{path}: {error}" for error in errors]
+
+    for name in sorted(expected):
+        value = values.get(name)
+        if value is None:
+            result.append(f"{path}: missing [agents.{name}] config_file")
+            continue
+        if isinstance(expected_dir, Path):
+            expected_value = str(expected_dir / f"{name}.toml")
+        else:
+            expected_value = f"{expected_dir.rstrip('/')}/{name}.toml"
+        if value != expected_value:
+            result.append(f"{path}: [agents.{name}] config_file is {value!r}, expected {label} {expected_value!r}")
+
+    return result
+
+
 def check_manifest(manifest: dict) -> list[str]:
     names = [agent["name"] for agent in manifest["agents"]]
     errors = []
@@ -115,6 +161,10 @@ def check_generated(manifest: dict) -> list[str]:
         errors.append(f"{CODEX_CONFIG}: missing")
     elif GENERATED_CODEX_CONFIG.read_bytes() != CODEX_CONFIG.read_bytes():
         errors.append(f"{CODEX_CONFIG}: differs from generated Codex config")
+    if GENERATED_CODEX_CONFIG.is_file():
+        errors.extend(check_codex_config_paths(GENERATED_CODEX_CONFIG, expected_names(manifest, "codex", "agent"), "$HOME/.codex/agents", "portable path"))
+    if CODEX_CONFIG.is_file():
+        errors.extend(check_codex_config_paths(CODEX_CONFIG, expected_names(manifest, "codex", "agent"), "$HOME/.codex/agents", "portable path"))
     return errors
 
 
@@ -134,10 +184,7 @@ def check_installed(manifest: dict) -> list[str]:
         elif generated.read_bytes() != installed.read_bytes():
             errors.append(f"{installed}: differs from generated Codex agent {generated}")
 
-    config_text = CODEX_USER_CONFIG.read_text() if CODEX_USER_CONFIG.is_file() else ""
-    for name in sorted(expected_names(manifest, "codex", "agent")):
-        if f"[agents.{name}]" not in config_text:
-            errors.append(f"{CODEX_USER_CONFIG}: missing [agents.{name}] block")
+    errors.extend(check_codex_config_paths(CODEX_USER_CONFIG, expected_names(manifest, "codex", "agent"), INSTALLED_CODEX_AGENTS, "installed path"))
 
     retired_present = sorted(name for name in RETIRED_CLAUDE_AGENT_FILES if (INSTALLED_CLAUDE_AGENTS / name).exists())
     if retired_present:

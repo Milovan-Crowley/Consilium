@@ -230,8 +230,7 @@
           "tools_profile": "read_bash",
           "mcp_servers": [
             "serena",
-            "medusa",
-            "consilium-principales"
+            "medusa"
           ]
         }
       }

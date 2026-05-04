@@ -41,7 +41,7 @@ Execution ranks:
 
 - Root `source/roles/` contains compact persona source files.
 - Root `source/doctrine/` contains prompt-source law baked into generated agents.
-- Runtime shared doctrine and Consilium artifacts live in `$CONSILIUM_DOCS`, defaulting to `/Users/milovan/projects/Consilium/docs`
+- Runtime shared doctrine and Consilium artifacts live in `$CONSILIUM_DOCS`. On Milovan's machine the fallback is `/Users/milovan/projects/Consilium/docs`; teammates should export their own `consilium-docs` checkout path.
 - Root `source/protocols/` contains routing and planning rules.
 - Root `source/manifest.json` defines the installed agent pack.
 - Root `generated/codex/agents/` contains generated Codex TOMLs.
@@ -61,19 +61,26 @@ Start a fresh Codex thread after installing agents. Existing threads may keep ol
 
 ## Install
 
-Install everything from this repo:
+Validate the install without writing installed files or config:
 
 ```bash
-bash scripts/install-codex.sh
+bash codex/scripts/install-codex.sh --dry-run
+```
+
+Install everything from this repo after the dry run passes:
+
+```bash
+bash codex/scripts/install-codex.sh
 ```
 
 Optional full refresh:
 
 ```bash
-bash scripts/install-codex.sh --prune-agents
+bash codex/scripts/install-codex.sh --prune-agents
 ```
 
 The wrapper:
+- preflights generated agent TOMLs, the Tribune skill package, and config sync before writing to user-home paths
 - regenerates and installs `consilium-*.toml` into `~/.codex/agents`
 - installs `skills/tribune` into the local skill registry at `~/.agents/skills/tribune`
 - optionally prunes stale installed Consilium agents
@@ -84,25 +91,31 @@ Start a new Codex thread or session after installing. Existing threads do not pi
 ## Agent Install
 
 ```bash
-bash scripts/install-codex-agents.sh
+bash codex/scripts/install-codex-agents.sh
 ```
 
 Optional prune of stale installed agents:
 
 ```bash
-bash scripts/install-codex-agents.sh --prune
+bash codex/scripts/install-codex-agents.sh --prune
 ```
 
 The script:
-- regenerates the TOMLs from root `source/`
+- regenerates the TOMLs from root `source/` during real install
 - validates each generated TOML
 - syncs `consilium-*.toml` into `~/.codex/agents`
 - optionally prunes stale installed agent files
 
+No-write validation:
+
+```bash
+bash codex/scripts/install-codex-agents.sh --validate-only
+```
+
 Verify:
 
 ```bash
-python3 scripts/check-shared-docs-adoption.py --installed
+python3 codex/scripts/check-shared-docs-adoption.py --installed
 ```
 
 After installing, start a new Codex thread or session. Existing threads do not pick up newly added custom agent types.
@@ -112,19 +125,18 @@ After installing, start a new Codex thread or session. Existing threads do not p
 Install only the Codex Tribune debugging skill:
 
 ```bash
-bash scripts/install-codex-skills.sh
+bash codex/scripts/install-codex-skills.sh
 ```
 
 Dry-run validation:
 
 ```bash
-bash scripts/install-codex-skills.sh --dry-run
+bash codex/scripts/install-codex-skills.sh --dry-run
 ```
 
 The skill installer:
 - validates `skills/tribune/SKILL.md` frontmatter
 - validates `skills/tribune/agents/openai.yaml`
-- checks referenced skill files exist
 - rejects stale copied references such as Claude-era paths and wrong Consilium skill calls
 - rejects Markdown tables in runtime skill docs
 - updates the local `~/.agents/skills/tribune` symlink
@@ -146,8 +158,16 @@ Expected result points at this checkout's Codex Tribune skill source:
 To sync the generated Consilium registrations into `~/.codex/config.toml` manually:
 
 ```bash
-python3 scripts/sync-codex-config.py
+python3 codex/scripts/sync-codex-config.py
 ```
+
+Fixture-friendly options:
+
+```bash
+python3 codex/scripts/sync-codex-config.py --config /tmp/config.toml --snippet /tmp/snippet.toml --agent-dir /tmp/agents --dry-run
+```
+
+Config sync supports missing config files, config files without `[features]`, and existing non-Consilium settings. It renders installed `config_file` paths from `~/.codex/agents` by default, or from `--agent-dir` for fixture checks.
 
 The generated registration blocks include:
 - `config_file`
@@ -179,4 +199,4 @@ The Consul should:
 
 ## Evals
 
-Golden-task eval prompts live in [evals/](/Users/milovan/projects/Consilium/codex/evals:1). Use them when tuning prompts so changes are judged against recurring work instead of intuition alone.
+Golden-task eval prompts live in [evals/](evals/). Use them when tuning prompts so changes are judged against recurring work instead of intuition alone.

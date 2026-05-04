@@ -5,17 +5,53 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 src_dir="$repo_root/generated/codex/agents"
 target_dir="$HOME/.codex/agents"
-prune="${1:-}"
+prune=0
+validate_only=0
+
+usage() {
+  cat <<'USAGE'
+Usage: bash codex/scripts/install-codex-agents.sh [--prune] [--validate-only]
+
+Installs generated Consilium Codex agent TOMLs into ~/.codex/agents.
+
+Options:
+  --prune          Remove installed consilium agent TOMLs that are no longer generated here.
+  --validate-only  Validate current generated agent TOMLs without generating or installing files.
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --prune)
+      prune=1
+      shift
+      ;;
+    --validate-only)
+      validate_only=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
 
 if [[ ! -f "$script_dir/generate_agents.py" ]]; then
   echo "Missing generator script" >&2
   exit 1
 fi
 
-python3 "$script_dir/generate_agents.py"
-python3 "$script_dir/check-shared-docs-adoption.py"
+if [[ "$validate_only" == "0" ]]; then
+  python3 "$script_dir/generate_agents.py"
+fi
 
-mkdir -p "$target_dir"
+python3 "$script_dir/check-shared-docs-adoption.py"
 
 python3 - <<'PY' "$src_dir"
 import json
@@ -47,6 +83,13 @@ for path in paths:
 print(f"Validated {len(paths)} TOML files")
 PY
 
+if [[ "$validate_only" == "1" ]]; then
+  echo "Validated Consilium Codex agents without generating or installing files."
+  exit 0
+fi
+
+mkdir -p "$target_dir"
+
 for src in "$src_dir"/consilium-*.toml; do
   install -m 0644 "$src" "$target_dir/$(basename "$src")"
 done
@@ -58,7 +101,7 @@ from pathlib import Path
 src = {p.name for p in Path(sys.argv[1]).glob("consilium-*.toml")}
 target = {p.name for p in Path(sys.argv[2]).glob("consilium-*.toml")}
 extra = sorted(target - src)
-prune = sys.argv[3] == "--prune"
+prune = sys.argv[3] == "1"
 
 if extra:
     if prune:

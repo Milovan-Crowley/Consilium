@@ -20,6 +20,7 @@ CODEX_SOURCE = ROOT / "codex" / "source"
 CODEX_AGENTS = ROOT / "codex" / "agents"
 CODEX_CONFIG = ROOT / "codex" / "config" / "codex-config-snippet.toml"
 CLAUDE_SKILLS = ROOT / "claude" / "skills"
+DEFAULT_CODEX_AGENT_DIR = "$HOME/.codex/agents"
 
 
 CLAUDE_TOOL_PROFILES = {
@@ -135,18 +136,14 @@ def render_claude_agent(agent: dict) -> str:
     return "\n".join(frontmatter) + "\n" + composed_body(agent)
 
 
-def write_codex_outputs(manifest: dict) -> int:
-    reset_dir(GENERATED_CODEX_AGENTS)
-    GENERATED_CODEX_CONFIG.parent.mkdir(parents=True, exist_ok=True)
-
+def render_codex_config(manifest: dict, agent_dir: str = DEFAULT_CODEX_AGENT_DIR) -> str:
     agents = [agent for agent in manifest["agents"] if agent["runtime_surfaces"]["codex"]["enabled"]]
-    for agent in agents:
-        (GENERATED_CODEX_AGENTS / f"{agent['name']}.toml").write_text(render_codex_agent(agent))
+    agent_dir = agent_dir.rstrip("/")
 
     lines = ['project_doc_fallback_filenames = ["AGENTS.md"]', ""]
     for agent in agents:
         nicknames = ", ".join(quote(name) for name in agent["nickname_candidates"])
-        config_file = f"/Users/milovan/.codex/agents/{agent['name']}.toml"
+        config_file = f"{agent_dir}/{agent['name']}.toml"
         lines.extend(
             [
                 f'[agents.{agent["name"]}]',
@@ -156,7 +153,18 @@ def write_codex_outputs(manifest: dict) -> int:
                 "",
             ]
         )
-    GENERATED_CODEX_CONFIG.write_text("\n".join(lines).rstrip() + "\n")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_codex_outputs(manifest: dict) -> int:
+    reset_dir(GENERATED_CODEX_AGENTS)
+    GENERATED_CODEX_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+
+    agents = [agent for agent in manifest["agents"] if agent["runtime_surfaces"]["codex"]["enabled"]]
+    for agent in agents:
+        (GENERATED_CODEX_AGENTS / f"{agent['name']}.toml").write_text(render_codex_agent(agent))
+
+    GENERATED_CODEX_CONFIG.write_text(render_codex_config(manifest))
     return len(agents)
 
 

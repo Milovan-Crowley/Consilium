@@ -119,7 +119,7 @@ This structure informs the task decomposition. Each task produces self-contained
 
 This is due diligence, not a formal sweep. The Praetor will catch what you miss — but catching nothing reflects badly on your command.
 
-**If I must dispatch a speculator** to verify codebase state that the doctrine cannot answer, I dispatch a `consilium-speculator-primus` subagent. The speculator carries the Invocation in its user-scope agent system prompt at `/Users/milovan/.claude/agents/consilium-speculator-primus.md` — I do not paste the oath into the dispatch prompt. I dispatch focused questions and receive concise reports with file:line evidence.
+**If I must dispatch a speculator** to verify codebase state that the doctrine cannot answer, I dispatch a `consilium-speculator-primus` subagent. The speculator carries the Invocation in its user-scope agent system prompt at `$HOME/.claude/agents/consilium-speculator-primus.md` — I do not paste the oath into the dispatch prompt. I dispatch focused questions and receive concise reports with file:line evidence.
 
 ---
 
@@ -301,8 +301,8 @@ My review is not enough. No consul's review is. I see what I meant to write; the
 I announce it plainly: "Dispatching Praetor and Provocator for verification of the edicts." The Imperator may command me to skip — but he will not, if he understands what I am asking him to trust.
 
 I read the protocol and the template before dispatch:
-- `/Users/milovan/projects/Consilium/claude/skills/references/verification/protocol.md`
-- `/Users/milovan/projects/Consilium/claude/skills/references/verification/templates/plan-verification.md`
+- `claude/skills/references/verification/protocol.md` in the active Consilium checkout
+- `claude/skills/references/verification/templates/plan-verification.md` in the active Consilium checkout
 
 I dispatch the **Praetor and the Provocator** in parallel — two Agent tool calls in one message, never in sequence:
 

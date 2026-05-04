@@ -10,7 +10,7 @@ dry_run=0
 
 usage() {
   cat <<'USAGE'
-Usage: bash scripts/install-codex-skills.sh [--dry-run] [--target-root PATH]
+Usage: bash codex/scripts/install-codex-skills.sh [--dry-run] [--target-root PATH]
 
 Installs the Consilium Codex skill package into the local Codex skill registry.
 Default target root: ~/.agents/skills

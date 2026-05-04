@@ -1,6 +1,6 @@
 ## Frontend Doctrine
 
-Repo: `/Users/milovan/projects/divinipress-store`
+Repo: `divinipress-store` checkout. Default local convention: `$HOME/projects/divinipress-store`; use the teammate's actual clone path when different.
 
 Canonical truth surfaces:
 - `src/app/_domain/custom-order/`

@@ -1,86 +1,86 @@
 project_doc_fallback_filenames = ["AGENTS.md"]
 
 [agents.consilium-consul]
-config_file = "/Users/milovan/.codex/agents/consilium-consul.toml"
+config_file = "$HOME/.codex/agents/consilium-consul.toml"
 description = "Main orchestration Consul. Thinks, sequences, judges, and synthesizes. Delegates retrieval, tracing, verification, and implementation aggressively to specialists."
 nickname_candidates = ["consul", "publius", "auctor"]
 
 [agents.consilium-legatus]
-config_file = "/Users/milovan/.codex/agents/consilium-legatus.toml"
+config_file = "$HOME/.codex/agents/consilium-legatus.toml"
 description = "Execution commander. Takes an approved plan or explicit build order, dispatches the right centurions, and uses the Tribunus to stop drift early."
 nickname_candidates = ["legatus", "gnaeus", "imperius"]
 
 [agents.consilium-censor]
-config_file = "/Users/milovan/.codex/agents/consilium-censor.toml"
+config_file = "$HOME/.codex/agents/consilium-censor.toml"
 description = "Spec verification. Reviews a spec cold against the real domain and returns MISUNDERSTANDING, GAP, CONCERN, or SOUND with evidence."
 nickname_candidates = ["censor", "scrutinus"]
 
 [agents.consilium-praetor]
-config_file = "/Users/milovan/.codex/agents/consilium-praetor.toml"
+config_file = "$HOME/.codex/agents/consilium-praetor.toml"
 description = "Plan verification. Checks whether a plan survives contact with reality: ordering, assumptions, dependencies, and file collisions."
 nickname_candidates = ["praetor", "pragmaticus"]
 
 [agents.consilium-tabularius]
-config_file = "/Users/milovan/.codex/agents/consilium-tabularius.toml"
+config_file = "$HOME/.codex/agents/consilium-tabularius.toml"
 description = "Contract inventory verifier. Enumerates canonical contract surfaces and checks that each has a named Inventory home."
 nickname_candidates = ["tabularius", "marcus tabularius", "record keeper"]
 
 [agents.consilium-provocator]
-config_file = "/Users/milovan/.codex/agents/consilium-provocator.toml"
+config_file = "$HOME/.codex/agents/consilium-provocator.toml"
 description = "Adversarial verifier. Hunts failure modes, brittle assumptions, and overconfidence in specs, plans, and implementations."
 nickname_candidates = ["provocator", "ferox"]
 
 [agents.consilium-tribunus]
-config_file = "/Users/milovan/.codex/agents/consilium-tribunus.toml"
+config_file = "$HOME/.codex/agents/consilium-tribunus.toml"
 description = "Per-task verifier during execution. Checks that one completed task is real, on-plan, and not poisoning the next task."
 nickname_candidates = ["tribunus", "vigil"]
 
 [agents.consilium-custos]
-config_file = "/Users/milovan/.codex/agents/consilium-custos.toml"
+config_file = "$HOME/.codex/agents/consilium-custos.toml"
 description = "Dispatch-readiness verifier. Walks shell, env, tests, baseline, blast radius, and document coherence to catch what kills a plan in zsh after the magistrates have cleared it. Default placement: after Praetor/Provocator, before Legatus dispatch."
 nickname_candidates = ["custos", "pernix"]
 
 [agents.consilium-speculator-front]
-config_file = "/Users/milovan/.codex/agents/consilium-speculator-front.toml"
+config_file = "$HOME/.codex/agents/consilium-speculator-front.toml"
 description = "Frontend tracer for divinipress-store. Confirms exact symbols, path ownership, and execution flow with tight citations."
 nickname_candidates = ["front speculator", "quintus frontinus"]
 
 [agents.consilium-speculator-back]
-config_file = "/Users/milovan/.codex/agents/consilium-speculator-back.toml"
+config_file = "$HOME/.codex/agents/consilium-speculator-back.toml"
 description = "Backend tracer for divinipress-backend. Confirms exact routes, services, and state transitions with tight citations."
 nickname_candidates = ["back speculator", "decimus varro"]
 
 [agents.consilium-speculator-primus]
-config_file = "/Users/milovan/.codex/agents/consilium-speculator-primus.toml"
+config_file = "$HOME/.codex/agents/consilium-speculator-primus.toml"
 description = "Source and runtime tracer for Consilium. Confirms exact source, generated output, installed runtime, plugin/cache/config, and unknown-lane facts with tight citations."
 nickname_candidates = ["speculator primus", "primus speculator", "marcus speculator"]
 
 [agents.consilium-interpres-front]
-config_file = "/Users/milovan/.codex/agents/consilium-interpres-front.toml"
+config_file = "$HOME/.codex/agents/consilium-interpres-front.toml"
 description = "Frontend interpreter for divinipress-store. Explains domain-layer behavior, proof and order UI rules, and canonical frontend truth surfaces."
 nickname_candidates = ["front interpres", "lucius frontinus"]
 
 [agents.consilium-interpres-back]
-config_file = "/Users/milovan/.codex/agents/consilium-interpres-back.toml"
+config_file = "$HOME/.codex/agents/consilium-interpres-back.toml"
 description = "Backend interpreter for divinipress-backend. Explains proof, order, tenancy, and Medusa workflow rules from backend truth."
 nickname_candidates = ["back interpres", "gaius ordinator"]
 
 [agents.consilium-arbiter]
-config_file = "/Users/milovan/.codex/agents/consilium-arbiter.toml"
+config_file = "$HOME/.codex/agents/consilium-arbiter.toml"
 description = "Cross-repo contract judge. Compares frontend assumptions with backend truth for statuses, permissions, payloads, and lifecycle transitions."
 nickname_candidates = ["arbiter", "concordius"]
 
 [agents.consilium-centurio-front]
-config_file = "/Users/milovan/.codex/agents/consilium-centurio-front.toml"
+config_file = "$HOME/.codex/agents/consilium-centurio-front.toml"
 description = "Frontend execution centurion for divinipress-store. Implements one bounded frontend task without wandering into backend."
 nickname_candidates = ["front centurion", "titus frontinus"]
 
 [agents.consilium-centurio-back]
-config_file = "/Users/milovan/.codex/agents/consilium-centurio-back.toml"
+config_file = "$HOME/.codex/agents/consilium-centurio-back.toml"
 description = "Backend execution centurion for divinipress-backend. Implements one bounded backend task without wandering into frontend."
 nickname_candidates = ["back centurion", "titus severus"]
 
 [agents.consilium-centurio-primus]
-config_file = "/Users/milovan/.codex/agents/consilium-centurio-primus.toml"
+config_file = "$HOME/.codex/agents/consilium-centurio-primus.toml"
 description = "Senior fallback centurion for work that does not fit clean frontend or backend lanes, or for rescue missions after ambiguity is reduced."
 nickname_candidates = ["centurio primus", "gnaeus primus"]
