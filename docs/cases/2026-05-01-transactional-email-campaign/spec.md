@@ -214,6 +214,76 @@ Slack message formats must also be source-owned in the backend repo. Normal cust
 
 **Confidence: High** - this preserves the DIV-97 source-rendered pattern and the explicit no-publish discipline.
 
+## Contract Inventory
+
+Every canonical-six contract surface this spec touches, mapped to its definition in the spec body and (where it exists today) its location in code on this branch's HEAD (`cc31649`). New surfaces are wired by this campaign; existing surfaces are inherited and either reused unchanged or modified per the noted requirement. `link.create` boundaries and module-boundary API contracts are not present in this spec — declared empty at the bottom of this section.
+
+Code citations were verified against this branch's HEAD by reconnaissance before this section was authored. The Inventory is the spec's contract-surface map; full requirements live in the named spec sections.
+
+### Subscriber boundaries
+
+| Subscriber wiring | Status | Spec body | Code citation |
+|-|-|-|-|
+| `custom-order.created` → `ORDER_RECEIVED_CUSTOM` (proof-required path) | Existing — copy refresh | §Existing Terrain; §Email Inventory > Customer Order and Proof Emails | `src/subscribers/custom-order-created.ts:82-100` |
+| `custom-order.created` → `ORDER_CONFIRMED_PROOFED` (all-reorder path) | Existing — copy refresh | §Existing Terrain; §Email Inventory > Customer Order and Proof Emails | `src/subscribers/custom-order-created.ts:75-80` |
+| `custom-order.created` → `SLACK_OPS_NEW_CUSTOM_ORDER` | New | §Email Inventory > Internal Divinipress Slack Alerts; §Fanout Rules | none — to be added |
+| `custom-order.proof_ready` → `PROOF_READY` | Existing — copy refresh; emission must be moved or protected to post-persistence | §Existing Terrain; §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails | subscriber `src/subscribers/custom-order-proof-ready.ts:29-40`; current emission `src/api/custom-order/order-flow.ts:172-185` (pre-persistence today) |
+| post-`rejectProof` event → `PROOF_REVISION_REQUESTED_CUSTOMER` | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails | none — to be added |
+| post-`rejectProof` event → `SLACK_OPS_PROOF_REVISION_REQUESTED` | New | §Notification Event Contract; §Email Inventory > Internal Divinipress Slack Alerts | none — to be added |
+| post-`approveProof` (ORDER) → `PROOF_APPROVED_CUSTOMER` | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails | none — to be added |
+| post-`approveProof` (CATALOG) → `SAVED_PRODUCT_READY` | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails; §Data Contracts | none — to be added |
+| post-`approveProof` (both types) → `SLACK_OPS_PROOF_APPROVED` | New | §Notification Event Contract; §Email Inventory > Internal Divinipress Slack Alerts | none — to be added |
+| post-`holdProduction` → `PRODUCTION_HOLD_CUSTOMER` | New — `holdProduction` requires a sideEffects-capable dispatch path; currently dispatched via `otherEventSchema` with no sideEffects block | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails | dispatch `src/api/custom-order/[id]/route.ts:306-346`; `EVENT_MAP` entry `src/api/custom-order/order-flow.ts:548-554` |
+| post-`holdProduction` → `SLACK_OPS_PRODUCTION_HOLD` | New — same dispatch dependency as above | §Notification Event Contract; §Email Inventory > Internal Divinipress Slack Alerts | as above |
+| post-`addTracking` → `ORDER_SHIPPED` | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails; §Data Contracts | sideEffects today `src/api/custom-order/order-flow.ts:585-627` (no emission) |
+| post-`addTracking` → `SLACK_OPS_ORDER_SHIPPED` | New | §Notification Event Contract; §Email Inventory > Internal Divinipress Slack Alerts | as above |
+| post-`deliverProduct` → `ORDER_DELIVERED` | New — `deliverProduct` requires a sideEffects-capable dispatch path; currently dispatched via `otherEventSchema` with no sideEffects block | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails | dispatch `src/api/custom-order/[id]/route.ts:306-346`; `EVENT_MAP` entry `src/api/custom-order/order-flow.ts:628-631` |
+| cancellation event (conditional) → `ORDER_CANCELED` | Conditional new — wire only if a real customer-facing cancellation action exists in the target branch | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails | none — no cancellation emission point identified on HEAD |
+| onboarding event (conditional) → `ONBOARDING` | Conditional new — `ONBOARDING` template exists in registry but no subscriber is wired; needs a durable post-account-created event carrying recipient identity | §Email Inventory > Account Emails | template at `src/modules/resend/email/template-registry.ts:144-153`; no subscriber present under `src/subscribers/` |
+| `invite.created` / `invite.resent` → `INVITE_TEAM_MEMBER` | Existing — copy refresh; account template hosted-to-source migration optional | §Existing Terrain; §Email Inventory > Account Emails; §Source Ownership | `src/subscribers/user-invited.ts:24-37` |
+| `auth.password_reset` → `PASSWORD_RESET` | Existing — copy refresh; account template hosted-to-source migration optional | §Existing Terrain; §Email Inventory > Account Emails; §Source Ownership | `src/subscribers/password-reset.ts:66-78` |
+
+### Wire shapes on module boundaries
+
+| Surface | Status | Spec body | Code citation |
+|-|-|-|-|
+| `custom-order.created` event payload — `{ order_id: string }` | Existing | §Notification Event Contract | emit `src/api/store/carts/[id]/custom-complete/route.ts:437-444`; consumer typing `src/subscribers/custom-order-created.ts:12-14` |
+| `custom-order.proof_ready` event payload — `{ customOrderId: string }` | Existing — emission point moves to post-persistence; payload shape unchanged | §Notification Event Contract | `src/api/custom-order/order-flow.ts:172-185` |
+| New lifecycle event payloads — `rejectProof`, `approveProof` (ORDER), `approveProof` (CATALOG), `holdProduction`, `addTracking`, `deliverProduct`, cancellation | New — must carry enough identifier data for subscribers to render emails per §Data Contracts (order id, custom order id, customer email/name, product/line-item summary, tracking labels for shipping, etc.) | §Notification Event Contract; §Data Contracts | none — to be added |
+| Existing customer email template variable contracts — `orderVariables` (13 fields, used by `ORDER_RECEIVED_CUSTOM` + `ORDER_CONFIRMED_PROOFED`), `proofReadyVariables` (6 fields, used by `PROOF_READY`), invite/password/onboarding variable shapes | Existing — copy refresh only; variable shapes unchanged unless required by spec | §Data Contracts | registry `src/modules/resend/email/template-registry.ts:52-75, 93-161`; materializers `src/modules/resend/utils/build-order-email-variables.ts:31-57`, `src/modules/resend/utils/build-proof-ready-email-variables.ts:13-30` |
+| New customer email template variable contracts — `PROOF_REVISION_REQUESTED_CUSTOMER`, `PROOF_APPROVED_CUSTOMER`, `SAVED_PRODUCT_READY`, `PRODUCTION_HOLD_CUSTOMER`, `ORDER_SHIPPED`, `ORDER_DELIVERED`, `ORDER_CANCELED` | New — must include the field families named in §Data Contracts (`current_year`, recipient name, primary URL, primary identifier, plus per-template fields: order id + line-item summary, proof note text when present, multiple tracking entries when present, saved product id/handle with My Products fallback) | §Data Contracts; §Email Inventory > Customer Order and Proof Emails | none — to be added |
+| Slack alert payload contracts — five alerts | New — must include customer/company, order id, custom order id when relevant, product/line-item summary, triggering event, and admin/proof URL when available; compact block or text layout with one action link | §Data Contracts; §Email Inventory > Internal Divinipress Slack Alerts | none — `Templates` enum `src/modules/resend/templates.ts` has no Slack keys today |
+| `SAVED_PRODUCT_READY` payload + saved-product retrieval shape | New — payload must carry saved product id and handle from creation result; fallback path queries by `metadata.custom_order_id` and falls back to a My Products link if no direct URL is provable | §Data Contracts (paragraph on `SAVED_PRODUCT_READY`) | creation site `src/api/custom-order/order-flow.ts:349-403` (returns standard Medusa `ProductDTO[]`, accessed `result[0].id`); link mechanism `metadata.custom_order_id` on product record |
+| Shipping notification scoping shape | New — must use labels from triggering `addTracking` request or filter queried fulfillment labels back to the triggering custom order's items; multiple labels render as multiple tracking entries | §Data Contracts (paragraph on shipping notifications) | `addTracking` schema `src/api/custom-order/order-flow.ts:50-61` (`{ fulfillmentId, labels: [{ trackingNumber, trackingUrl?, labelUrl? }], items, metadata? }`); current write path `src/api/custom-order/order-flow.ts:613-625` |
+| Template variable validation contract — `validateTemplateVariables` presence-only check | Existing — campaign preserves hard-fail behavior on missing variables for customer email; no weakening allowed under Slack's warning-only failure mode | §Recipient Rules ("Existing Resend behavior already hard-fails invalid templates and failed sends; this campaign should preserve that observability for customer email."); §Source Ownership; §Success Criteria | `src/modules/resend/service.ts:71-84` |
+
+### Idempotency anchors
+
+| Anchor | Status | Spec body | Code citation |
+|-|-|-|-|
+| `SAVED_PRODUCT_READY` send + saved-product creation, keyed by `custom_order` id (with saved product id or another stable proof-approval result) | New — must be added; before creation/announcement, implementation must query for an existing saved product associated with the `custom_order` id and reuse if present | §Data Contracts (paragraph on duplicate prevention) | absent today — `approveProof` CATALOG branch `src/api/custom-order/order-flow.ts:221-445` has no pre-creation duplicate query; only guard is status-based via `validateEventTransition` (`src/api/custom-order/order-flow.ts:686-728`), which is artifact-blind |
+
+### Workflow ownership claims
+
+| Owner | Emission requirement | Status today | Spec body | Code citation |
+|-|-|-|-|-|
+| `submitProof` route — `custom-order.proof_ready` emission | Move or protect emission so it occurs only after the `custom_order` status update is durable | Pre-persistence — emission inside sideEffects fires before status DB write | §Notification Event Contract | handler order `src/api/custom-order/[id]/route.ts:297-352`; current emission `src/api/custom-order/order-flow.ts:172-185` |
+| `approveProof` route — emission for ORDER and CATALOG branches | Emit post-persistence after `approveProof` succeeds | Not implemented today | §Notification Event Contract | sideEffects `src/api/custom-order/order-flow.ts:221-445` (no emission); persistence `src/api/custom-order/[id]/route.ts:349-352` |
+| `rejectProof` route — revision event emission | Emit after `rejectProof` side effects and status transition succeed | Not implemented today | §Notification Event Contract | sideEffects `src/api/custom-order/order-flow.ts:471-509` (no emission) |
+| `holdProduction` route — hold event emission | Emit after `holdProduction` status transition succeeds | Not implemented today; route lacks sideEffects block | §Notification Event Contract | dispatch `src/api/custom-order/[id]/route.ts:306-346`; `EVENT_MAP` entry `src/api/custom-order/order-flow.ts:548-554` |
+| `addTracking` route — shipped event emission | Emit after `addTracking` shipment creation and status transition succeed | Not implemented today | §Notification Event Contract | sideEffects `src/api/custom-order/order-flow.ts:585-627` (no emission) |
+| `deliverProduct` route — delivered event emission | Emit after `deliverProduct` status transition succeeds | Not implemented today; route lacks sideEffects block | §Notification Event Contract | dispatch `src/api/custom-order/[id]/route.ts:306-346`; `EVENT_MAP` entry `src/api/custom-order/order-flow.ts:628-631` |
+
+### `link.create` boundaries
+
+None defined. The saved-product / `custom_order` association uses a metadata field (`product.metadata.custom_order_id`) on the product record, not a Medusa module link table. The spec does not introduce a new `link.create` boundary.
+
+### API contracts at module boundaries
+
+None defined. The spec covers notification events, template variable contracts, and Slack alert payload contracts. It does not introduce new REST endpoints or change existing ones.
+
+**Confidence: High** — every entry is anchored to a named spec body section. Existing surfaces are anchored to verified file/line citations on this branch's HEAD (`cc31649`); new surfaces are explicitly marked "to be added."
+
 ## Non-Goals
 
 - Marketing nurture or sales drip emails.
