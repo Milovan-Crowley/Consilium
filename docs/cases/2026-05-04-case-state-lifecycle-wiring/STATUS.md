@@ -1,5 +1,5 @@
 ---
-status: draft
+status: rejected
 opened: 2026-05-04
 target: consilium
 agent: claude
