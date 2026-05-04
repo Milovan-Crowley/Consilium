@@ -193,7 +193,17 @@ The Inventory is the spec's contract-surface map; full requirements live in the 
 
 #### Notification workflow ownership
 
-Each Slack alert is sent through a dedicated notification workflow following Medusa's official Slack integration pattern (subscriber → workflow with `useQueryGraphStep` + `sendNotificationsStep`). One workflow per alert key listed in §Slack Alert Inventory. Each workflow:
+One workflow per Slack alert key. Each workflow is owned by this campaign.
+
+| Workflow ownership | Status | Spec body |
+|-|-|-|
+| Workflow that sends `SLACK_OPS_NEW_CUSTOM_ORDER` (triggered by `custom-order.created`) | New | §Slack Alert Inventory; §Fanout Rules |
+| Workflow that sends `SLACK_OPS_PROOF_APPROVED` (triggered by post-`approveProof` event for both `ProofType.ORDER` and `ProofType.CATALOG`) | New | §Slack Alert Inventory |
+| Workflow that sends `SLACK_OPS_PROOF_REVISION_REQUESTED` (triggered by post-`rejectProof` event) | New | §Slack Alert Inventory |
+| Workflow that sends `SLACK_OPS_PRODUCTION_HOLD` (triggered by post-`holdProduction` event) | New | §Slack Alert Inventory |
+| Workflow that sends `SLACK_OPS_ORDER_SHIPPED` (triggered by post-`addTracking` event) | New | §Slack Alert Inventory; §Data Contracts |
+
+Each workflow follows Medusa's official Slack integration pattern (subscriber → workflow with `useQueryGraphStep` + `sendNotificationsStep`):
 
 - Accepts the lifecycle event payload as input.
 - Uses `useQueryGraphStep` to fetch the customer, custom order, line items, product info, and tracking labels as needed.

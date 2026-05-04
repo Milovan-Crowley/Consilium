@@ -238,7 +238,23 @@ Code citations were verified against this branch's HEAD by reconnaissance before
 
 #### Notification workflow ownership
 
-Each customer email is sent through a dedicated notification workflow following Medusa's official Resend pattern (subscriber → workflow with `useQueryGraphStep` + `sendNotificationStep`). One workflow per template key listed in §Email Inventory > Customer Order and Proof Emails (and optionally for Account Emails if migration is in scope). Each workflow:
+One workflow per customer email template key. Each workflow is owned by this campaign and replaces the current direct-from-subscriber send pattern.
+
+| Workflow ownership | Status | Spec body |
+|-|-|-|
+| Workflow that sends `ORDER_RECEIVED_CUSTOM` (triggered by `custom-order.created` — proof-required path) | New workflow; subscriber re-implemented as thin shim → workflow | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails |
+| Workflow that sends `ORDER_CONFIRMED_PROOFED` (triggered by `custom-order.created` — all-reorder path) | New workflow; subscriber re-implemented as thin shim → workflow | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails |
+| Workflow that sends `PROOF_READY` (triggered by `custom-order.proof_ready`) | New workflow; subscriber re-implemented as thin shim → workflow | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails |
+| Workflow that sends `PROOF_REVISION_REQUESTED_CUSTOMER` (triggered by post-`rejectProof` event) | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails |
+| Workflow that sends `PROOF_APPROVED_CUSTOMER` (triggered by post-`approveProof` ORDER event) | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails |
+| Workflow that sends `SAVED_PRODUCT_READY` (triggered by post-`approveProof` CATALOG event) | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails; §Data Contracts |
+| Workflow that sends `PRODUCTION_HOLD_CUSTOMER` (triggered by post-`holdProduction` event) | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails |
+| Workflow that sends `ORDER_SHIPPED` (triggered by post-`addTracking` event) | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails; §Data Contracts |
+| Workflow that sends `ORDER_DELIVERED` (triggered by post-`deliverProduct` event) | New | §Notification Event Contract; §Email Inventory > Customer Order and Proof Emails |
+| Workflow that sends `INVITE_TEAM_MEMBER` (triggered by `invite.created` / `invite.resent`) | Optional — only if account template migration lands in V1; subscriber re-implemented as thin shim → workflow | §Notification Event Contract; §Email Inventory > Account Emails; §Source Ownership |
+| Workflow that sends `PASSWORD_RESET` (triggered by `auth.password_reset`) | Optional — only if account template migration lands in V1; subscriber re-implemented as thin shim → workflow | §Notification Event Contract; §Email Inventory > Account Emails; §Source Ownership |
+
+Each workflow follows Medusa's official Resend pattern (subscriber → workflow with `useQueryGraphStep` + `sendNotificationStep`):
 
 - Accepts the lifecycle event payload as input.
 - Uses `useQueryGraphStep` to fetch the customer, custom order, line items, product info, and (where applicable) saved product or tracking labels.
