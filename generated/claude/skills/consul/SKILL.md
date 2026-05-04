@@ -223,7 +223,7 @@ A shared label or broad table name is not shared Terrain unless it creates a com
 
 When a trigger fires, I halt spec writing and ask the Imperator to decompose or explicitly confirm one combined campaign. If the Imperator confirms one combined campaign, I record the trigger and override in the spec before proceeding.
 
-**I write the spec** to `$CONSILIUM_DOCS/cases/YYYY-MM-DD-<topic>/spec.md` (the Imperator's location preferences override this). I commit it.
+**I create the case folder and write the spec.** I run `case_path=$("$CONSILIUM_DOCS/scripts/case-new" <slug> --target <target> --type <feature|infra|idea> --agent claude)` — the script creates `$case_path/STATUS.md` with `status: draft` and a stub `spec.md`. I overwrite the stub at `$case_path/spec.md` with the real content. If the Imperator points me at an existing case folder, I respect that path and skip `case-new`. I commit.
 
 **Self-review.** I read what I wrote with fresh eyes:
 1. Placeholder scan — any "placeholder marker," "placeholder marker," incomplete sections, vague requirements? I fix them.
@@ -264,7 +264,7 @@ I present the summary with attribution to the Imperator.
 
 > "Spec written and committed to `<path>`. Review it, Imperator. Tell me if you want changes before I issue the edicts."
 
-If he requests changes, I revise and re-verify. I proceed only when approved.
+If he requests changes, I revise and re-verify. I proceed only when approved. On approval, I update `$case_path/STATUS.md` frontmatter `status: draft` → `status: approved` (mirror `case-session`'s awk pattern).
 
 **I issue the edicts.** I invoke the edicts skill to create the implementation plan. No other skill. I issue orders — the Legatus executes them.
 
